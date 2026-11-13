@@ -3,18 +3,19 @@
 import React from "react";
 import { useLanguage } from "@/i18n";
 import { MatagerLogo } from "@/components/brand/MatagerLogo";
-import { ArrowUpRight, ShieldCheck } from "lucide-react";
+import { ShieldCheck, Download } from "lucide-react";
 import { APP_ROUTES } from "@/config/routes";
 
 interface LandingFooterProps {
   onOpenAuth: (mode?: "signin" | "signup", role?: "owner" | "employee") => void;
+  onOpenDownload?: () => void;
 }
 
-export const LandingFooter: React.FC<LandingFooterProps> = ({ onOpenAuth }) => {
+export const LandingFooter: React.FC<LandingFooterProps> = ({ onOpenAuth, onOpenDownload }) => {
   const { t } = useLanguage();
 
   return (
-    <footer className="w-full relative border-t border-[var(--color-border)] bg-[var(--color-surface)]">
+    <footer className="w-full relative">
       {/* ─── FINAL HERO CTA STACK ─── */}
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 pt-20 pb-20 text-center">
         <div className="max-w-[760px] mx-auto space-y-6">
@@ -37,9 +38,10 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({ onOpenAuth }) => {
 
             <button
               type="button"
-              onClick={() => onOpenAuth("signin", "owner")}
-              className="btn-ghost-action text-[15px]"
+              onClick={onOpenDownload}
+              className="btn-ghost-action text-[15px] inline-flex items-center gap-2"
             >
+              <Download className="w-4 h-4 opacity-70" />
               <span>{t.finalCta.secondaryButton}</span>
             </button>
           </div>
@@ -52,7 +54,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({ onOpenAuth }) => {
       </div>
 
       {/* ─── TECHNICAL TERMINAL FOOTER BAR ─── */}
-      <div className="border-t border-[var(--color-border-subtle)] py-10 px-4 sm:px-6 bg-[var(--color-canvas)]">
+      <div className="py-10 px-4 sm:px-6 bg-[var(--color-canvas)]">
         <div className="max-w-[1200px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-[13px] text-[var(--color-text-secondary)]">
           {/* Brand Identity & Tagline */}
           <div className="flex flex-col sm:flex-row items-center gap-3">
@@ -65,35 +67,10 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({ onOpenAuth }) => {
             </span>
           </div>
 
-          {/* Access Portals */}
-          <div className="flex flex-wrap items-center gap-6">
-            <a
-              href={APP_ROUTES.dashboard}
-              className="hover:text-[var(--color-text-primary)] transition-colors flex items-center gap-1 focus-visible:outline-none"
-            >
-              <span>{t.footer.ownerPortal}</span>
-              <ArrowUpRight className="w-3.5 h-3.5 opacity-60" />
-            </a>
-
-            <button
-              type="button"
-              onClick={() => onOpenAuth("signin", "employee")}
-              className="hover:text-[var(--color-text-primary)] transition-colors focus-visible:outline-none"
-            >
-              {t.footer.staffPortal}
-            </button>
-
-            <a
-              href={APP_ROUTES.landing}
-              className="hover:text-[var(--color-text-primary)] transition-colors flex items-center gap-1 focus-visible:outline-none"
-            >
-              <span>{t.footer.customerStore}</span>
-              <ArrowUpRight className="w-3.5 h-3.5 opacity-60" />
-            </a>
-          </div>
+          {/* Access Portals removed temporarily per user brief */}
 
           {/* Copyright & Legal */}
-          <div className="text-[12px] text-[var(--color-text-muted)] font-mono">
+          <div className="text-[12px] text-[var(--color-text-muted)]">
             © {new Date().getFullYear()} {t.footer.rights}
           </div>
         </div>

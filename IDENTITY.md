@@ -12,7 +12,7 @@
 * **App Icon Asset:** `/public/app-icon.png` (Isometric 3D cube rendered in primary gradient `#0479E8` &rarr; `#0083FE` with an upward-pointing arrow tip, symbolizing growth and commerce synchronization).
 * **Wordmark Typography:**
   * **English (`en`):** `Josefin Sans` (SemiBold / Medium), tight tracking (`-0.03em`), clean geometric baseline.
-  * **Arabic (`ar`):** `Reem Kufi` (Medium), natural cursive spacing (`0px` tracking).
+  * **Arabic (`ar`):** `El Messiri` (Medium), natural cursive spacing (`0px` tracking).
 * **Wordmark Sizing Scale:**
   | Size | Icon Box | Text Class (EN) | Text Class (AR) | Application |
   | :--- | :--- | :--- | :--- | :--- |
@@ -29,7 +29,7 @@
 
 ## 2. Typography Rules & Strict Font System
 
-> **Rule:** In English mode, fonts must be strictly between **Josefin Sans** and **Poiret One**. In Arabic mode, fonts must be strictly between **Reem Kufi** and **Fustat**.
+> **Rule:** In English mode, fonts must be strictly between **Josefin Sans** and **Poiret One**. In Arabic mode, fonts must be strictly between **El Messiri** (main headings) and **Cairo** (subtitles and other).
 
 ### 2.1 Mode-Specific Font Allocation
 
@@ -42,11 +42,11 @@
   * Usage: Buttons, form labels, inputs, navigation links, data tables.
 
 #### Arabic Mode (`lang="ar"`, `dir="rtl"`)
-* **Headings & Display (`--font-heading`):** `Reem Kufi` (`--font-reem-kufi`), `Fustat`, sans-serif.
+* **Headings & Display (`--font-heading`):** `El Messiri` (`--font-el-messiri`), sans-serif.
   * Usage: Main Arabic titles, hero tagline, major section headers.
-* **Subtitles & Badges (`--font-subtitle`):** `Fustat`, `Reem Kufi`, sans-serif.
+* **Subtitles & Badges (`--font-subtitle`):** `Cairo` (`--font-cairo`), sans-serif.
   * Usage: Arabic subtitles, supporting paragraphs, explanatory labels.
-* **Interface & Form Controls (`--font-ui`):** `Fustat`, `Reem Kufi`, sans-serif.
+* **Interface & Form Controls (`--font-ui`):** `Cairo` (`--font-cairo`), sans-serif.
   * Usage: Arabic inputs, buttons, navigation items, onboarding step forms.
 
 ### 2.2 Typographic Metrics Scale

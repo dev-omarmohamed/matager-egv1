@@ -1,35 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Josefin_Sans, Poiret_One, Reem_Kufi } from "next/font/google";
+import { Josefin_Sans, El_Messiri } from "next/font/google";
 import "./globals.css";
 import { SITE_CONFIG } from "@/config/site";
 import { ThemeProvider, noFlashScript } from "@/theme";
 import { LanguageProvider } from "@/i18n";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
+import { SmoothScrollProvider } from "@/components/layout/SmoothScrollProvider";
 
 const josefinSans = Josefin_Sans({
   subsets: ["latin"],
+  weight: ["300", "400", "600", "700"],
+  display: "swap",
   variable: "--font-josefin",
-  display: "swap",
-  weight: ["300", "400", "500", "600", "700"],
 });
 
-const poiretOne = Poiret_One({
-  subsets: ["latin"],
-  variable: "--font-poiret",
-  display: "swap",
-  weight: ["400"],
-});
-
-const reemKufi = Reem_Kufi({
-  subsets: ["arabic", "latin"],
-  variable: "--font-reem-kufi",
-  display: "swap",
+const elMessiri = El_Messiri({
+  subsets: ["arabic"],
   weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-el-messiri",
 });
 
 export const metadata: Metadata = {
@@ -73,7 +61,7 @@ export default function RootLayout({
       lang="en"
       dir="ltr"
       data-theme="dark"
-      className={`${inter.variable} ${josefinSans.variable} ${poiretOne.variable} ${reemKufi.variable} dark`}
+      className={`dark ${josefinSans.variable} ${elMessiri.variable}`}
       suppressHydrationWarning
     >
       <head>
@@ -86,15 +74,14 @@ export default function RootLayout({
         <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2" />
         <link rel="shortcut icon" href="/favicon.ico?v=2" />
         <link rel="apple-touch-icon" href="/favicon.png?v=2" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Fustat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
       </head>
       <body className="font-ui bg-[var(--color-canvas)] text-[var(--color-text-primary)] antialiased transition-colors duration-200">
         <ThemeProvider defaultTheme="dark">
           <LanguageProvider defaultLocale="en">
-            {children}
+            <SmoothScrollProvider>
+              {children}
+            </SmoothScrollProvider>
           </LanguageProvider>
         </ThemeProvider>
       </body>

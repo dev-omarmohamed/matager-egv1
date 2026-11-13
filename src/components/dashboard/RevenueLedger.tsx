@@ -129,14 +129,14 @@ export const RevenueLedger: React.FC = () => {
                 {currentRows.map((r, i) => (
                   <tr key={i} className="hover:bg-white/[0.02] transition-colors">
                     <td className="py-2.5 text-[var(--color-text-secondary)] font-ui">{r.month}</td>
-                    <td className="py-2.5 text-center font-bold text-[var(--color-status-blue)] font-mono">
+                    <td className="py-2.5 text-center font-bold text-[var(--color-status-blue)]">
                       {r.revenue}
                     </td>
-                    <td className="py-2.5 text-center text-[var(--color-text-secondary)] font-mono">
+                    <td className="py-2.5 text-center text-[var(--color-text-secondary)]">
                       {r.products}
                     </td>
                     <td
-                      className={`py-2.5 text-center font-bold font-mono ${
+                      className={`py-2.5 text-center font-bold ${
                         r.growthPositive
                           ? "text-[var(--color-status-green)]"
                           : "text-[var(--color-text-muted)]"

@@ -129,13 +129,13 @@ export const Discounts: React.FC = () => {
                 key={item.id}
                 className="flex items-center justify-between text-xs border-b border-[var(--color-border-subtle)]/40 pb-2 last:border-b-0 hover:bg-white/[0.02] p-1.5 rounded-lg transition-colors"
               >
-                <span className="font-bold font-mono text-[var(--color-text-primary)] w-24">
+                <span className="font-bold text-[var(--color-text-primary)] w-24">
                   {item.code}
                 </span>
                 <span className="text-[var(--color-text-secondary)] font-ui w-20">
                   {item.discount}
                 </span>
-                <span className="text-[var(--color-text-muted)] font-mono w-20">
+                <span className="text-[var(--color-text-muted)] w-20">
                   {item.usage}
                 </span>
                 <span className="text-[var(--color-text-muted)] font-subtitle w-24">

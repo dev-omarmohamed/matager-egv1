@@ -1,17 +1,119 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null",
+    ".read": false,
+    ".write": false,
     "stores": {
+      ".read": true,
       "$storeId": {
         ".read": true,
-        ".write": "auth != null && (auth.uid === data.child('owner_id').val() || !data.exists())"
+        ".write": "auth != null"
+      }
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('users/' + auth.uid + '/role').val() === 'admin')",
+        ".write": "auth != null && (auth.uid === $uid || root.child('users/' + auth.uid + '/role').val() === 'admin')",
+        "role": {
+          ".write": "auth != null && (auth.uid === $uid && !data.exists() || root.child('users/' + auth.uid + '/role').val() === 'admin')"
+        }
+      }
+    },
+    "$uid": {
+      ".read": "auth != null && (auth.uid === $uid || root.child('users/' + auth.uid + '/role').val() === 'admin')",
+      ".write": "auth != null && (auth.uid === $uid || root.child('users/' + auth.uid + '/role').val() === 'admin')"
+    },
+    "clients": {
+      ".read": true,
+      "$clientId": {
+        ".read": true,
+        ".write": "auth != null"
+      }
+    },
+    "customers": {
+      "$storeId": {
+        ".read": "auth != null",
+        ".write": true
+      }
+    },
+    "wholesalers": {
+      "$wid": {
+        ".read": "auth != null && (root.child('users/' + auth.uid + '/role').val() === 'admin' || root.child('users/' + auth.uid + '/role').val() === 'wholesaler' && auth.uid === $wid || root.child('stores/' + auth.uid + '/category').val() != null && (root.child('stores/' + auth.uid + '/linkedWholesalers/' + $wid).exists() || root.child('wholesalers/' + $wid + '/profile/categories').hasChild(root.child('stores/' + auth.uid + '/category').val())))",
+        "profile": {
+          ".write": "root.child('users/' + auth.uid + '/role').val() === 'wholesaler' && auth.uid === $wid"
+        },
+        "products": {
+          ".write": "root.child('users/' + auth.uid + '/role').val() === 'wholesaler' && auth.uid === $wid"
+        }
+      }
+    },
+    "wholesalerInquiries": {
+      "$inquiryId": {
+        ".read": "auth != null && (data.child('storeId').val() === auth.uid || data.child('wholesalerId').val() === auth.uid || root.child('users/' + auth.uid + '/role').val() === 'admin')",
+        ".write": "auth != null && (!data.exists() || data.child('wholesalerId').val() === auth.uid || root.child('users/' + auth.uid + '/role').val() === 'admin')"
+      }
+    },
+    "requests": {
+      "storeowners": {
+        ".read": "auth != null && root.child('users/' + auth.uid + '/role').val() === 'admin'",
+        ".write": true
+      },
+      "wholesaler": {
+        ".read": "auth != null && root.child('users/' + auth.uid + '/role').val() === 'admin'",
+        ".write": true
+      }
+    },
+    "products": {
+      "$storeId": {
+        ".read": true,
+        ".write": "auth != null"
+      }
+    },
+    "categories": {
+      "$storeId": {
+        ".read": true,
+        ".write": "auth != null"
+      }
+    },
+    "branches": {
+      "$storeId": {
+        ".read": true,
+        ".write": "auth != null"
+      }
+    },
+    "pos_terminals": {
+      "$storeId": {
+        ".read": true,
+        ".write": "auth != null"
+      }
+    },
+    "pos_ledger": {
+      "$storeId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
       }
     },
     "orders": {
       "$storeId": {
         ".read": "auth != null",
         ".write": true
+      }
+    },
+    "order_items": {
+      "$storeId": {
+        ".read": "auth != null",
+        ".write": true
+      }
+    },
+    "subscriptions": {
+      "$storeId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    "promo_codes": {
+      "$storeId": {
+        ".read": true,
+        ".write": "auth != null"
       }
     }
   }

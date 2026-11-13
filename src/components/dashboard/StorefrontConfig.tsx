@@ -51,7 +51,7 @@ export const StorefrontConfig: React.FC = () => {
       <div className="p-4 sm:p-5 border-b border-[var(--color-border-subtle)] flex flex-wrap justify-between items-center gap-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 flex items-center gap-1 font-mono">
+            <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 flex items-center gap-1">
               <Store className="w-3 h-3" /> Storefront Engine
             </span>
             <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
@@ -242,7 +242,7 @@ export const StorefrontConfig: React.FC = () => {
                         value={domainInput}
                         onChange={(e) => setDomainInput(e.target.value)}
                         placeholder="yourstore.matager.com"
-                        className="bg-transparent border-none text-xs outline-none w-full text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] font-mono"
+                        className="bg-transparent border-none text-xs outline-none w-full text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
                       />
                     </div>
                     <button
@@ -258,7 +258,7 @@ export const StorefrontConfig: React.FC = () => {
                   <p className="text-[10px] uppercase font-bold text-white/50 tracking-wider">
                     {isAr ? "روابط المتجر للمعاينة والنشر" : "Live Storefront Endpoints"}
                   </p>
-                  <div className="space-y-1.5 font-mono text-[11px]">
+                  <div className="space-y-1.5 text-[11px]">
                     <div className="flex items-center justify-between p-2 rounded-lg bg-black/40 border border-white/5">
                       <span className="text-blue-400 font-bold">/storefront?storeId={domainInput.split('.')[0] || 'peacock_store'}</span>
                       <Link
@@ -344,7 +344,7 @@ export const StorefrontConfig: React.FC = () => {
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                         <span>POS Nodes Live Sync: Connected</span>
                       </span>
-                      <span className="font-mono text-[10px]">14ms latency</span>
+                      <span className="text-[10px]">14ms latency</span>
                     </div>
                     <p className="text-[10px] text-emerald-400/80">
                       Channel: <code>matager_pos_sync</code> · 3 active cashier nodes listening.
@@ -451,11 +451,11 @@ export const StorefrontConfig: React.FC = () => {
                 <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-2">
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-white/70">{t.storefrontConfig.cairoGiza}</span>
-                    <span className="font-mono font-bold text-blue-400">{t.storefrontConfig.cairoPrice}</span>
+                    <span className="font-bold text-blue-400">{t.storefrontConfig.cairoPrice}</span>
                   </div>
                   <div className="flex justify-between items-center text-xs pt-2 border-t border-white/5">
                     <span className="text-white/70">{t.storefrontConfig.matrouh}</span>
-                    <span className="font-mono font-bold text-blue-400">{t.storefrontConfig.matrouhPrice}</span>
+                    <span className="font-bold text-blue-400">{t.storefrontConfig.matrouhPrice}</span>
                   </div>
                 </div>
               </div>

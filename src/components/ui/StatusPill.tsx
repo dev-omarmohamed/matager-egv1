@@ -17,15 +17,15 @@ export interface StatusPillProps {
 
 const variantStyles: Record<PillVariant, string> = {
   success:
-    "text-[var(--color-status-green)] bg-[var(--color-status-green-bg)] border-[var(--color-status-green-border)]",
+    "text-[var(--color-accent-violet)] bg-[var(--color-accent-violet)]/10 border-[var(--color-accent-violet)]/30",
   pending:
     "text-[var(--color-status-amber)] bg-[var(--color-status-amber-bg)] border-[var(--color-status-amber-border)]",
   danger:
     "text-[var(--color-status-red)] bg-[var(--color-status-red-bg)] border-[var(--color-status-red-border)]",
   info:
-    "text-[var(--color-status-blue)] bg-[var(--color-status-blue-bg)] border-[var(--color-status-blue-border)]",
+    "text-[var(--color-accent-violet)] bg-[var(--color-accent-violet)]/10 border-[var(--color-accent-violet)]/30",
   purple:
-    "text-[var(--color-status-purple)] bg-[var(--color-status-purple-bg)] border-[var(--color-status-purple-border)]",
+    "text-[var(--color-accent-violet)] bg-[var(--color-accent-violet)]/10 border-[var(--color-accent-violet)]/30",
   orange:
     "text-[var(--color-status-orange)] bg-[var(--color-status-orange-bg)] border-[var(--color-status-orange-border)]",
   neutral:

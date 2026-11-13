@@ -60,7 +60,7 @@ export const CustomerTransition: React.FC<CustomerTransitionProps> = ({
 
           {/* Banner skeleton */}
           <div className="h-24 w-full bg-gradient-to-r from-blue-950/40 via-sky-950/20 to-blue-950/40 rounded-lg animate-pulse flex items-center justify-center">
-            <span className="text-xs text-brand-sky/60 font-mono">
+            <span className="text-xs text-brand-sky/60">
               MATAGER COMMERCE
             </span>
           </div>

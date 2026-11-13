@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import Lenis from "lenis";
+import { useSmoothScroll } from "./SmoothScrollProvider";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useLanguage } from "@/i18n";
 
@@ -13,7 +13,7 @@ export const GsapScrollManager: React.FC<{ children: React.ReactNode }> = ({
   const prefersReducedMotion = useReducedMotion();
   const { locale, dir } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
-  const lenisRef = useRef<Lenis | null>(null);
+  const { lenis } = useSmoothScroll();
 
   useEffect(() => {
     // Only run on client
@@ -21,35 +21,16 @@ export const GsapScrollManager: React.FC<{ children: React.ReactNode }> = ({
 
     gsap.registerPlugin(ScrollTrigger);
 
-    // If user prefers reduced motion, skip scroll hijacking & heavy animations
+    // If user prefers reduced motion, skip heavy animations
     if (prefersReducedMotion) {
       return;
     }
 
-    // ─── 1. Initialize Lenis Smooth Scroll ───
-    const lenis = new Lenis({
-      duration: 1.15,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      orientation: "vertical",
-      gestureOrientation: "vertical",
-      smoothWheel: true,
-      wheelMultiplier: 0.95,
-      touchMultiplier: 1.4,
-    });
+    if (lenis) {
+      lenis.on("scroll", ScrollTrigger.update);
+    }
 
-    lenisRef.current = lenis;
-
-    // Connect Lenis to GSAP ScrollTrigger
-    lenis.on("scroll", ScrollTrigger.update);
-
-    const tickerCb = (time: number) => {
-      lenis.raf(time * 1000);
-    };
-
-    gsap.ticker.add(tickerCb);
-    gsap.ticker.lagSmoothing(0);
-
-    // ─── 2. Build GSAP ScrollTrigger Animations ───
+    // ─── Build GSAP ScrollTrigger Animations for Landing Page ───
     const ctx = gsap.context(() => {
       // Parallax effect on Hero Terminal Mockup
       const heroTerminal = document.querySelector(".group.relative.w-full.max-w-\\[1100px\\]");
@@ -240,15 +221,9 @@ export const GsapScrollManager: React.FC<{ children: React.ReactNode }> = ({
 
     return () => {
       clearTimeout(refreshTimer);
-      gsap.ticker.remove(tickerCb);
       ctx.revert();
-      if (lenisRef.current) {
-        lenisRef.current.destroy();
-        lenisRef.current = null;
-      }
-      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
     };
-  }, [prefersReducedMotion, locale, dir]);
+  }, [prefersReducedMotion, locale, dir, lenis]);
 
   return (
     <div ref={containerRef} className="w-full">

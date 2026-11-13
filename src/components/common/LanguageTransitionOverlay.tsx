@@ -52,7 +52,7 @@ export const LanguageTransitionOverlay: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2 text-xs font-medium tracking-tight">
-              <span className="text-[var(--color-text-muted)] font-mono">
+              <span className="text-[var(--color-text-muted)]">
                 {locale === "en" ? "EN" : "AR"}
               </span>
               <ArrowRightLeft className="w-3.5 h-3.5 text-[var(--color-accent-mint)]" />

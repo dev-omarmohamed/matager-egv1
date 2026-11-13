@@ -1,41 +1,48 @@
 /**
  * Firebase Client Initialization & Singleton Instances
  *
- * Configured for Matager Cloud infrastructure with Cloud Firestore,
- * Firebase Authentication, and Realtime Database fallback.
- * Protected via environment variables with safe defaults.
+ * Configured for Matager Cloud infrastructure with:
+ * - Firebase Realtime Database (rtdb / database)
+ * - Firebase Authentication (auth)
+ * - Firebase Analytics (analytics)
+ * - Firebase Cloud Storage (storage)
+ * - Cloud Firestore (db)
+ *
+ * Protected via environment variables with safe defaults for matager-egv01.
  */
 
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
-import { getFirestore, type Firestore } from "firebase/firestore";
 import { getDatabase, type Database } from "firebase/database";
+import { getStorage, type FirebaseStorage } from "firebase/storage";
+import { getFirestore, type Firestore } from "firebase/firestore";
+import { getAnalytics, isSupported, type Analytics } from "firebase/analytics";
 
 export const firebaseConfig = {
   apiKey:
     process.env.NEXT_PUBLIC_FIREBASE_API_KEY ||
-    "AIzaSyDtR4bpaQkEpCmmKeIdmww9yckJmbqibHU",
+    "AIzaSyD_yJ3inVvSzwSPAQPtpXJSYgxH5J2gajo",
   authDomain:
     process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ||
-    "matager-f1f00.firebaseapp.com",
+    "matager-egv01.firebaseapp.com",
   databaseURL:
     process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ||
-    "https://matager-f1f00-default-rtdb.firebaseio.com",
+    "https://matager-egv01-default-rtdb.europe-west1.firebasedatabase.app",
   projectId:
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-    "matager-f1f00",
+    "matager-egv01",
   storageBucket:
     process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
-    "matager-f1f00.firebasestorage.app",
+    "matager-egv01.firebasestorage.app",
   messagingSenderId:
     process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ||
-    "922824110897",
+    "789251938163",
   appId:
     process.env.NEXT_PUBLIC_FIREBASE_APP_ID ||
-    "1:922824110897:web:c96f9a90a2b2ff4a2e7610",
+    "1:789251938163:web:9bff4eff91f73abfb61706",
   measurementId:
     process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID ||
-    "G-TVHBP63CSV",
+    "G-77YTXR85KB",
 };
 
 // Singleton Firebase App instance
@@ -46,8 +53,25 @@ export const app: FirebaseApp = !getApps().length
 // Firebase Auth Instance
 export const auth: Auth = getAuth(app);
 
-// Cloud Firestore Instance (Primary Multi-Tenant E-Commerce Database)
+// Realtime Database Instance (Live telemetry, order sync, POS terminals)
+export const rtdb: Database = getDatabase(app, firebaseConfig.databaseURL);
+export const database: Database = rtdb; // Alias for standard RTDB naming
+
+// Firebase Cloud Storage Instance (Product media, store logos, receipts)
+export const storage: FirebaseStorage = getStorage(app);
+
+// Cloud Firestore Instance (Document Store)
 export const db: Firestore = getFirestore(app);
 
-// Realtime Database Instance (Available for low-latency telemetry if needed)
-export const rtdb: Database = getDatabase(app);
+// Firebase Analytics Instance (Browser client only, SSR-safe)
+let analyticsInstance: Analytics | null = null;
+if (typeof window !== "undefined") {
+  isSupported()
+    .then((supported) => {
+      if (supported) {
+        analyticsInstance = getAnalytics(app);
+      }
+    })
+    .catch(() => null);
+}
+export const analytics: Analytics | null = analyticsInstance;

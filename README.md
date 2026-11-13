@@ -82,8 +82,8 @@ All styles strictly consume design system tokens. **Zero inline hex colors exist
   * Display, Headings & UI: `Josefin Sans` (`--font-josefin`)
   * Subtitles & Badges: `Poiret One` (`--font-poiret`)
 * **Arabic Mode (`ar`):**
-  * Display & Headings: `Reem Kufi` (`--font-reem-kufi`)
-  * Subtitles & Body: `Fustat` (`Fustat`)
+  * Display & Headings: `El Messiri` (`--font-el-messiri`)
+  * Subtitles & Body: `Cairo` (`--font-cairo`)
   * **Zero Letter Spacing Rule:** `letter-spacing: 0 !important` is enforced globally on all Arabic glyphs.
 
 ---
@@ -176,7 +176,21 @@ To add a new collapsible module to the dashboard:
 
 ---
 
-## 7. How to Run
+## 7. Firebase Cloud Infrastructure & Database Nodes
+
+The platform is configured with Firebase project **`matager-egv01`**:
+* **Realtime Database (RTDB):** Live telemetric orders, POS cashier terminals, and real-time ledger sync.
+* **Authentication:** Email/Password & Anonymous auth for merchants and guests.
+* **Cloud Storage:** Multi-tenant media, store logos, and receipts (`matager-egv01.firebasestorage.app`).
+* **Google Analytics:** E-commerce telemetry and visitor funnel metrics (`G-77YTXR85KB`).
+
+> 📖 **Full Database Nodes Guide:** See [`FIREBASE_NODES_SETUP.md`](./FIREBASE_NODES_SETUP.md) for detailed node schemas, security rules, and console instructions.
+>
+> ⚡ **1-Click Database Import:** Import [`firebase-rtdb-seed.json`](./firebase-rtdb-seed.json) into Firebase Console &rarr; Realtime Database to instantly seed all required nodes.
+
+---
+
+## 8. How to Run
 
 ```bash
 # Install dependencies
@@ -189,5 +203,8 @@ npm run dev
 npx tsc --noEmit
 ```
 
-* Dashboard: `http://localhost:3000` (or `http://localhost:3000/dashboard`)
-* Marketing Landing: `http://localhost:3000/landing`
+* **Marketing Landing:** `http://localhost:3000/`
+* **Online Storefront:** `http://localhost:3000/storefront?storeId=peacock_store`
+* **Merchant Dashboard:** `http://localhost:3000/dashboard?storeId=peacock_store`
+* **Cashier POS Terminal:** `http://localhost:3000/cashier?storeId=peacock_store`
+* **Platform Super Admin:** `http://localhost:3000/admin`

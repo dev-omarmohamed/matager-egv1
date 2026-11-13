@@ -304,10 +304,10 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
               <p className="text-sm font-bold font-ui text-[var(--color-text-primary)] mb-0.5">
                 {t.recentOrders.latestOrder.customerName}
               </p>
-              <p className="text-[10px] font-mono text-[var(--color-text-muted)] mb-2">
+              <p className="text-[10px] text-[var(--color-text-muted)] mb-2">
                 {t.recentOrders.latestOrder.orderId}
               </p>
-              <p className="text-[11px] text-[var(--color-text-secondary)] font-mono mb-1">
+              <p className="text-[11px] text-[var(--color-text-secondary)] mb-1">
                 {t.recentOrders.latestOrder.phone}
               </p>
               <p className="text-[11px] text-[var(--color-text-secondary)]">
@@ -385,7 +385,7 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
                     <p className="text-[9px] text-[var(--color-text-muted)]">{item.meta}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[var(--color-text-primary)] font-mono">{item.qty}</p>
+                    <p className="text-[var(--color-text-primary)]">{item.qty}</p>
                     <p className="text-[9px] text-[var(--color-text-muted)]">{item.price}</p>
                   </div>
                 </div>
@@ -426,7 +426,7 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
                   <tr key={cart.id} className="hover:bg-white/[0.02]">
                     <td className="py-2.5">
                       <p className="font-bold text-[var(--color-text-primary)]">{cart.name}</p>
-                      <p className="text-[9px] text-[var(--color-text-muted)] font-mono">{cart.email}</p>
+                      <p className="text-[9px] text-[var(--color-text-muted)]">{cart.email}</p>
                     </td>
                     <td className="py-2.5">
                       <p className="font-bold text-[var(--color-text-primary)]">{cart.value}</p>
@@ -475,7 +475,7 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
                 key={ord.id}
                 className="hover:bg-white/[0.02] transition-colors order-row"
               >
-                <td className="p-4 text-[var(--color-text-secondary)] font-mono order-id">
+                <td className="p-4 text-[var(--color-text-secondary)] order-id">
                   {ord.id}
                 </td>
                 <td className="p-4 text-[var(--color-text-primary)] font-bold customer-name">
@@ -484,7 +484,7 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
                 <td className="p-4">
                   <StatusPill variant={ord.variant}>{ord.status}</StatusPill>
                 </td>
-                <td className="p-4 text-[var(--color-text-primary)] font-bold font-mono">
+                <td className="p-4 text-[var(--color-text-primary)] font-bold">
                   {ord.total}
                 </td>
               </tr>

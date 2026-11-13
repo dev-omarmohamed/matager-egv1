@@ -88,7 +88,7 @@ export const GateSection: React.FC<GateSectionProps> = ({
       <header className="w-full max-w-6xl mx-auto flex items-center justify-between z-10">
         <MatagerLogo size="sm" showWordmark={true} />
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-pill text-xs font-mono font-medium text-slate-300 bg-white/[0.03] border border-white/[0.08]">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-pill text-xs font-medium text-slate-300 bg-white/[0.03] border border-white/[0.08]">
             <span className="w-1.5 h-1.5 rounded-full bg-status-live animate-pulse" />
             v1.0 Live Platform
           </span>
@@ -118,7 +118,7 @@ export const GateSection: React.FC<GateSectionProps> = ({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8, duration: 0.6 }}
-                className="mt-4 text-sm font-mono tracking-widest text-slate-400 uppercase"
+                className="mt-4 text-sm tracking-widest text-slate-400 uppercase"
               >
                 Commerce, without the noise.
               </motion.p>
@@ -175,7 +175,7 @@ export const GateSection: React.FC<GateSectionProps> = ({
                     <div className="w-11 h-11 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center text-white group-hover:text-brand-sky group-hover:border-brand-sky/40 transition-colors">
                       <ShoppingBag className="w-5 h-5" />
                     </div>
-                    <span className="text-xs font-mono font-medium text-slate-400 group-hover:text-brand-sky transition-colors flex items-center gap-1">
+                    <span className="text-xs font-medium text-slate-400 group-hover:text-brand-sky transition-colors flex items-center gap-1">
                       Direct Store <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
                     </span>
                   </div>
@@ -207,7 +207,7 @@ export const GateSection: React.FC<GateSectionProps> = ({
                     <div className="w-11 h-11 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center text-white group-hover:text-brand-sky group-hover:border-brand-sky/40 transition-colors">
                       <Store className="w-5 h-5" />
                     </div>
-                    <span className="text-xs font-mono font-medium text-slate-400 group-hover:text-brand-sky transition-colors flex items-center gap-1">
+                    <span className="text-xs font-medium text-slate-400 group-hover:text-brand-sky transition-colors flex items-center gap-1">
                       Platform Tour <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
                     </span>
                   </div>
@@ -229,7 +229,7 @@ export const GateSection: React.FC<GateSectionProps> = ({
                 </span>
                 <span className="hidden sm:inline-block text-slate-700">•</span>
                 <span className="hidden sm:inline-block">
-                  Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white font-mono text-[11px]">Tab</kbd> to navigate
+                  Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white text-[11px]">Tab</kbd> to navigate
                 </span>
               </div>
             </motion.div>

@@ -991,14 +991,14 @@ html[dir="rtl"] .cart-total-row {
             (ord) => `
           <div class="p-3 rounded-xl bg-white/[0.04] border border-white/10 flex flex-col gap-1 text-xs">
             <div class="flex items-center justify-between">
-              <span class="font-mono font-bold text-blue-400">${ord.id}</span>
+              <span class="font-bold text-blue-400">${ord.id}</span>
               <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                 ${ord.status || "Completed"}
               </span>
             </div>
             <div class="flex items-center justify-between text-[11px] text-white/60">
               <span>${ord.customer_name || "Customer"} · ${ord.items_count || 1} items</span>
-              <span class="font-mono font-bold text-white">EGP ${(Number(ord.amount) || 0).toLocaleString()}</span>
+              <span class="font-bold text-white">EGP ${(Number(ord.amount) || 0).toLocaleString()}</span>
             </div>
           </div>
         `

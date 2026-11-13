@@ -54,7 +54,7 @@ export const FinancialLedger: React.FC = () => {
                   <span className="text-[var(--color-text-muted)] font-subtitle">
                     {t.financialLedger.codLabel}
                   </span>
-                  <span className="text-[var(--color-text-primary)] font-bold font-mono">
+                  <span className="text-[var(--color-text-primary)] font-bold">
                     {t.financialLedger.codValue}
                   </span>
                 </div>
@@ -62,7 +62,7 @@ export const FinancialLedger: React.FC = () => {
                   <span className="text-[var(--color-text-muted)] font-subtitle">
                     {t.financialLedger.directTransfersLabel}
                   </span>
-                  <span className="text-[var(--color-text-primary)] font-bold font-mono">
+                  <span className="text-[var(--color-text-primary)] font-bold">
                     {t.financialLedger.directTransfersValue}
                   </span>
                 </div>
@@ -95,7 +95,7 @@ export const FinancialLedger: React.FC = () => {
                   <span className="text-[var(--color-text-muted)] font-subtitle">
                     {t.financialLedger.cardPaymentsLabel}
                   </span>
-                  <span className="text-[var(--color-text-primary)] font-bold font-mono">
+                  <span className="text-[var(--color-text-primary)] font-bold">
                     {t.financialLedger.cardPaymentsValue}
                   </span>
                 </div>
@@ -103,7 +103,7 @@ export const FinancialLedger: React.FC = () => {
                   <span className="text-[var(--color-text-muted)] font-subtitle">
                     {t.financialLedger.walletsLabel}
                   </span>
-                  <span className="text-[var(--color-text-primary)] font-bold font-mono">
+                  <span className="text-[var(--color-text-primary)] font-bold">
                     {t.financialLedger.walletsValue}
                   </span>
                 </div>
@@ -136,7 +136,7 @@ export const FinancialLedger: React.FC = () => {
                   <span className="text-[var(--color-text-muted)] font-subtitle">
                     {t.financialLedger.storeSubLabel}
                   </span>
-                  <span className="text-[var(--color-text-primary)] font-bold font-mono">
+                  <span className="text-[var(--color-text-primary)] font-bold">
                     {t.financialLedger.storeSubValue}
                   </span>
                 </div>
@@ -144,7 +144,7 @@ export const FinancialLedger: React.FC = () => {
                   <span className="text-[var(--color-text-muted)] font-subtitle">
                     {t.financialLedger.processingFeesLabel}
                   </span>
-                  <span className="text-[var(--color-text-primary)] font-bold font-mono">
+                  <span className="text-[var(--color-text-primary)] font-bold">
                     {t.financialLedger.processingFeesValue}
                   </span>
                 </div>
@@ -152,7 +152,7 @@ export const FinancialLedger: React.FC = () => {
                   <span className="text-[var(--color-text-muted)] font-subtitle">
                     {t.financialLedger.addonsLabel}
                   </span>
-                  <span className="text-[var(--color-text-primary)] font-bold font-mono">
+                  <span className="text-[var(--color-text-primary)] font-bold">
                     {t.financialLedger.addonsValue}
                   </span>
                 </div>

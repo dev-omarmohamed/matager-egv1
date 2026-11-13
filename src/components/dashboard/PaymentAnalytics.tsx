@@ -116,11 +116,11 @@ export const PaymentAnalytics: React.FC = () => {
               <tbody className="divide-y divide-[var(--color-border-subtle)]">
                 {transactions.map((txn) => (
                   <tr key={txn.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="py-2.5 font-mono text-[var(--color-text-muted)]">{txn.id}</td>
+                    <td className="py-2.5 text-[var(--color-text-muted)]">{txn.id}</td>
                     <td className="py-2.5 text-[var(--color-text-primary)] font-ui">{txn.method}</td>
-                    <td className="py-2.5 text-[var(--color-text-muted)] font-mono">{txn.date}</td>
+                    <td className="py-2.5 text-[var(--color-text-muted)]">{txn.date}</td>
                     <td
-                      className={`py-2.5 text-right rtl:text-left font-bold font-mono ${
+                      className={`py-2.5 text-right rtl:text-left font-bold ${
                         txn.isPositive
                           ? "text-[var(--color-status-green)]"
                           : "text-[var(--color-status-red)]"

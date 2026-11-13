@@ -59,13 +59,13 @@ export const TopNav: React.FC<TopNavProps> = ({ onSearchChange, searchValue = ""
               title="Switch Active Store Console"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-              <span className="font-mono text-blue-400">{activeStore.name}</span>
+              <span className="text-blue-400">{activeStore.name}</span>
               <i className="bi bi-chevron-down text-[10px] text-[var(--color-text-muted)]" />
             </button>
 
             {showStoreMenu && (
               <div className="absolute top-full left-0 rtl:left-auto rtl:right-0 mt-2 w-64 rounded-2xl bg-neutral-900 border border-white/15 p-2 shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-150">
-                <div className="px-2 py-1 text-[10px] font-mono uppercase text-white/50 border-b border-white/10 mb-1">
+                <div className="px-2 py-1 text-[10px] uppercase text-white/50 border-b border-white/10 mb-1">
                   Active Store Switcher
                 </div>
                 <div className="space-y-1">
@@ -82,7 +82,7 @@ export const TopNav: React.FC<TopNavProps> = ({ onSearchChange, searchValue = ""
                     >
                       <div className="truncate">
                         <p className="font-bold truncate leading-none">{s.name}</p>
-                        <p className="text-[10px] opacity-60 font-mono mt-0.5">{s.city}, {s.country}</p>
+                        <p className="text-[10px] opacity-60 mt-0.5">{s.city}, {s.country}</p>
                       </div>
                       {s.id === activeStore.id && <i className="bi bi-check2 text-sm" />}
                     </button>
@@ -104,7 +104,7 @@ export const TopNav: React.FC<TopNavProps> = ({ onSearchChange, searchValue = ""
               placeholder={t.nav.searchPlaceholder}
               className="w-full text-xs py-2 pl-9 pr-8 rtl:pl-8 rtl:pr-9 rounded-full bg-[var(--input-bg-gradient)] border border-[var(--input-border-color)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary-light)] focus:ring-1 focus:ring-[var(--color-primary-light)]/40 transition-all font-ui"
             />
-            <kbd className="absolute right-3 rtl:right-auto rtl:left-3 top-1/2 -translate-y-1/2 text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/5 border border-[var(--color-border-subtle)] text-[var(--color-text-muted)] pointer-events-none hidden lg:inline-block">
+            <kbd className="absolute right-3 rtl:right-auto rtl:left-3 top-1/2 -translate-y-1/2 text-[9px] px-1.5 py-0.5 rounded bg-white/5 border border-[var(--color-border-subtle)] text-[var(--color-text-muted)] pointer-events-none hidden lg:inline-block">
               /
             </kbd>
           </div>

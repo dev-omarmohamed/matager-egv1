@@ -517,7 +517,7 @@ function StorefrontContent() {
             </div>
             <div className="hidden sm:block">
               <span className="text-xs font-bold tracking-tight block leading-none">Matager OS</span>
-              <span className="text-[10px] text-[var(--color-text-muted)] font-mono">
+              <span className="text-[10px] text-[var(--color-text-muted)]">
                 {currentStore.name}
               </span>
             </div>
@@ -547,7 +547,7 @@ function StorefrontContent() {
             {/* Store Switcher Dropdown */}
             {showStoreSwitcher && (
               <div className="absolute top-full left-0 rtl:left-auto rtl:right-0 mt-2 w-64 rounded-2xl bg-neutral-900 border border-white/15 p-2 shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
-                <div className="px-2 py-1 text-[10px] font-mono uppercase text-white/50 border-b border-white/10 mb-1">
+                <div className="px-2 py-1 text-[10px] uppercase text-white/50 border-b border-white/10 mb-1">
                   {isAr ? "المتاجر المتاحة بالمنصة" : "Platform Active Stores"}
                 </div>
                 <div className="space-y-1">
@@ -570,7 +570,7 @@ function StorefrontContent() {
                         />
                         <div>
                           <p className="truncate font-bold leading-none">{store.name}</p>
-                          <p className="text-[10px] opacity-60 font-mono">{store.city}, {store.country}</p>
+                          <p className="text-[10px] opacity-60">{store.city}, {store.country}</p>
                         </div>
                       </div>
                       {store.id === currentStore.id && <CheckCircle2 className="w-3.5 h-3.5" />}
@@ -582,7 +582,7 @@ function StorefrontContent() {
           </div>
 
           {/* POS Sync Indicator */}
-          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[10px] font-bold font-mono">
+          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[10px] font-bold">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
             <span>POS Online</span>
           </div>
@@ -594,7 +594,7 @@ function StorefrontContent() {
           <button
             type="button"
             onClick={() => setShowViewerModal(true)}
-            className="px-2.5 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 text-xs font-mono font-bold flex items-center gap-1.5 transition-all"
+            className="px-2.5 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 text-xs font-bold flex items-center gap-1.5 transition-all"
             title="Click to view or switch Viewer ID"
           >
             <User className="w-3.5 h-3.5" />
@@ -679,7 +679,7 @@ function StorefrontContent() {
               <p className="text-white/60">
                 Each viewer browsing this storefront has an independent ID standing on their cart, preferences, and orders.
               </p>
-              <div className="p-3 rounded-xl bg-white/5 border border-white/10 font-mono text-[11px] space-y-1">
+              <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-[11px] space-y-1">
                 <div><span className="text-white/50">Current Viewer ID:</span> <strong className="text-blue-400">{viewer.id}</strong></div>
                 <div><span className="text-white/50">Store Bound:</span> <strong className="text-white">{currentStore.id}</strong></div>
               </div>
@@ -693,7 +693,7 @@ function StorefrontContent() {
                   placeholder="e.g. omar_vip or customer_42"
                   value={customViewerInput}
                   onChange={(e) => setCustomViewerInput(e.target.value)}
-                  className="w-full bg-black/50 border border-white/10 rounded-xl p-2.5 text-white font-mono text-xs focus:outline-none focus:border-blue-500"
+                  className="w-full bg-black/50 border border-white/10 rounded-xl p-2.5 text-white text-xs focus:outline-none focus:border-blue-500"
                 />
               </div>
             </div>
@@ -760,14 +760,14 @@ function StorefrontContent() {
                       <CheckCircle2 className="w-3.5 h-3.5" />
                     </span>
                   )}
-                  <span className="px-2.5 py-1 rounded-full bg-slate-200/80 dark:bg-white/10 text-slate-800 dark:text-white/80 font-mono text-[10px] font-bold">
+                  <span className="px-2.5 py-1 rounded-full bg-slate-200/80 dark:bg-white/10 text-slate-800 dark:text-white/80 text-[10px] font-bold">
                     {currentStore.categories?.[1] || currentStore.categories?.[0] || "Clothing"}
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 dark:text-white/70 max-w-xl">
                   {isAr ? currentStore.taglineAr : currentStore.tagline}
                 </p>
-                <div className="flex items-center gap-4 text-xs pt-1 font-mono">
+                <div className="flex items-center gap-4 text-xs pt-1">
                   <span>
                     <strong className="text-slate-900 dark:text-white">{currentStore.productsCount}</strong>{" "}
                     <span className="text-slate-500 dark:text-white/50">{isAr ? "منتج" : "products"}</span>
@@ -832,7 +832,7 @@ function StorefrontContent() {
               ))}
             </div>
 
-            <div className="text-xs text-slate-500 dark:text-[var(--color-text-muted)] font-mono flex items-center gap-2">
+            <div className="text-xs text-slate-500 dark:text-[var(--color-text-muted)] flex items-center gap-2">
               <span>
                 {filteredProducts.length} {isAr ? "منتجات معروضة" : "Products Live"}
               </span>
@@ -858,17 +858,17 @@ function StorefrontContent() {
                     className="w-full h-full object-cover rounded-none group-hover:scale-105 transition-transform duration-300"
                   />
                   {prod.badge && (
-                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-white text-[9px] font-mono">
+                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-white text-[9px]">
                       {prod.badge}
                     </span>
                   )}
-                  <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-white text-[9px] font-mono">
+                  <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-white text-[9px]">
                     {prod.stock} in stock
                   </span>
                 </div>
 
                 <div className="px-2.5">
-                  <span className="text-[10px] text-blue-500 dark:text-blue-400 font-mono font-bold uppercase tracking-wider">
+                  <span className="text-[10px] text-blue-500 dark:text-blue-400 font-bold uppercase tracking-wider">
                     {prod.storeName} · {prod.category}
                   </span>
                   <h3
@@ -880,14 +880,14 @@ function StorefrontContent() {
 
                   <div className="flex items-baseline justify-between mt-2.5">
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-base font-black font-mono text-slate-900 dark:text-[var(--color-text-primary)]">
+                      <span className="text-base font-black text-slate-900 dark:text-[var(--color-text-primary)]">
                         {prod.price.toLocaleString()}
                       </span>
                       <span className="text-[10px] text-slate-500 dark:text-[var(--color-text-muted)] font-bold">
                         {prod.currency || currentStore.currency}
                       </span>
                       {prod.originalPrice && (
-                        <span className="text-[10px] text-slate-400 dark:text-[var(--color-text-muted)] line-through font-mono">
+                        <span className="text-[10px] text-slate-400 dark:text-[var(--color-text-muted)] line-through">
                           {prod.originalPrice.toLocaleString()}
                         </span>
                       )}
@@ -922,10 +922,10 @@ function StorefrontContent() {
 
       {/* ══════════════════ FULLSCREEN BENTO 3D GALLERY OVERLAY ══════════════════ */}
       {isGalleryActive && (
-        <div className="fixed inset-0 z-40 overflow-y-auto bg-black/95 backdrop-blur-3xl p-4 sm:p-8 flex flex-col items-center animate-in fade-in duration-500">
+        <div data-lenis-prevent className="fixed inset-0 z-40 overflow-y-auto bg-black/95 backdrop-blur-3xl p-4 sm:p-8 flex flex-col items-center animate-in fade-in duration-500">
           <div className="w-full max-w-6xl mx-auto flex items-center justify-between pb-6 border-b border-white/10">
             <div>
-              <span className="text-xs uppercase font-mono text-blue-400 font-bold">
+              <span className="text-xs uppercase text-blue-400 font-bold">
                 3D Bento Presentation Mode · {currentStore.name}
               </span>
               <h2 className="text-xl sm:text-2xl font-black text-white">
@@ -959,14 +959,14 @@ function StorefrontContent() {
                   className="w-full h-full object-cover group-hover:scale-105 group-hover:blur-[1px] transition-all duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent flex flex-col justify-end p-6">
-                  <span className="text-[10px] font-mono text-blue-400 font-bold uppercase tracking-wider">
+                  <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">
                     {currentStore.name} · {prod.category}
                   </span>
                   <h3 className="text-base sm:text-lg font-black text-white leading-tight mt-0.5">
                     {prod.title}
                   </h3>
                   <div className="flex items-baseline justify-between mt-2">
-                    <span className="text-sm font-black text-white font-mono">
+                    <span className="text-sm font-black text-white">
                       {prod.currency || currentStore.currency} {prod.price.toLocaleString()}
                     </span>
                     <span className="px-3 py-1 rounded-full bg-white text-black text-[10px] font-bold group-hover:bg-blue-500 group-hover:text-white transition-colors flex items-center gap-1">
@@ -1029,7 +1029,7 @@ function StorefrontContent() {
             <button
               type="button"
               onClick={toggleLocale}
-              className="px-1.5 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 text-[9px] font-mono font-bold"
+              className="px-1.5 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 text-[9px] font-bold"
             >
               {isAr ? "EN" : "عربي"}
             </button>
@@ -1044,7 +1044,7 @@ function StorefrontContent() {
         </div>
 
         {/* Dock Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[220px]">
+        <div data-lenis-prevent className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[220px]">
           {/* Sub-tabs inside dock */}
           <div className="flex items-center gap-1 border-b border-white/10 pb-2 text-xs">
             <button
@@ -1109,7 +1109,7 @@ function StorefrontContent() {
                             {store.items.length} items
                           </span>
                         </div>
-                        <span className="text-xs font-mono font-bold text-blue-400">
+                        <span className="text-xs font-bold text-blue-400">
                           {store.currency || currentStore.currency} {store.subtotal.toLocaleString()}
                         </span>
                       </div>
@@ -1126,7 +1126,7 @@ function StorefrontContent() {
                               />
                               <div className="min-w-0">
                                 <p className="text-xs font-bold text-white truncate">{item.title}</p>
-                                <p className="text-[10px] text-white/50 font-mono">
+                                <p className="text-[10px] text-white/50">
                                   {item.currency || store.currency} {item.price.toLocaleString()}
                                 </p>
                               </div>
@@ -1141,7 +1141,7 @@ function StorefrontContent() {
                                 >
                                   <Minus className="w-3 h-3" />
                                 </button>
-                                <span className="text-xs font-mono font-bold px-1.5 text-white">{item.qty}</span>
+                                <span className="text-xs font-bold px-1.5 text-white">{item.qty}</span>
                                 <button
                                   type="button"
                                   onClick={() => handleUpdateQty(storeId, item.id, 1)}
@@ -1173,7 +1173,7 @@ function StorefrontContent() {
                     </div>
                     <div className="flex justify-between text-sm font-bold text-white pt-2 border-t border-white/10">
                       <span>{isAr ? "الإجمالي الكلي" : "Grand Total"}</span>
-                      <span className="font-mono text-blue-400">
+                      <span className="text-blue-400">
                         {currentStore.currency} {grandTotal.toLocaleString()}
                       </span>
                     </div>
@@ -1194,7 +1194,7 @@ function StorefrontContent() {
           {/* TAB 2: CHECKOUT VIEW */}
           {activeDockTab === "checkout" && (
             <div className="space-y-3 text-xs">
-              <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 flex items-center justify-between font-mono text-[11px]">
+              <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 flex items-center justify-between text-[11px]">
                 <span className="flex items-center gap-1.5">
                   <User className="w-3 h-3" /> Viewer Session:
                 </span>
@@ -1221,7 +1221,7 @@ function StorefrontContent() {
                   type="tel"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-blue-500 font-mono"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
 
@@ -1256,7 +1256,7 @@ function StorefrontContent() {
               <div className="p-3 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-between mt-2">
                 <div>
                   <span className="text-[10px] text-white/50 block">Amount Due</span>
-                  <span className="text-sm font-black font-mono text-blue-400">
+                  <span className="text-sm font-black text-blue-400">
                     {currentStore.currency} {grandTotal.toLocaleString()}
                   </span>
                 </div>
@@ -1299,7 +1299,7 @@ function StorefrontContent() {
               {placedOrderInfo && (
                 <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-white space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono font-bold text-emerald-300">{placedOrderInfo.id}</span>
+                    <span className="font-bold text-emerald-300">{placedOrderInfo.id}</span>
                     <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-300">
                       Just Placed
                     </span>
@@ -1307,7 +1307,7 @@ function StorefrontContent() {
                   <p className="text-[11px] text-white/70">
                     {placedOrderInfo.items_count} items across {placedOrderInfo.stores?.length || 1} stores
                   </p>
-                  <p className="text-[11px] font-mono font-bold text-emerald-400">
+                  <p className="text-[11px] font-bold text-emerald-400">
                     {placedOrderInfo.currency} {placedOrderInfo.amount.toLocaleString()}
                   </p>
                   <div className="pt-1 text-[9px] text-emerald-300 flex items-center gap-1">
@@ -1379,7 +1379,7 @@ export default function StorefrontPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#060608] text-white flex items-center justify-center font-mono text-xs">
+        <div className="min-h-screen bg-[#060608] text-white flex items-center justify-center text-xs">
           Loading Matager Universal FastCart & Storefront...
         </div>
       }

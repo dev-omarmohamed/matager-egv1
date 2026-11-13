@@ -254,7 +254,7 @@ export default function SuperAdminPage() {
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-600 to-amber-600 flex items-center justify-center mx-auto shadow-xl shadow-red-600/30">
               <ShieldAlert className="w-8 h-8 text-white" />
             </div>
-            <span className="inline-block text-[10px] font-mono font-black uppercase tracking-widest px-3 py-1 rounded-full bg-red-500/15 text-red-400 border border-red-500/30">
+            <span className="inline-block text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-red-500/15 text-red-400 border border-red-500/30">
               Super Admin Clearance Required
             </span>
             <h1 className="text-xl font-black text-white tracking-tight">
@@ -281,7 +281,7 @@ export default function SuperAdminPage() {
                 value={adminEmailInput}
                 onChange={(e) => setAdminEmailInput(e.target.value)}
                 placeholder="admin@matager.com"
-                className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-white font-mono text-xs focus:outline-none focus:border-red-500"
+                className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-white text-xs focus:outline-none focus:border-red-500"
               />
             </div>
 
@@ -294,7 +294,7 @@ export default function SuperAdminPage() {
                 value={adminKeyInput}
                 onChange={(e) => setAdminKeyInput(e.target.value)}
                 placeholder="Enter Super Admin Security Key"
-                className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-white font-mono text-xs focus:outline-none focus:border-red-500"
+                className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-white text-xs focus:outline-none focus:border-red-500"
               />
             </div>
 
@@ -346,7 +346,7 @@ export default function SuperAdminPage() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/30 font-mono">
+              <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/30">
                 Super Admin Access
               </span>
               <span className="text-[10px] text-white/40">Multi-Tenant Governance (Global)</span>
@@ -407,7 +407,7 @@ export default function SuperAdminPage() {
               <Store className="w-4 h-4 text-blue-400" />
             </div>
             <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-3xl font-black text-white font-mono">{totalStores}</span>
+              <span className="text-3xl font-black text-white">{totalStores}</span>
               <span className="text-xs text-emerald-400 font-bold">+12% this month</span>
             </div>
             <div className="flex gap-2.5 mt-3 text-[10px] font-bold">
@@ -427,7 +427,7 @@ export default function SuperAdminPage() {
               <TrendingUp className="w-4 h-4 text-emerald-400" />
             </div>
             <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-3xl font-black text-white font-mono">
+              <span className="text-3xl font-black text-white">
                 ${(totalGmv > 0 ? totalGmv : 653400).toLocaleString()}
               </span>
               <span className="text-xs text-emerald-400 font-bold">+18.7%</span>
@@ -447,7 +447,7 @@ export default function SuperAdminPage() {
               <Laptop className="w-4 h-4 text-purple-400" />
             </div>
             <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-3xl font-black text-white font-mono">{totalPosNodes}</span>
+              <span className="text-3xl font-black text-white">{totalPosNodes}</span>
               <span className="text-xs text-purple-400 font-bold">Registers Active</span>
             </div>
             <div className="flex gap-3 mt-3 text-[10px] text-white/50">
@@ -465,7 +465,7 @@ export default function SuperAdminPage() {
               <Percent className="w-4 h-4 text-amber-400" />
             </div>
             <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-3xl font-black text-white font-mono">
+              <span className="text-3xl font-black text-white">
                 ${Math.round((totalGmv > 0 ? totalGmv : 653400) * 0.05).toLocaleString()}
               </span>
               <span className="text-xs text-amber-400 font-bold">5.0% take rate</span>
@@ -597,7 +597,7 @@ export default function SuperAdminPage() {
                             </div>
                             <div>
                               <p className="font-bold text-white leading-tight">{store.name}</p>
-                              <p className="text-[10px] text-white/40 font-mono mt-0.5">
+                              <p className="text-[10px] text-white/40 mt-0.5">
                                 {store.id} · {store.subdomain}
                               </p>
                             </div>
@@ -607,7 +607,7 @@ export default function SuperAdminPage() {
                         <td className="p-4">
                           <p className="font-bold text-white">{store.ownerName}</p>
                           <p className="text-[10px] text-white/40">{store.ownerEmail}</p>
-                          <p className="text-[10px] text-white/40 font-mono">{store.ownerPhone}</p>
+                          <p className="text-[10px] text-white/40">{store.ownerPhone}</p>
                         </td>
 
                         <td className="p-4">
@@ -629,7 +629,7 @@ export default function SuperAdminPage() {
                           </p>
                         </td>
 
-                        <td className="p-4 font-mono">
+                        <td className="p-4">
                           <p className="font-black text-white">
                             ${store.gmv_30d.toLocaleString()}
                           </p>
@@ -742,7 +742,7 @@ export default function SuperAdminPage() {
                   <h3 className="text-base font-bold text-white leading-none">
                     {selectedStore.name}
                   </h3>
-                  <p className="text-[10px] text-white/40 font-mono mt-1">
+                  <p className="text-[10px] text-white/40 mt-1">
                     {selectedStore.id} · {selectedStore.subdomain}
                   </p>
                 </div>
@@ -763,7 +763,7 @@ export default function SuperAdminPage() {
                   </p>
                   <p className="text-sm font-bold text-white">{selectedStore.ownerName}</p>
                   <p className="text-white/60">{selectedStore.ownerEmail}</p>
-                  <p className="text-white/50 font-mono">{selectedStore.ownerPhone}</p>
+                  <p className="text-white/50">{selectedStore.ownerPhone}</p>
                   <p className="text-white/40 mt-1">
                     {selectedStore.city}, {selectedStore.country}
                   </p>
@@ -786,7 +786,7 @@ export default function SuperAdminPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-white/50">POS Terminals</span>
-                    <span className="font-bold text-white font-mono">
+                    <span className="font-bold text-white">
                       {selectedStore.posNodesCount} Active Nodes
                     </span>
                   </div>
@@ -801,13 +801,13 @@ export default function SuperAdminPage() {
                   <div className="grid grid-cols-2 gap-2 text-center">
                     <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                       <p className="text-[9px] uppercase font-bold text-emerald-400">GMV</p>
-                      <p className="text-sm font-black text-white font-mono mt-0.5">
+                      <p className="text-sm font-black text-white mt-0.5">
                         ${selectedStore.gmv_30d.toLocaleString()}
                       </p>
                     </div>
                     <div className="p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
                       <p className="text-[9px] uppercase font-bold text-blue-400">Orders</p>
-                      <p className="text-sm font-black text-white font-mono mt-0.5">
+                      <p className="text-sm font-black text-white mt-0.5">
                         {selectedStore.orders_30d}
                       </p>
                     </div>
@@ -824,7 +824,7 @@ export default function SuperAdminPage() {
                       step="0.1"
                       value={customCommission}
                       onChange={(e) => setCustomCommission(e.target.value)}
-                      className="w-20 bg-white/5 border border-white/10 rounded-lg p-1.5 text-center text-white font-mono focus:outline-none focus:border-blue-500"
+                      className="w-20 bg-white/5 border border-white/10 rounded-lg p-1.5 text-center text-white focus:outline-none focus:border-blue-500"
                     />
                     <span className="text-white/50">% of GMV</span>
                     <button
@@ -914,7 +914,7 @@ export default function SuperAdminPage() {
                       value={provSubdomain}
                       onChange={(e) => setProvSubdomain(e.target.value)}
                       placeholder="royalcairo"
-                      className="w-full bg-transparent p-2 text-white font-mono focus:outline-none"
+                      className="w-full bg-transparent p-2 text-white focus:outline-none"
                     />
                     <span className="text-[10px] text-white/40">.matager.com</span>
                   </div>
@@ -1053,7 +1053,7 @@ export default function SuperAdminPage() {
                 Delete Store "{showDeleteConfirm.name}"?
               </h3>
               <p className="text-xs text-white/60 mt-1 leading-relaxed">
-                This will permanently delete store ID <span className="font-mono text-white">{showDeleteConfirm.id}</span>, its owner credentials, all {showDeleteConfirm.posNodesCount} associated POS terminals, inventory catalog, order history, and database records. This action cannot be undone.
+                This will permanently delete store ID <span className="text-white">{showDeleteConfirm.id}</span>, its owner credentials, all {showDeleteConfirm.posNodesCount} associated POS terminals, inventory catalog, order history, and database records. This action cannot be undone.
               </p>
             </div>
 
