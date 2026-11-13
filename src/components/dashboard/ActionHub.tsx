@@ -72,7 +72,7 @@ export const ActionHub: React.FC = () => {
             <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] font-subtitle mb-0.5">
               {t.actionHub.defaultDomain}
             </p>
-            <p className="text-xs font-mono text-[var(--color-text-primary)] select-all">
+            <p className="text-xs text-[var(--color-text-primary)] select-all">
               {t.actionHub.domainValue}
             </p>
           </div>

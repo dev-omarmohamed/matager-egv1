@@ -134,15 +134,15 @@ export const InventoryPanel: React.FC = () => {
             </p>
             <div className="flex justify-between items-center border-b border-[var(--color-border-subtle)]/40 pb-2">
               <span className="text-[var(--color-text-secondary)]">{t.inventory.capacity.draftProducts}</span>
-              <span className="font-bold text-[var(--color-text-primary)] font-mono">12</span>
+              <span className="font-bold text-[var(--color-text-primary)]">12</span>
             </div>
             <div className="flex justify-between items-center border-b border-[var(--color-border-subtle)]/40 pb-2">
               <span className="text-[var(--color-status-amber)]">{t.inventory.capacity.lowStockAlert}</span>
-              <span className="font-bold text-[var(--color-status-amber)] font-mono">08</span>
+              <span className="font-bold text-[var(--color-status-amber)]">08</span>
             </div>
             <div className="flex justify-between items-center border-b border-[var(--color-border-subtle)]/40 pb-2">
               <span className="text-[var(--color-status-red)]">{t.inventory.capacity.depletedStock}</span>
-              <span className="font-bold text-[var(--color-status-red)] font-mono">03</span>
+              <span className="font-bold text-[var(--color-status-red)]">03</span>
             </div>
             <button
               type="button"
@@ -205,7 +205,7 @@ export const InventoryPanel: React.FC = () => {
                         )}
                         <div>
                           <p className="text-[var(--color-text-primary)] font-bold">{p.name}</p>
-                          <p className="text-[9px] text-[var(--color-text-muted)] font-mono">{p.sku}</p>
+                          <p className="text-[9px] text-[var(--color-text-muted)]">{p.sku}</p>
                         </div>
                       </div>
                     </td>
@@ -213,7 +213,7 @@ export const InventoryPanel: React.FC = () => {
                     <td className="py-2.5">
                       <StatusPill variant={p.statusVariant}>{p.stockText}</StatusPill>
                     </td>
-                    <td className="py-2.5 text-right rtl:text-left font-bold text-[var(--color-text-primary)] font-mono">
+                    <td className="py-2.5 text-right rtl:text-left font-bold text-[var(--color-text-primary)]">
                       {p.price}{" "}
                       <span className="text-[9px] text-[var(--color-text-muted)] font-normal font-ui">
                         {p.currency}
@@ -297,7 +297,7 @@ export const InventoryPanel: React.FC = () => {
               <input
                 type="number"
                 defaultValue={50}
-                className="w-16 bg-[var(--input-bg-gradient)] border border-[var(--input-border-color)] rounded-md py-1 px-2 text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-primary-light)] font-mono"
+                className="w-16 bg-[var(--input-bg-gradient)] border border-[var(--input-border-color)] rounded-md py-1 px-2 text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-primary-light)]"
               />
             </div>
             <button

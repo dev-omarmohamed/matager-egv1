@@ -67,7 +67,7 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
           variants={fadeInUp}
           className="text-center max-w-3xl mx-auto mb-16"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-white/[0.03] border border-white/10 text-xs font-mono text-slate-400 mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-white/[0.03] border border-white/10 text-xs text-slate-400 mb-4">
             <Layers className="w-3.5 h-3.5 text-brand-blue" />
             <span>Unified Architecture</span>
           </div>
@@ -91,7 +91,7 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
           className="relative rounded-2xl bg-[var(--color-surface)]/90 border border-white/10 shadow-2xl p-4 sm:p-8 backdrop-blur-xl overflow-hidden"
         >
           {/* Top simulated window bar */}
-          <div className="flex items-center justify-between pb-4 mb-6 border-b border-white/[0.07] text-xs font-mono text-slate-400">
+          <div className="flex items-center justify-between pb-4 mb-6 border-b border-white/[0.07] text-xs text-slate-400">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
               <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
@@ -111,7 +111,7 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
             {/* Node 1: Online Storefront */}
             <div className="p-5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-brand-blue/40 transition-colors">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-mono text-slate-400">SURFACE 01</span>
+                <span className="text-xs text-slate-400">SURFACE 01</span>
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-500/10 text-brand-sky border border-blue-500/20">
                   Storefront
                 </span>
@@ -120,7 +120,7 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
               <p className="text-xs text-slate-300 mb-4">
                 0.2s product switch, frictionless bento collections, zero cart abandonment friction.
               </p>
-              <div className="flex items-center justify-between text-xs font-mono text-slate-400 pt-3 border-t border-white/5">
+              <div className="flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-white/5">
                 <span>Active Shoppers</span>
                 <span className="text-white font-semibold">1,482 live</span>
               </div>
@@ -129,7 +129,7 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
             {/* Node 2: In-Store Registers */}
             <div className="p-5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-brand-sky/40 transition-colors">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-mono text-slate-400">SURFACE 02</span>
+                <span className="text-xs text-slate-400">SURFACE 02</span>
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                   POS Workstation
                 </span>
@@ -138,7 +138,7 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
               <p className="text-xs text-slate-300 mb-4">
                 Sub-second barcode scan, split payment tenders, automated receipt and drawer sync.
               </p>
-              <div className="flex items-center justify-between text-xs font-mono text-slate-400 pt-3 border-t border-white/5">
+              <div className="flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-white/5">
                 <span>Transactions Today</span>
                 <span className="text-white font-semibold">648 processed</span>
               </div>
@@ -147,7 +147,7 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
             {/* Node 3: Core Operations */}
             <div className="p-5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-purple-500/40 transition-colors">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-mono text-slate-400">SURFACE 03</span>
+                <span className="text-xs text-slate-400">SURFACE 03</span>
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
                   Platform HQ
                 </span>
@@ -156,7 +156,7 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
               <p className="text-xs text-slate-300 mb-4">
                 Real-time ledger, supplier re-orders, role permission boundaries, and audit logs.
               </p>
-              <div className="flex items-center justify-between text-xs font-mono text-slate-400 pt-3 border-t border-white/5">
+              <div className="flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-white/5">
                 <span>Sync Status</span>
                 <span className="text-emerald-400 font-semibold">100% In-Sync</span>
               </div>
@@ -180,7 +180,7 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
             viewport={{ once: true, amount: 0.3 }}
             variants={fadeInUp}
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-white/[0.03] border border-white/10 text-xs font-mono text-slate-400 mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-white/[0.03] border border-white/10 text-xs text-slate-400 mb-4">
               <Boxes className="w-3.5 h-3.5 text-brand-sky" />
               <span>Real-Time SKU Allocation</span>
             </div>
@@ -219,14 +219,14 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
           >
             <div className="flex items-center justify-between pb-4 border-b border-white/5">
               <span className="text-sm font-semibold text-white">Live Stock Levels</span>
-              <span className="text-xs font-mono text-slate-400">4,280 Total SKUs</span>
+              <span className="text-xs text-slate-400">4,280 Total SKUs</span>
             </div>
 
             {/* Item 1: High stock */}
             <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-white">Nordic Minimalist Chrono</span>
-                <span className="text-xs font-mono text-emerald-400 font-semibold">182 in stock</span>
+                <span className="text-xs text-emerald-400 font-semibold">182 in stock</span>
               </div>
               <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                 <div className="h-full bg-emerald-400 rounded-full w-[85%]" />
@@ -240,7 +240,7 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
                   <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
                   <span className="text-xs font-medium text-white">Merino Wool Overshirt (M)</span>
                 </div>
-                <span className="text-xs font-mono text-amber-400 font-semibold">6 left (Low Stock)</span>
+                <span className="text-xs text-amber-400 font-semibold">6 left (Low Stock)</span>
               </div>
               <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                 <div className="h-full bg-amber-400 rounded-full w-[15%]" />
@@ -251,7 +251,7 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
             <div className="p-3.5 rounded-xl bg-blue-500/[0.04] border border-blue-500/20">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-white">Ceramic Pour-Over Dripper</span>
-                <span className="text-xs font-mono text-brand-sky font-semibold">PO #810 Dispatched</span>
+                <span className="text-xs text-brand-sky font-semibold">PO #810 Dispatched</span>
               </div>
               <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                 <div className="h-full bg-brand-sky rounded-full w-[45%]" />
@@ -280,11 +280,11 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
           >
             <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-4">
               <div>
-                <span className="text-xs font-mono text-slate-400 block">TODAY’S VOLUME</span>
+                <span className="text-xs text-slate-400 block">TODAY’S VOLUME</span>
                 <span className="text-2xl font-bold text-white">$24,910.40</span>
               </div>
               <div className="text-right">
-                <span className="text-xs font-mono text-emerald-400 font-medium">+18.4% vs yesterday</span>
+                <span className="text-xs text-emerald-400 font-medium">+18.4% vs yesterday</span>
                 <span className="text-[11px] text-slate-400 block">348 orders</span>
               </div>
             </div>
@@ -334,18 +334,18 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
               <div className="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.02] border border-white/5 text-xs">
                 <div className="flex items-center gap-2">
                   <CreditCard className="w-3.5 h-3.5 text-brand-sky" />
-                  <span className="font-mono text-slate-300">#4912 · Web Fast Cart</span>
+                  <span className="text-slate-300">#4912 · Web Fast Cart</span>
                 </div>
                 <span className="text-white font-semibold">$184.00</span>
-                <span className="text-emerald-400 font-mono">Paid</span>
+                <span className="text-emerald-400">Paid</span>
               </div>
               <div className="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.02] border border-white/5 text-xs">
                 <div className="flex items-center gap-2">
                   <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="font-mono text-slate-300">#4911 · Store POS 02</span>
+                  <span className="text-slate-300">#4911 · Store POS 02</span>
                 </div>
                 <span className="text-white font-semibold">$45.50</span>
-                <span className="text-emerald-400 font-mono">Settled</span>
+                <span className="text-emerald-400">Settled</span>
               </div>
             </div>
           </motion.div>
@@ -357,7 +357,7 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
             variants={fadeInUp}
             className="order-1 lg:order-2"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-white/[0.03] border border-white/10 text-xs font-mono text-slate-400 mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-white/[0.03] border border-white/10 text-xs text-slate-400 mb-4">
               <Activity className="w-3.5 h-3.5 text-emerald-400" />
               <span>Real-Time Transaction Stream</span>
             </div>
@@ -399,7 +399,7 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
           variants={fadeInUp}
           className="text-center max-w-3xl mx-auto mb-16"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-white/[0.03] border border-white/10 text-xs font-mono text-slate-400 mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-white/[0.03] border border-white/10 text-xs text-slate-400 mb-4">
             <Users className="w-3.5 h-3.5 text-brand-blue" />
             <span>Role Boundaries & Security</span>
           </div>
@@ -425,7 +425,7 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
             className="p-6 rounded-2xl bg-white/[0.02] border border-brand-blue/30 relative overflow-hidden"
           >
             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-mono text-brand-sky">LEVEL 01</span>
+              <span className="text-xs text-brand-sky">LEVEL 01</span>
               <Lock className="w-4 h-4 text-brand-sky" />
             </div>
             <h3 className="text-xl font-bold text-white mb-2">Store Owner</h3>
@@ -454,7 +454,7 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
             className="p-6 rounded-2xl bg-white/[0.02] border border-white/10"
           >
             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-mono text-slate-400">LEVEL 02</span>
+              <span className="text-xs text-slate-400">LEVEL 02</span>
               <Sliders className="w-4 h-4 text-slate-400" />
             </div>
             <h3 className="text-xl font-bold text-white mb-2">Store Manager</h3>
@@ -483,7 +483,7 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
             className="p-6 rounded-2xl bg-white/[0.02] border border-white/10"
           >
             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-mono text-slate-400">LEVEL 03</span>
+              <span className="text-xs text-slate-400">LEVEL 03</span>
               <Clock className="w-4 h-4 text-slate-400" />
             </div>
             <h3 className="text-xl font-bold text-white mb-2">POS Cashier</h3>
@@ -520,7 +520,7 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
           variants={fadeInUp}
           className="text-center max-w-3xl mx-auto mb-16"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-white/[0.03] border border-white/10 text-xs font-mono text-slate-400 mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-pill bg-white/[0.03] border border-white/10 text-xs text-slate-400 mb-4">
             <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
             <span>Velocity & Margins</span>
           </div>
@@ -544,9 +544,9 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
             variants={fadeInUp}
             className="p-6 rounded-2xl bg-white/[0.02] border border-white/10"
           >
-            <span className="text-xs font-mono text-slate-400">NET PROFIT MARGIN</span>
+            <span className="text-xs text-slate-400">NET PROFIT MARGIN</span>
             <div className="text-3xl font-extrabold text-white mt-2 mb-1">38.4%</div>
-            <span className="text-xs text-emerald-400 flex items-center gap-1 font-mono">
+            <span className="text-xs text-emerald-400 flex items-center gap-1">
               <TrendingUp className="w-3.5 h-3.5" /> +4.2% after supplier auto-reorder
             </span>
             <div className="mt-6 flex items-end gap-2 h-16">
@@ -575,9 +575,9 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
             variants={fadeInUp}
             className="p-6 rounded-2xl bg-white/[0.02] border border-white/10"
           >
-            <span className="text-xs font-mono text-slate-400">AVERAGE BASKET SIZE</span>
+            <span className="text-xs text-slate-400">AVERAGE BASKET SIZE</span>
             <div className="text-3xl font-extrabold text-white mt-2 mb-1">$72.60</div>
-            <span className="text-xs text-brand-sky flex items-center gap-1 font-mono">
+            <span className="text-xs text-brand-sky flex items-center gap-1">
               <Zap className="w-3.5 h-3.5" /> +14% uplift from Fast Cart bundles
             </span>
             <div className="mt-6 flex items-end gap-2 h-16">
@@ -606,9 +606,9 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
             variants={fadeInUp}
             className="p-6 rounded-2xl bg-white/[0.02] border border-white/10"
           >
-            <span className="text-xs font-mono text-slate-400">REPEAT CUSTOMER RATE</span>
+            <span className="text-xs text-slate-400">REPEAT CUSTOMER RATE</span>
             <div className="text-3xl font-extrabold text-white mt-2 mb-1">68.2%</div>
-            <span className="text-xs text-emerald-400 flex items-center gap-1 font-mono">
+            <span className="text-xs text-emerald-400 flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" /> 2.8x higher than industry average
             </span>
             <div className="mt-6 flex items-end gap-2 h-16">
@@ -641,7 +641,7 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
         className="py-20 px-4 sm:px-6 max-w-6xl mx-auto border-t border-white/[0.06] overflow-hidden"
       >
         <div className="text-center max-w-2xl mx-auto mb-10">
-          <span className="text-xs font-mono uppercase tracking-widest text-slate-400">
+          <span className="text-xs uppercase tracking-widest text-slate-400">
             Hardware & Cloud Ecosystem
           </span>
           <h3 className="text-xl sm:text-2xl font-bold text-white mt-2">
@@ -668,7 +668,7 @@ export const ProductTour: React.FC<ProductTourProps> = ({ onOpenAuth }) => {
             ].map((item, idx) => (
               <div
                 key={idx}
-                className="px-5 py-2.5 rounded-full bg-white/[0.03] border border-white/10 text-xs font-mono font-medium text-slate-300 hover:text-white hover:border-brand-sky/40 transition-colors whitespace-nowrap"
+                className="px-5 py-2.5 rounded-full bg-white/[0.03] border border-white/10 text-xs font-medium text-slate-300 hover:text-white hover:border-brand-sky/40 transition-colors whitespace-nowrap"
               >
                 {item}
               </div>

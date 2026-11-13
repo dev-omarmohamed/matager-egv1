@@ -121,7 +121,7 @@ export const MatagerLogo: React.FC<MatagerLogoProps> = ({
         )}
       </span>
 
-      {/* ─── SYSTEM FONT WORDMARK (Josefin Sans in EN / Reem Kufi in AR) ─── */}
+      {/* ─── SYSTEM FONT WORDMARK (Josefin Sans in EN / El Messiri in AR) ─── */}
       {showWordmark && (
         <span className="inline-flex flex-col justify-center leading-none">
           {shouldAnimate ? (

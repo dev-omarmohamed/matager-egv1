@@ -100,7 +100,7 @@ function StoreContextProviderInner({ children }: { children: React.ReactNode }) 
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0a0a0c] text-white flex items-center justify-center font-mono text-xs">Loading Matager Store Environment...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-[#0a0a0c] text-white flex items-center justify-center text-xs">Loading Matager Store Environment...</div>}>
       <StoreContextProviderInner>{children}</StoreContextProviderInner>
     </Suspense>
   );

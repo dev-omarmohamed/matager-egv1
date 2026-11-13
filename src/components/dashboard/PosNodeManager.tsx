@@ -107,7 +107,7 @@ export const PosNodeManager: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 flex items-center gap-1 font-mono">
+            <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 flex items-center gap-1">
               <Laptop className="w-3 h-3" /> POS Terminal Nodes
             </span>
             <span className="text-[10px] text-[var(--color-text-muted)] font-ui">
@@ -154,7 +154,7 @@ export const PosNodeManager: React.FC = () => {
             <Banknote className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-2xl font-black text-white font-mono">
+            <span className="text-2xl font-black text-white">
               {totalPosRevenue.toLocaleString()}
             </span>
             <span className="text-xs text-white/50">EGP</span>
@@ -177,7 +177,7 @@ export const PosNodeManager: React.FC = () => {
             <CreditCard className="w-4 h-4 text-blue-400" />
           </div>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-2xl font-black text-white font-mono">
+            <span className="text-2xl font-black text-white">
               46,850
             </span>
             <span className="text-xs text-white/50">EGP</span>
@@ -203,7 +203,7 @@ export const PosNodeManager: React.FC = () => {
             <div>
               <div className="flex justify-between text-white/60 mb-0.5">
                 <span>Cash Register</span>
-                <span className="font-mono font-bold text-white">52%</span>
+                <span className="font-bold text-white">52%</span>
               </div>
               <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
                 <div className="h-full bg-emerald-500 w-[52%]" />
@@ -212,7 +212,7 @@ export const PosNodeManager: React.FC = () => {
             <div>
               <div className="flex justify-between text-white/60 mb-0.5">
                 <span>Mada / Meeza / QR</span>
-                <span className="font-mono font-bold text-white">34%</span>
+                <span className="font-bold text-white">34%</span>
               </div>
               <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
                 <div className="h-full bg-blue-500 w-[34%]" />
@@ -221,7 +221,7 @@ export const PosNodeManager: React.FC = () => {
             <div>
               <div className="flex justify-between text-white/60 mb-0.5">
                 <span>Visa / MasterCard</span>
-                <span className="font-mono font-bold text-white">14%</span>
+                <span className="font-bold text-white">14%</span>
               </div>
               <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
                 <div className="h-full bg-purple-500 w-[14%]" />
@@ -255,12 +255,12 @@ export const PosNodeManager: React.FC = () => {
                 >
                   <td className="p-3.5">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-blue-400 shrink-0 font-mono font-bold text-[10px]">
+                      <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-blue-400 shrink-0 font-bold text-[10px]">
                         {node.id.replace("TERM-", "#")}
                       </div>
                       <div>
                         <p className="font-bold text-white leading-tight">{node.name}</p>
-                        <p className="text-[10px] text-white/40 font-mono mt-0.5">{node.id}</p>
+                        <p className="text-[10px] text-white/40 mt-0.5">{node.id}</p>
                       </div>
                     </div>
                   </td>
@@ -277,7 +277,7 @@ export const PosNodeManager: React.FC = () => {
                   </td>
 
                   <td className="p-3.5">
-                    <div className="flex items-center gap-1.5 font-mono text-[11px] text-white/70">
+                    <div className="flex items-center gap-1.5 text-[11px] text-white/70">
                       <span>{isPinVisible ? node.pin : "••••"}</span>
                       <button
                         onClick={() => togglePinVisibility(node.id)}
@@ -316,7 +316,7 @@ export const PosNodeManager: React.FC = () => {
                     </span>
                   </td>
 
-                  <td className="p-3.5 font-mono">
+                  <td className="p-3.5">
                     <p className="font-bold text-white">
                       {node.todaySales.toLocaleString()} EGP
                     </p>
@@ -415,7 +415,7 @@ export const PosNodeManager: React.FC = () => {
                     value={newPin}
                     onChange={(e) => setNewPin(e.target.value)}
                     placeholder="1234"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white font-mono focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>

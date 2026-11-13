@@ -525,9 +525,9 @@ function PosCashierContent() {
         <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-600 text-white px-4 py-2 flex items-center justify-between text-xs font-bold animate-in slide-in-from-top-2 duration-300 shadow-xl z-50">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-white animate-ping" />
-            <span className="font-mono">⚡ FASTCART ONLINE ORDER: {incomingOnlineOrder.id}</span>
+            <span>⚡ FASTCART ONLINE ORDER: {incomingOnlineOrder.id}</span>
             <span className="text-white/80">· {incomingOnlineOrder.customer_name}</span>
-            <span className="font-mono text-emerald-200">EGP {Number(incomingOnlineOrder.amount).toLocaleString()}</span>
+            <span className="text-emerald-200">EGP {Number(incomingOnlineOrder.amount).toLocaleString()}</span>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -558,7 +558,7 @@ function PosCashierContent() {
               <h1 className="text-sm font-bold text-white tracking-tight leading-none">
                 {activeStore.name} · Ground POS
               </h1>
-              <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold">
+              <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold">
                 Online Sync
               </span>
             </div>
@@ -570,7 +570,7 @@ function PosCashierContent() {
                   const found = nodes.find((n) => n.id === e.target.value);
                   if (found) setCashierName(found.staffName);
                 }}
-                className="bg-transparent text-[10px] text-white/50 font-mono focus:outline-none focus:text-white cursor-pointer hover:text-white transition-colors"
+                className="bg-transparent text-[10px] text-white/50 focus:outline-none focus:text-white cursor-pointer hover:text-white transition-colors"
               >
                 {nodes.map((n) => (
                   <option key={n.id} value={n.id} className="bg-neutral-900 text-white">
@@ -594,7 +594,7 @@ function PosCashierContent() {
             </button>
             {showStoreSwitcher && (
               <div className="absolute top-full left-0 mt-1 w-56 rounded-xl bg-neutral-900 border border-white/15 p-1.5 shadow-2xl z-50">
-                <div className="px-2 py-1 text-[9px] font-mono uppercase text-white/40 border-b border-white/10 mb-1">
+                <div className="px-2 py-1 text-[9px] uppercase text-white/40 border-b border-white/10 mb-1">
                   Active Store POS Register
                 </div>
                 {allStores.map((s) => (
@@ -636,7 +636,7 @@ function PosCashierContent() {
               }`}
             />
             <span className="text-[10px] text-white/60">Shift Open:</span>
-            <span className="text-[10px] text-white font-mono font-bold">{shiftOpenTime}</span>
+            <span className="text-[10px] text-white font-bold">{shiftOpenTime}</span>
           </div>
 
           {/* Cashier Badge */}
@@ -668,7 +668,7 @@ function PosCashierContent() {
             <Zap className="w-3 h-3 text-blue-400" />
             <span>FastCart Orders</span>
             {onlineFastCartOrders.length > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-blue-600 text-white font-mono text-[9px]">
+              <span className="px-1.5 py-0.2 rounded-full bg-blue-600 text-white text-[9px]">
                 {onlineFastCartOrders.length}
               </span>
             )}
@@ -718,7 +718,7 @@ function PosCashierContent() {
       {/* ══════════════════ 3-COLUMN RESPONSIVE POS LAYOUT ══════════════════ */}
       <main className="flex-1 grid grid-cols-12 gap-0 overflow-hidden min-h-[calc(100vh-60px)]">
         {/* ─── COLUMN 1: CATEGORIES & QUICK FILTERS (2 cols) ─── */}
-        <aside className="col-span-12 md:col-span-3 lg:col-span-2 border-r border-white/10 p-3 space-y-3 bg-[#060606] overflow-y-auto">
+        <aside data-lenis-prevent className="col-span-12 md:col-span-3 lg:col-span-2 border-r border-white/10 p-3 space-y-3 bg-[#060606] overflow-y-auto">
           <div>
             <p className="text-[9px] font-black text-white/40 uppercase tracking-widest px-2 mb-2">
               Categories
@@ -749,7 +749,7 @@ function PosCashierContent() {
                     <Icon className="w-3.5 h-3.5 shrink-0" />
                     <span className="truncate">{cat.name}</span>
                     <span
-                      className={`ml-auto text-[10px] font-mono font-bold ${
+                      className={`ml-auto text-[10px] font-bold ${
                         isActive ? "text-white/90" : "text-white/30"
                       }`}
                     >
@@ -811,7 +811,7 @@ function PosCashierContent() {
                 <button
                   key={item.sku}
                   onClick={() => handleAddToCart(item)}
-                  className="w-full text-left p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 text-[10px] text-white/70 font-mono flex items-center justify-between group transition-colors"
+                  className="w-full text-left p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 text-[10px] text-white/70 flex items-center justify-between group transition-colors"
                 >
                   <span className="truncate">{item.sku}</span>
                   <Plus className="w-3.5 h-3.5 opacity-40 group-hover:opacity-100 group-hover:text-blue-400 transition-opacity" />
@@ -878,7 +878,7 @@ function PosCashierContent() {
           </div>
 
           {/* Product Grid */}
-          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+          <div data-lenis-prevent className="flex-1 overflow-y-auto p-4 custom-scrollbar">
             {filteredProducts.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-8 text-white/40">
                 <Package className="w-10 h-10 mb-2 opacity-30" />
@@ -934,7 +934,7 @@ function PosCashierContent() {
                         <h4 className="text-xs font-bold text-white truncate leading-tight group-hover:text-blue-400 transition-colors">
                           {prod.name}
                         </h4>
-                        <p className="text-[10px] text-white/40 font-mono mt-0.5 mb-2 truncate">
+                        <p className="text-[10px] text-white/40 mt-0.5 mb-2 truncate">
                           {prod.sku} {prod.size ? `· ${prod.size}` : ""}
                         </p>
 
@@ -969,7 +969,7 @@ function PosCashierContent() {
               <p className="text-[10px] font-black uppercase tracking-widest text-white/40">
                 Active Order
               </p>
-              <p className="text-xs font-mono font-bold text-white mt-0.5">{orderNumber}</p>
+              <p className="text-xs font-bold text-white mt-0.5">{orderNumber}</p>
             </div>
             {cart.length > 0 && (
               <button
@@ -987,7 +987,7 @@ function PosCashierContent() {
               <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold text-white">{customerName}</p>
-                  <p className="text-[10px] text-white/50 font-mono">{customerPhone || "Guest phone"}</p>
+                  <p className="text-[10px] text-white/50">{customerPhone || "Guest phone"}</p>
                 </div>
                 <button
                   onClick={() => {
@@ -1010,7 +1010,7 @@ function PosCashierContent() {
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
+          <div data-lenis-prevent className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
             {cart.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6 text-white/30">
                 <Receipt className="w-8 h-8 mb-2 opacity-25" />
@@ -1040,7 +1040,7 @@ function PosCashierContent() {
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <p className="text-[10px] text-white/40 font-mono">
+                    <p className="text-[10px] text-white/40">
                       {line.product.sku} {line.selectedSize ? `· Size ${line.selectedSize}` : ""}
                     </p>
 
@@ -1052,7 +1052,7 @@ function PosCashierContent() {
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="text-xs font-bold text-white w-5 text-center font-mono">
+                        <span className="text-xs font-bold text-white w-5 text-center">
                           {line.quantity}
                         </span>
                         <button
@@ -1064,7 +1064,7 @@ function PosCashierContent() {
                       </div>
 
                       <div className="text-right">
-                        <p className="text-xs font-black text-white font-mono">
+                        <p className="text-xs font-black text-white">
                           {line.product.price * line.quantity} EGP
                         </p>
                       </div>
@@ -1082,7 +1082,7 @@ function PosCashierContent() {
                 value={discountCode}
                 onChange={(e) => setDiscountCode(e.target.value)}
                 placeholder="Discount code (e.g. SAVE20)..."
-                className="flex-1 bg-white/5 border border-white/10 rounded-lg py-1.5 px-2.5 text-[11px] text-white placeholder:text-white/30 focus:outline-none focus:border-blue-500 font-mono uppercase"
+                className="flex-1 bg-white/5 border border-white/10 rounded-lg py-1.5 px-2.5 text-[11px] text-white placeholder:text-white/30 focus:outline-none focus:border-blue-500 uppercase"
               />
               <button
                 onClick={handleApplyDiscount}
@@ -1105,17 +1105,17 @@ function PosCashierContent() {
           <div className="p-3 border-t border-white/10 space-y-1.5 bg-black/40 text-[11px]">
             <div className="flex justify-between text-white/50">
               <span>Subtotal</span>
-              <span className="text-white/80 font-mono">{subtotal.toLocaleString()} EGP</span>
+              <span className="text-white/80">{subtotal.toLocaleString()} EGP</span>
             </div>
             {discountAmount > 0 && (
               <div className="flex justify-between text-emerald-400 font-bold">
                 <span>Discount ({appliedDiscountRate * 100}%)</span>
-                <span className="font-mono">- {discountAmount.toLocaleString()} EGP</span>
+                <span>- {discountAmount.toLocaleString()} EGP</span>
               </div>
             )}
             <div className="flex justify-between text-white/50">
               <span>VAT (14%)</span>
-              <span className="text-white/80 font-mono">{vatAmount.toLocaleString()} EGP</span>
+              <span className="text-white/80">{vatAmount.toLocaleString()} EGP</span>
             </div>
 
             <div className="flex justify-between items-end pt-2 border-t border-white/10 mt-1">
@@ -1123,7 +1123,7 @@ function PosCashierContent() {
                 Total Due
               </span>
               <div className="text-right">
-                <span className="text-2xl font-black text-white tracking-tight font-mono">
+                <span className="text-2xl font-black text-white tracking-tight">
                   {totalDue.toLocaleString()}
                 </span>
                 <span className="text-[10px] text-white/50 uppercase ml-1">EGP</span>
@@ -1171,7 +1171,7 @@ function PosCashierContent() {
                     <button
                       key={idx}
                       onClick={() => setTenderedAmount(amt)}
-                      className={`flex-1 py-1 rounded-lg border text-[9px] font-mono font-bold transition-all ${
+                      className={`flex-1 py-1 rounded-lg border text-[9px] font-bold transition-all ${
                         tenderedAmount === amt
                           ? "bg-emerald-500/20 border-emerald-500 text-emerald-300"
                           : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"
@@ -1269,7 +1269,7 @@ function PosCashierContent() {
       {/* ══════════════════ MODAL: SIMULATED THERMAL RECEIPT ══════════════════ */}
       {showReceiptModal && completedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-          <div className="w-full max-w-sm bg-white text-neutral-900 rounded-2xl p-6 space-y-4 shadow-2xl font-mono text-xs">
+          <div className="w-full max-w-sm bg-white text-neutral-900 rounded-2xl p-6 space-y-4 shadow-2xl text-xs">
             <div className="text-center border-b border-dashed border-neutral-300 pb-4">
               <h2 className="text-base font-black uppercase tracking-tight text-black">
                 MATAGER GROUND STORE
@@ -1326,7 +1326,7 @@ function PosCashierContent() {
             </div>
 
             <div className="text-center pt-2 border-t border-dashed border-neutral-300">
-              <div className="h-10 bg-neutral-900 rounded mx-auto flex items-center justify-center text-white text-[9px] font-mono tracking-widest">
+              <div className="h-10 bg-neutral-900 rounded mx-auto flex items-center justify-center text-white text-[9px] tracking-widest">
                 |||||| | ||||| |||| |||||| |||
               </div>
               <p className="text-[9px] text-neutral-500 mt-1">Thank you for shopping at Matager!</p>
@@ -1375,23 +1375,23 @@ function PosCashierContent() {
               <div className="p-3 rounded-xl bg-white/5 border border-white/10 space-y-2">
                 <div className="flex justify-between text-white/60">
                   <span>Shift Opened:</span>
-                  <span className="text-white font-mono">{shiftOpenTime}</span>
+                  <span className="text-white">{shiftOpenTime}</span>
                 </div>
                 <div className="flex justify-between text-white/60">
                   <span>Opening Cash Float:</span>
-                  <span className="text-white font-mono">1,000.00 EGP</span>
+                  <span className="text-white">1,000.00 EGP</span>
                 </div>
                 <div className="flex justify-between text-white/60">
                   <span>Today's In-Store Revenue:</span>
-                  <span className="text-emerald-400 font-bold font-mono">18,450.00 EGP</span>
+                  <span className="text-emerald-400 font-bold">18,450.00 EGP</span>
                 </div>
                 <div className="flex justify-between text-white/60">
                   <span>Completed In-Store Orders:</span>
-                  <span className="text-white font-bold font-mono">24 transactions</span>
+                  <span className="text-white font-bold">24 transactions</span>
                 </div>
                 <div className="flex justify-between text-white/60">
                   <span>Expected Cash in Drawer:</span>
-                  <span className="text-white font-black font-mono">11,250.00 EGP</span>
+                  <span className="text-white font-black">11,250.00 EGP</span>
                 </div>
               </div>
 
@@ -1400,7 +1400,7 @@ function PosCashierContent() {
                 <input
                   type="number"
                   defaultValue="11250"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white font-mono focus:outline-none focus:border-blue-500"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
 
@@ -1471,7 +1471,7 @@ function PosCashierContent() {
                     className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 space-y-2 text-xs"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-blue-400">{ord.id}</span>
+                      <span className="font-bold text-blue-400">{ord.id}</span>
                       <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                         {ord.status || "Ready for Pickup"}
                       </span>
@@ -1479,7 +1479,7 @@ function PosCashierContent() {
 
                     <div className="flex items-center justify-between text-white/70">
                       <span>Customer: <strong className="text-white">{ord.customer_name}</strong></span>
-                      <span className="font-mono text-emerald-400 font-bold">EGP {Number(ord.amount).toLocaleString()}</span>
+                      <span className="text-emerald-400 font-bold">EGP {Number(ord.amount).toLocaleString()}</span>
                     </div>
 
                     <div className="text-[11px] text-white/50">
@@ -1522,7 +1522,7 @@ export default function PosCashierPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#030303] text-white flex items-center justify-center font-mono text-xs">
+        <div className="min-h-screen bg-[#030303] text-white flex items-center justify-center text-xs">
           Loading Matager POS Cashier Terminal...
         </div>
       }

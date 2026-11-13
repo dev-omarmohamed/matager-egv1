@@ -3,16 +3,6 @@
    Midnight data terminal with frosted type & dual theme support
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Self-hosted / Google Font font-face for Fustat (Arabic Subtitles & Body) */
-@font-face {
-  font-family: 'Fustat';
-  font-style: normal;
-  font-weight: 300 700;
-  font-display: swap;
-  src: url('https://fonts.gstatic.com/s/fustat/v2/NaPZcZSZvG9WbY_hL1Z9.woff2') format('woff2');
-  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+08A0-08E1, U+08E3-08FF;
-}
-
 :root {
   /* ─── BASEDASH CANONICAL TOKENS (DARK OBSIDIAN PALETTE) ─── */
   --color-void-black: #000000;
@@ -22,8 +12,8 @@
   --color-ash-gray: #b3b3b3;
   --color-steel-gray: #808080;
   --color-graphite: #333333;
-  --color-lavender-pulse: #9984d8;
-  --color-mint-signal: #3fcb7f;
+  --color-lavender-pulse: #0083FE;
+  --color-mint-signal: #0083FE;
 
   /* ─── SPACING SCALE (Base unit: 4px) ─── */
   --spacing-4: 4px;
@@ -87,21 +77,25 @@
   --leading-display: 1.0;
   --tracking-display: 0px;
 
-  /* Default Typography Variables (English Mode: Josefin Sans & Poiret One) */
-  --font-heading: var(--font-josefin), sans-serif;
-  --font-subtitle: var(--font-poiret), sans-serif;
-  --font-ui: var(--font-josefin), var(--font-poiret), sans-serif;
+  /* Default Typography Variables (English Mode: Josefin Sans exclusively) */
+  --font-heading: var(--font-josefin), 'Josefin Sans', system-ui, sans-serif;
+  --font-subtitle: var(--font-josefin), 'Josefin Sans', system-ui, sans-serif;
+  --font-ui: var(--font-josefin), 'Josefin Sans', system-ui, sans-serif;
+  --font-body: var(--font-josefin), 'Josefin Sans', system-ui, sans-serif;
+  --font-display: var(--font-josefin), 'Josefin Sans', system-ui, sans-serif;
 
   /* Atmospheric & Primary Gradients */
   --gradient-primary: linear-gradient(135deg, #0479E8 0%, #0083FE 100%);
   --color-primary-dark: #0479E8;
   --color-primary-light: #0083FE;
+  --color-accent-blue: #0479E8;
   --color-accent-blue-dark: #0479E8;
   --color-accent-blue-light: #0083FE;
+  --color-grid-line: rgba(255, 255, 255, 0.05);
   --input-bg-gradient: linear-gradient(135deg, #1a1a24 0%, #2a3a50 100%);
   --input-border-color: rgba(4, 121, 232, 0.35);
   --gradient-atmospheric: radial-gradient(circle at 50% 0%, rgba(4, 121, 232, 0.32) 0%, rgba(0, 131, 254, 0.16) 40%, rgba(4, 121, 232, 0.05) 70%, transparent 100%);
-  --gradient-glow-mint: radial-gradient(circle at 50% 50%, rgba(63, 203, 127, 0.22) 0%, transparent 70%);
+  --gradient-glow-mint: radial-gradient(circle at 50% 50%, rgba(0, 131, 254, 0.22) 0%, transparent 70%);
 
   /* ─── DEFAULT THEME: DARK (BASEDASH TERMINAL) ─── */
   --color-canvas: #000000;
@@ -114,8 +108,10 @@
   --color-border: #333333;
   --color-border-subtle: rgba(255, 255, 255, 0.07);
   --color-border-hover: #808080;
+  --color-accent-blue: #0083FE;
+  --color-grid-line: rgba(255, 255, 255, 0.05);
   --color-accent-violet: #0083FE;
-  --color-accent-mint: #3fcb7f;
+  --color-accent-mint: #0083FE;
 
   /* Interactive Elements */
   --color-btn-primary-bg: #ffffff;
@@ -142,15 +138,15 @@
   --color-status-amber: #f59e0b;
   --color-status-amber-bg: rgba(245, 158, 11, 0.1);
   --color-status-amber-border: rgba(245, 158, 11, 0.2);
-  --color-status-green: #3fcb7f;
-  --color-status-green-bg: rgba(63, 203, 127, 0.1);
-  --color-status-green-border: rgba(63, 203, 127, 0.2);
+  --color-status-green: #0083FE;
+  --color-status-green-bg: rgba(0, 131, 254, 0.1);
+  --color-status-green-border: rgba(0, 131, 254, 0.25);
   --color-status-blue: #0083fe;
   --color-status-blue-bg: rgba(0, 131, 254, 0.1);
   --color-status-blue-border: rgba(0, 131, 254, 0.2);
-  --color-status-purple: #a855f7;
-  --color-status-purple-bg: rgba(168, 85, 247, 0.1);
-  --color-status-purple-border: rgba(168, 85, 247, 0.2);
+  --color-status-purple: #0083FE;
+  --color-status-purple-bg: rgba(0, 131, 254, 0.1);
+  --color-status-purple-border: rgba(0, 131, 254, 0.25);
   --color-status-red: #ef4444;
   --color-status-red-bg: rgba(239, 68, 68, 0.1);
   --color-status-red-border: rgba(239, 68, 68, 0.2);
@@ -159,12 +155,14 @@
   --color-status-orange-border: rgba(249, 115, 22, 0.2);
 }
 
-/* ─── ARABIC TYPOGRAPHY OVERRIDES ─── */
+/* ─── ARABIC TYPOGRAPHY OVERRIDES (El Messiri exclusively) ─── */
 [lang="ar"],
 [dir="rtl"] {
-  --font-heading: var(--font-reem-kufi), 'Fustat', sans-serif;
-  --font-subtitle: 'Fustat', var(--font-reem-kufi), sans-serif;
-  --font-ui: 'Fustat', var(--font-reem-kufi), sans-serif;
+  --font-heading: var(--font-el-messiri), 'El Messiri', system-ui, sans-serif;
+  --font-subtitle: var(--font-el-messiri), 'El Messiri', system-ui, sans-serif;
+  --font-ui: var(--font-el-messiri), 'El Messiri', system-ui, sans-serif;
+  --font-body: var(--font-el-messiri), 'El Messiri', system-ui, sans-serif;
+  --font-display: var(--font-el-messiri), 'El Messiri', system-ui, sans-serif;
 
   /* Arabic line heights and letter-spacing adjustments */
   --leading-display: 1.25;
@@ -199,8 +197,16 @@
   --color-border: #e3e6eb;
   --color-border-subtle: rgba(0, 0, 0, 0.08);
   --color-border-hover: #9ca3af;
+  --color-accent-blue: #0479E8;
+  --color-grid-line: rgba(0, 0, 0, 0.05);
   --color-accent-violet: #0479E8;
-  --color-accent-mint: #159c53;
+  --color-accent-mint: #0479E8;
+  --color-status-green: #0479E8;
+  --color-status-green-bg: rgba(4, 121, 232, 0.1);
+  --color-status-green-border: rgba(4, 121, 232, 0.25);
+  --color-status-purple: #0479E8;
+  --color-status-purple-bg: rgba(4, 121, 232, 0.1);
+  --color-status-purple-border: rgba(4, 121, 232, 0.25);
   --input-bg-gradient: linear-gradient(135deg, #f0f6ff 0%, #e2eeff 100%);
   --input-border-color: rgba(4, 121, 232, 0.25);
 
@@ -260,6 +266,8 @@
   --color-border: #333333;
   --color-border-subtle: rgba(255, 255, 255, 0.07);
   --color-border-hover: #808080;
+  --color-accent-blue: #0083FE;
+  --color-grid-line: rgba(255, 255, 255, 0.05);
   --color-accent-violet: #0083FE;
   --color-accent-mint: #3fcb7f;
   --input-bg-gradient: linear-gradient(135deg, #1a1a24 0%, #2a3a50 100%);

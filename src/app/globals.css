@@ -16,6 +16,39 @@ html {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LENIS SMOOTH SCROLLING STYLES (UNIVERSAL PLATFORM SCROLL)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
 }
 
 body {
@@ -44,9 +77,9 @@ button, input, select, textarea, label, .msm-opt, .msm-next, .msm-back, .msm-swi
   font-family: var(--font-ui) !important;
 }
 
-/* Custom Selection Highlight (Violet terminal tint) */
+/* Custom Selection Highlight (Blue terminal tint) */
 ::selection {
-  background-color: rgba(153, 132, 216, 0.35);
+  background-color: rgba(0, 131, 254, 0.35);
   color: var(--color-ghost-white);
 }
 
@@ -218,28 +251,28 @@ button, input, select, textarea, label, .msm-opt, .msm-next, .msm-back, .msm-swi
   line-height: 1.4;
 }
 
-/* Pulsing Mint Signal Dot */
+/* Pulsing Blue Signal Dot */
 .mint-live-dot {
   width: 8px;
   height: 8px;
   border-radius: 9999px;
-  background-color: var(--color-accent-mint);
-  box-shadow: 0 0 8px rgba(63, 203, 127, 0.7);
+  background-color: var(--color-accent-violet);
+  box-shadow: 0 0 8px rgba(0, 131, 254, 0.7);
   animation: pulse-live 2s infinite;
 }
 
 @keyframes pulse-live {
   0% {
     transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(63, 203, 127, 0.7);
+    box-shadow: 0 0 0 0 rgba(0, 131, 254, 0.7);
   }
   70% {
     transform: scale(1);
-    box-shadow: 0 0 0 6px rgba(63, 203, 127, 0);
+    box-shadow: 0 0 0 6px rgba(0, 131, 254, 0);
   }
   100% {
     transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(63, 203, 127, 0);
+    box-shadow: 0 0 0 0 rgba(0, 131, 254, 0);
   }
 }
 
@@ -270,7 +303,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 400;
 }
 
-/* Ensure Arabic subtitles and body text use Fustat/Cairo with smooth line heights */
+/* Ensure Arabic subtitles and body text use El Messiri with smooth line heights */
 [lang="ar"] .font-subtitle,
 [dir="rtl"] .font-subtitle,
 [lang="ar"] .subtitle,
@@ -280,6 +313,41 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-subtitle);
   letter-spacing: 0px;
   line-height: 1.6;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MICRO-LABEL TABULAR STYLING (REPLACES MONOSPACE)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.micro-label, [data-micro-label] {
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+[lang="ar"] .micro-label,
+[dir="rtl"] .micro-label,
+[lang="ar"] [data-micro-label],
+[dir="rtl"] [data-micro-label] {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DYNAMIC DUAL-THEME TECHNICAL GRID BACKGROUND
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.landing-grid-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background-image: 
+    linear-gradient(to right, var(--color-grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-grid-line) 1px, transparent 1px);
+  background-size: 44px 44px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -449,7 +517,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .msm-dot.is-passed {
-  background-color: var(--color-accent-mint);
+  background-color: var(--color-accent-violet);
 }
 
 

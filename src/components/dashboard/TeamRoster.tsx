@@ -91,7 +91,7 @@ export const TeamRoster: React.FC = () => {
                   <p className="text-xs font-bold font-ui text-[var(--color-text-primary)]">
                     {member.name}
                   </p>
-                  <p className="text-[10px] text-[var(--color-text-muted)] font-mono">
+                  <p className="text-[10px] text-[var(--color-text-muted)]">
                     {member.email}
                   </p>
                 </div>

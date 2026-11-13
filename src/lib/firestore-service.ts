@@ -22,12 +22,19 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import {
+  ref as rtdbRef,
+  set as rtdbSet,
+  update as rtdbUpdate,
+  remove as rtdbRemove,
+  onValue as rtdbOnValue,
+} from "firebase/database";
+import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInAnonymously,
   updateProfile,
 } from "firebase/auth";
-import { auth, db } from "./firebase";
+import { auth, db, rtdb } from "./firebase";
 import type {
   User,
   Store,
@@ -48,6 +55,9 @@ import type {
 
 export interface OnboardingData {
   salesChannel: "hybrid" | "online" | "pos";
+  expectedVolume?: string;
+  tierPrice?: number;
+  currency?: string;
   storeName: string;
   legalName: string;
   category: string;
@@ -61,6 +71,183 @@ export interface OnboardingData {
 }
 
 /**
+ * Pushes a new store owner record to Firebase Realtime Database.
+ * Creates /{uid} node exclusively, containing:
+ * - branches: Initialized flagship branch with pos_count and pos_systems
+ * - orders: Empty initialized node
+ * - payments: Empty initialized node
+ * - products: Empty initialized node
+ * - storeconfig: Store details, role ('store_owner'), created_at, subscription info
+ */
+export async function pushStoreRecordToRTDB({
+  uid,
+  token,
+  storeConfig,
+}: {
+  uid: string;
+  token?: string;
+  storeConfig: any;
+}): Promise<any> {
+  const RTDB_BASE =
+    process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ||
+    "https://matager-egv01-default-rtdb.europe-west1.firebasedatabase.app";
+
+  const storeId = storeConfig.store_id || `store_${uid}`;
+  const nowIso = storeConfig.created_at || new Date().toISOString();
+  const branchId = `branch_${storeId}_1`;
+
+  const plan = (
+    storeConfig.subscription?.plan_id ||
+    storeConfig.selected_plan ||
+    storeConfig.plan ||
+    "pro"
+  ).toLowerCase();
+
+  // Determine POS systems count per branch: starter = 1, pro = 2, enterprise = 4
+  const branchPosCount =
+    typeof storeConfig.pos_count === "number" && storeConfig.pos_count > 0
+      ? storeConfig.pos_count
+      : plan === "starter"
+      ? 1
+      : plan === "enterprise"
+      ? 4
+      : 2;
+
+  // Build the POS systems map for this branch
+  const posSystems: Record<string, any> = {};
+  for (let i = 1; i <= branchPosCount; i++) {
+    const termId = `pos_term_${i}`;
+    posSystems[termId] = {
+      id: termId,
+      terminal_number: i,
+      name: i === 1 ? "Register 1 (Main Cashier POS)" : `Register ${i} (Secondary / Floor POS)`,
+      device_serial: `POS-${1000 + i}`,
+      status: "Active",
+      type: i === 1 ? "Countertop POS" : "Mobile / Floor POS",
+      branch_id: branchId,
+      store_id: storeId,
+      created_at: nowIso,
+    };
+  }
+
+  const defaultBranch = {
+    id: branchId,
+    store_id: storeId,
+    name: `${storeConfig.store_name} — Flagship Branch`,
+    address: storeConfig.address
+      ? `${storeConfig.address}, ${storeConfig.city || "Cairo"}`
+      : `${storeConfig.city || "Cairo"}, ${storeConfig.country || "Egypt"}`,
+    city: storeConfig.city || "Cairo",
+    country: storeConfig.country || "Egypt",
+    phone: storeConfig.phone || "",
+    status: "Active",
+    is_default: true,
+    pos_count: branchPosCount,
+    pos_systems: posSystems,
+    created_at: nowIso,
+  };
+
+  const branchesMap: Record<string, any> =
+    storeConfig.branches &&
+    typeof storeConfig.branches === "object" &&
+    Object.keys(storeConfig.branches).length > 0
+      ? storeConfig.branches
+      : {
+          [branchId]: defaultBranch,
+        };
+
+  const totalPosCount = Object.values(branchesMap).reduce((acc: number, b: any) => {
+    const count =
+      typeof b?.pos_count === "number"
+        ? b.pos_count
+        : b?.pos_systems && typeof b.pos_systems === "object"
+        ? Object.keys(b.pos_systems).length
+        : branchPosCount;
+    return acc + count;
+  }, 0);
+
+  const { branches: _omittedBranches, ...cleanConfig } = storeConfig;
+  const enrichedStoreConfig = {
+    ...cleanConfig,
+    pos_count: totalPosCount,
+  };
+
+  // Node of the created user containing branches, orders, payments, products, storeconfig
+  const userRootPayload = {
+    branches: {
+      _initialized: true,
+      ...branchesMap,
+      pos_count: totalPosCount,
+      total: Object.keys(branchesMap).length,
+    },
+    orders: { _initialized: true, total: 0 },
+    payments: { _initialized: true, total: 0 },
+    products: { _initialized: true, total: 0 },
+    storeconfig: enrichedStoreConfig,
+  };
+
+  let apiSuccess = false;
+
+  // Method 1: Push via server API route (/api/rtdb/push-store)
+  try {
+    const apiRes = await fetch("/api/rtdb/push-store", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ uid, token, storeConfig: enrichedStoreConfig }),
+    });
+    if (apiRes.ok) {
+      const resJson = await apiRes.json();
+      console.log("Successfully pushed store record to RTDB via API route:", resJson);
+      apiSuccess = true;
+      return resJson;
+    } else {
+      const errTxt = await apiRes.text();
+      console.warn("API route responded with status", apiRes.status, errTxt);
+    }
+  } catch (apiErr) {
+    console.warn("API route /api/rtdb/push-store unavailable, falling back to direct REST:", apiErr);
+  }
+
+  // Method 2: Direct REST write fallback to RTDB (works in browser or Node)
+  if (!apiSuccess) {
+    try {
+      const userUrl = token
+        ? `${RTDB_BASE}/${uid}.json?auth=${encodeURIComponent(token)}`
+        : `${RTDB_BASE}/${uid}.json`;
+
+      await fetch(userUrl, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userRootPayload),
+      });
+      console.log("Successfully pushed store record to RTDB via direct REST");
+      apiSuccess = true;
+    } catch (restErr) {
+      console.warn("Direct REST write failed:", restErr);
+    }
+  }
+
+  // Method 3: Firebase RTDB Client SDK
+  try {
+    await rtdbSet(rtdbRef(rtdb, `${uid}/storeconfig`), enrichedStoreConfig);
+    await rtdbSet(rtdbRef(rtdb, `${uid}/products`), { _initialized: true, total: 0 });
+    await rtdbSet(rtdbRef(rtdb, `${uid}/branches`), {
+      _initialized: true,
+      total: Object.keys(branchesMap).length,
+      pos_count: totalPosCount,
+      ...branchesMap,
+    });
+    await rtdbSet(rtdbRef(rtdb, `${uid}/orders`), { _initialized: true, total: 0 });
+    await rtdbSet(rtdbRef(rtdb, `${uid}/payments`), { _initialized: true, total: 0 });
+    console.log("Successfully pushed store record to RTDB via client SDK");
+  } catch (sdkErr) {
+    console.warn("Client RTDB SDK write warning:", sdkErr);
+  }
+
+  return { success: apiSuccess, uid };
+}
+
+/**
  * Registers a new Store Owner via Firebase Auth, creates their User record,
  * creates their Store document, and seeds initial store structure.
  */
@@ -68,6 +255,7 @@ export async function setupStoreOwnerAccount(
   data: OnboardingData
 ): Promise<{ user: User; store: Store }> {
   let uid = "";
+  let idToken = "";
   let userEmail = data.email.trim();
   const password = data.password || "MatagerStore2026!";
 
@@ -77,24 +265,36 @@ export async function setupStoreOwnerAccount(
       try {
         const userCred = await createUserWithEmailAndPassword(auth, userEmail, password);
         uid = userCred.user.uid;
-        await updateProfile(userCred.user, { displayName: data.storeName });
+        idToken = await userCred.user.getIdToken(true).catch(() => "");
+        await updateProfile(userCred.user, { displayName: data.storeName }).catch(() => null);
       } catch (authErr: any) {
         if (authErr?.code === "auth/email-already-in-use") {
           try {
             const userCred = await signInWithEmailAndPassword(auth, userEmail, password);
             uid = userCred.user.uid;
+            idToken = await userCred.user.getIdToken(true).catch(() => "");
           } catch {
             uid = `owner_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
           }
         } else {
           // If auth domain or network restriction, generate client UID
           const anon = await signInAnonymously(auth).catch(() => null);
-          uid = anon ? anon.user.uid : `owner_${Date.now()}`;
+          if (anon) {
+            uid = anon.user.uid;
+            idToken = await anon.user.getIdToken(true).catch(() => "");
+          } else {
+            uid = `owner_${Date.now()}`;
+          }
         }
       }
     } else {
       const anon = await signInAnonymously(auth).catch(() => null);
-      uid = anon ? anon.user.uid : `owner_${Date.now()}`;
+      if (anon) {
+        uid = anon.user.uid;
+        idToken = await anon.user.getIdToken(true).catch(() => "");
+      } else {
+        uid = `owner_${Date.now()}`;
+      }
       userEmail = `${uid}@stores.matager.com`;
     }
   } catch (err) {
@@ -109,7 +309,9 @@ export async function setupStoreOwnerAccount(
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "") || "store";
 
-  // 2. Create User record in Firestore
+  const activeCurrency = data.currency || (data.country === "Saudi Arabia" ? "SAR" : data.country === "United Arab Emirates" ? "AED" : "EGP");
+
+  // 2. Create User record
   const userRecord: User = {
     id: uid,
     name: data.storeName,
@@ -120,7 +322,7 @@ export async function setupStoreOwnerAccount(
     created_at: nowIso,
   };
 
-  // 3. Create Store record in Firestore
+  // 3. Create Store record
   const storeRecord: Store = {
     id: storeId,
     owner_id: uid,
@@ -132,6 +334,8 @@ export async function setupStoreOwnerAccount(
     orders_30d: 142,
     category: data.category,
     sales_channel: data.salesChannel,
+    expected_volume: data.expectedVolume || "50 - 100 products",
+    tier_price: data.tierPrice || 570,
     plan: data.selectedPlan,
     location: {
       country: data.country,
@@ -145,151 +349,53 @@ export async function setupStoreOwnerAccount(
     created_at: nowIso,
   };
 
-  // 4. Save to Firestore
-  try {
-    await setDoc(doc(db, "User", uid), {
-      ...userRecord,
-      timestamp: serverTimestamp(),
-    });
-
-    await setDoc(doc(db, "Store", storeId), {
-      ...storeRecord,
-      timestamp: serverTimestamp(),
-    });
-
-    // Seed default branch
-    const branchId = `branch_${storeId}_1`;
-    const defaultBranch: Branch = {
-      id: branchId,
-      store_id: storeId,
-      name: `${data.storeName} — Flagship Branch`,
-      address: `${data.address}, ${data.city}`,
-      phone: data.phone,
-      status: "Active",
-      created_at: nowIso,
-    };
-    await setDoc(doc(db, "Branch", branchId), defaultBranch);
-
-    // Seed default POS terminal
-    const terminalId = `term_${storeId}_1`;
-    const defaultTerminal: PosTerminal = {
-      id: terminalId,
-      store_id: storeId,
-      branch_id: branchId,
-      name: "Register 1 (Main Cashier)",
-      device_serial: `POS-${Math.floor(1000 + Math.random() * 9000)}`,
-      status: "Active",
-      created_at: nowIso,
-    };
-    await setDoc(doc(db, "PosTerminal", terminalId), defaultTerminal);
-
-    // Seed initial category
-    const catId = `cat_${storeId}_1`;
-    const defaultCategory: Category = {
-      id: catId,
-      store_id: storeId,
-      name: data.category || "General Merchandise",
-      slug: slug,
-      path: `/${slug}`,
-      level: 1,
-      is_active: true,
-      created_at: nowIso,
-    };
-    await setDoc(doc(db, "Category", catId), defaultCategory);
-
-    // Seed initial product (SPU)
-    const prodId = `prod_${storeId}_1`;
-    const defaultProduct: Product = {
-      id: prodId,
-      store_id: storeId,
-      category_id: catId,
-      product_type: data.category || "Apparel",
-      name: `${data.storeName} Signature Item`,
-      slug: `${slug}-signature-item`,
-      description: "Handcrafted premium product created for unified commerce.",
-      brand: data.storeName,
-      base_price: 1250,
-      site_price: 1250,
-      tax_rate: 14,
-      currency: "EGP",
-      attributes: { origin: data.country, material: "Standard" },
-      has_variants: true,
-      is_active: true,
-      created_at: nowIso,
-      updated_at: nowIso,
-    };
-    await setDoc(doc(db, "Product", prodId), defaultProduct);
-
-    // Seed Product Option (Size)
-    const optId = `opt_${storeId}_1`;
-    const defaultOption: ProductOption = {
-      id: optId,
-      product_id: prodId,
-      store_id: storeId,
-      name: "Size",
-      code: "size",
-      position: 1,
-      created_at: nowIso,
-    };
-    await setDoc(doc(db, "ProductOption", optId), defaultOption);
-
-    // Seed Product Option Values (M, L)
-    const valMId = `val_${storeId}_m`;
-    await setDoc(doc(db, "ProductOptionValue", valMId), {
-      id: valMId,
-      option_id: optId,
-      product_id: prodId,
-      store_id: storeId,
-      value: "M",
-      code: "m",
-      position: 1,
-      created_at: nowIso,
-    } as ProductOptionValue);
-
-    // Seed Product Variant
-    const variantId = `var_${storeId}_1`;
-    const defaultVariant: ProductVariant = {
-      id: variantId,
-      product_id: prodId,
-      store_id: storeId,
-      sku: `${slug.toUpperCase()}-SIG-M`,
-      variant_name: "Medium (M)",
-      price: 1250,
-      stock_total: 45,
-      is_default: true,
-      is_active: true,
-      created_at: nowIso,
-      updated_at: nowIso,
-    };
-    await setDoc(doc(db, "ProductVariant", variantId), defaultVariant);
-
-    // Seed Variant Stock at Branch
-    const stockId = `stock_${variantId}_${branchId}`;
-    await setDoc(doc(db, "ProductVariantStock", stockId), {
-      id: stockId,
-      store_id: storeId,
-      variant_id: variantId,
-      branch_id: branchId,
-      quantity: 45,
-      reserved: 0,
-      low_stock_threshold: 5,
-      updated_at: nowIso,
-    } as ProductVariantStock);
-
-    // Seed Subscription
-    const subId = `sub_${storeId}`;
-    await setDoc(doc(db, "Subscription", subId), {
-      id: subId,
-      store_id: storeId,
+  // 4. Prepare Store Owner store-config payload
+  const storeConfigPayload = {
+    store_id: storeId,
+    uid: uid,
+    store_name: data.storeName,
+    legal_name: data.legalName,
+    owner_name: data.storeName,
+    email: userEmail,
+    phone: data.phone,
+    role: "store_owner",
+    sales_channel: data.salesChannel,
+    category: data.category,
+    expected_volume: data.expectedVolume || "50 - 100 products",
+    tier_price: data.tierPrice || 570,
+    currency: activeCurrency,
+    country: data.country || "Egypt",
+    city: data.city,
+    address: data.address,
+    status: "Active",
+    kyc_status: "Approved",
+    subdomain: `${slug}.matager.com`,
+    created_at: nowIso,
+    subscription: {
       plan_id: data.selectedPlan,
+      volume_tier: data.expectedVolume || "50 - 100 products",
+      price: data.tierPrice || 570,
+      currency: activeCurrency,
       status: "Active",
-      mrr: data.selectedPlan === "starter" ? 499 : data.selectedPlan === "pro" ? 1299 : 2999,
-      current_period_start: nowIso,
-      current_period_end: new Date(Date.now() + 30 * 86400000).toISOString(),
-      created_at: nowIso,
-    } as Subscription);
-  } catch (dbErr) {
-    console.warn("Firestore seeding fallback to localStorage:", dbErr);
+      start_date: nowIso,
+      end_date: new Date(Date.now() + 30 * 86400000).toISOString(),
+    },
+  };
+
+  // 5. PRIMARY PUSH: Push Store Owner structure exclusively under /{uid} in Realtime Database
+  // Creates /{uid}/branches, /{uid}/orders, /{uid}/payments, /{uid}/products, /{uid}/storeconfig
+  await pushStoreRecordToRTDB({
+    uid,
+    token: idToken,
+    storeConfig: storeConfigPayload,
+  });
+
+  // 6. Cloud Firestore optional synchronization in isolated block (non-blocking)
+  try {
+    await setDoc(doc(db, "User", uid), { ...userRecord, timestamp: serverTimestamp() });
+    await setDoc(doc(db, "Store", storeId), { ...storeRecord, timestamp: serverTimestamp() });
+  } catch (fsErr) {
+    console.warn("Firestore sync skipped:", fsErr);
   }
 
   // Save session state to localStorage
@@ -297,7 +403,28 @@ export async function setupStoreOwnerAccount(
     localStorage.setItem("matager_active_store_id", storeId);
     localStorage.setItem("matager_active_store_name", data.storeName);
     localStorage.setItem("matager_active_user_id", uid);
+    localStorage.setItem("matager_current_store_id", storeId);
+    localStorage.setItem("matager_user_role", "merchant");
     localStorage.setItem("matager_store_data", JSON.stringify(storeRecord));
+
+    try {
+      const existing = JSON.parse(localStorage.getItem("matager_platform_stores") || "[]");
+      existing.unshift({
+        id: storeId,
+        name: data.storeName,
+        subdomain: `${slug}.matager.com`,
+        status: "Active",
+        country: data.country,
+        city: data.city,
+        ownerName: data.storeName,
+        ownerEmail: data.email,
+        category: data.category,
+        expected_volume: data.expectedVolume || "50 - 100 products",
+        tier_price: data.tierPrice || 570,
+        plan: data.selectedPlan,
+      });
+      localStorage.setItem("matager_platform_stores", JSON.stringify(existing));
+    } catch (_) {}
   }
 
   return { user: userRecord, store: storeRecord };
@@ -389,6 +516,33 @@ export async function createFastCartOrder(params: {
       orders_30d: increment(1),
       gmv_30d: increment(params.totalAmount),
     }).catch(() => null);
+
+    // Sync to Realtime Database nodes
+    try {
+      await rtdbSet(rtdbRef(rtdb, `orders/${storeId}/${orderId}`), transaction);
+      for (let idx = 0; idx < params.items.length; idx++) {
+        const it = params.items[idx];
+        const itemId = `${orderId}_item_${idx + 1}`;
+        await rtdbSet(rtdbRef(rtdb, `order_items/${storeId}/${orderId}/${itemId}`), {
+          id: itemId,
+          transaction_id: orderId,
+          store_id: storeId,
+          product_id: it.productId,
+          variant_id: it.variantId || "default",
+          name_snapshot: it.title,
+          sku_snapshot: `SKU-${it.productId}`,
+          quantity: it.quantity,
+          unit_price: it.price,
+          total: it.price * it.quantity,
+          created_at: nowIso,
+        });
+      }
+      await rtdbUpdate(rtdbRef(rtdb, `stores/${storeId}`), {
+        last_order_at: nowIso,
+      }).catch(() => null);
+    } catch (rtdbErr) {
+      console.warn("RTDB order write fallback:", rtdbErr);
+    }
   } catch (err) {
     console.warn("Firestore order write error (persisting locally):", err);
   }
@@ -432,11 +586,38 @@ export function subscribeToOrders(
         callback(orders);
       },
       (err) => {
-        console.warn("Firestore onSnapshot error, falling back to local orders:", err);
-        // Fallback to local storage
-        if (typeof window !== "undefined") {
-          const local = JSON.parse(localStorage.getItem("matager_local_orders") || "[]");
-          callback(local);
+        console.warn("Firestore onSnapshot error, falling back to RTDB orders:", err);
+        // Fallback to Realtime Database
+        try {
+          const rtdbOrdersRef = rtdbRef(rtdb, `orders/${storeId}`);
+          rtdbOnValue(
+            rtdbOrdersRef,
+            (snap) => {
+              if (snap.exists()) {
+                const data = snap.val();
+                const list: Transaction[] = Object.values(data);
+                list.sort(
+                  (a, b) =>
+                    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                );
+                callback(list);
+              } else if (typeof window !== "undefined") {
+                const local = JSON.parse(localStorage.getItem("matager_local_orders") || "[]");
+                callback(local);
+              }
+            },
+            () => {
+              if (typeof window !== "undefined") {
+                const local = JSON.parse(localStorage.getItem("matager_local_orders") || "[]");
+                callback(local);
+              }
+            }
+          );
+        } catch {
+          if (typeof window !== "undefined") {
+            const local = JSON.parse(localStorage.getItem("matager_local_orders") || "[]");
+            callback(local);
+          }
         }
       }
     );
@@ -547,6 +728,22 @@ export async function createPosTransaction(params: PosOrderParams): Promise<Tran
       orders_30d: increment(1),
       gmv_30d: increment(params.totalAmount),
     }).catch(() => null);
+
+    // Sync to Realtime Database nodes
+    try {
+      await rtdbSet(rtdbRef(rtdb, `orders/${storeId}/${orderId}`), transaction);
+      await rtdbSet(rtdbRef(rtdb, `pos_ledger/${storeId}/${orderId}`), {
+        ...transaction,
+        terminal_id: params.terminalId,
+        terminal_name: params.terminalName || "Terminal 01",
+        cashier_name: params.cashierName,
+      });
+      await rtdbUpdate(rtdbRef(rtdb, `stores/${storeId}`), {
+        last_pos_sale_at: nowIso,
+      }).catch(() => null);
+    } catch (rtdbErr) {
+      console.warn("RTDB POS order write fallback:", rtdbErr);
+    }
   } catch (err) {
     console.warn("Firestore POS order write error (persisting locally):", err);
   }
@@ -868,6 +1065,8 @@ export function updatePlatformStoreStatus(
 
   // Update in Firestore asynchronously
   updateDoc(doc(db, "Store", storeId), { status: newStatus }).catch(() => null);
+  // Update in Realtime Database asynchronously
+  rtdbUpdate(rtdbRef(rtdb, `stores/${storeId}`), { status: newStatus }).catch(() => null);
 
   return updated;
 }
@@ -888,6 +1087,9 @@ export function deletePlatformStore(storeId: string): PlatformStoreTenant[] {
 
   // Remove from Firestore asynchronously
   deleteDoc(doc(db, "Store", storeId)).catch(() => null);
+  // Remove from Realtime Database asynchronously
+  rtdbRemove(rtdbRef(rtdb, `stores/${storeId}`)).catch(() => null);
+  rtdbRemove(rtdbRef(rtdb, `orders/${storeId}`)).catch(() => null);
 
   return updated;
 }
@@ -947,6 +1149,9 @@ export function provisionNewStoreFromAdmin(data: {
     orders_30d: 0,
     created_at: newStore.created_at,
   }).catch(() => null);
+
+  // Also write to Realtime Database
+  rtdbSet(rtdbRef(rtdb, `stores/${newStoreId}`), newStore).catch(() => null);
 
   return newStore;
 }

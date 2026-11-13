@@ -157,7 +157,7 @@ export function ProductDetailSheet({
                   <span className="text-xs font-bold text-white/90 truncate max-w-[200px]">
                     {product.storeName}
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/70 text-[10px] font-mono">
+                  <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/70 text-[10px]">
                     {product.category}
                   </span>
                 </div>
@@ -183,7 +183,7 @@ export function ProductDetailSheet({
               </div>
 
               {/* Scrollable Sheet Content */}
-              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5 scrollbar-none">
+              <div data-lenis-prevent className="flex-1 overflow-y-auto px-5 py-4 space-y-5 scrollbar-none">
                 {/* ═══════════ 1. SWIPEABLE IMAGE GALLERY ═══════════ */}
                 <div className="relative aspect-[4/3] sm:aspect-[16/10] w-full rounded-2xl overflow-hidden bg-black/60 border border-white/10 group">
                   <img
@@ -204,7 +204,7 @@ export function ProductDetailSheet({
                   ) : null}
 
                   {/* Pagination Badge (e.g., 1/2) */}
-                  <div className="absolute top-3 right-3 rtl:right-auto rtl:left-3 px-2.5 py-1 rounded-full bg-black/65 backdrop-blur-md text-white text-[11px] font-mono font-bold border border-white/15">
+                  <div className="absolute top-3 right-3 rtl:right-auto rtl:left-3 px-2.5 py-1 rounded-full bg-black/65 backdrop-blur-md text-white text-[11px] font-bold border border-white/15">
                     {activeImageIndex + 1}/{gallery.length}
                   </div>
 
@@ -266,10 +266,10 @@ export function ProductDetailSheet({
                 {/* ═══════════ 2. PRODUCT INFO & PRICING ═══════════ */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-bold text-blue-400 uppercase tracking-wider">
+                    <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">
                       {product.brand ? `${product.brand} · ${product.category}` : `${product.storeName} · ${product.category}`}
                     </span>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold font-mono">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                       <span>IN STOCK ({product.stock})</span>
                     </span>
@@ -282,7 +282,7 @@ export function ProductDetailSheet({
                   {/* Price Row */}
                   <div className="flex items-baseline gap-3 pt-1">
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-2xl font-black font-mono text-white">
+                      <span className="text-2xl font-black text-white">
                         {product.price.toLocaleString()}
                       </span>
                       <span className="text-xs font-bold text-white/60">
@@ -291,13 +291,13 @@ export function ProductDetailSheet({
                     </div>
 
                     {product.originalPrice && product.originalPrice > product.price && (
-                      <span className="text-sm font-mono text-white/40 line-through">
+                      <span className="text-sm text-white/40 line-through">
                         {product.originalPrice.toLocaleString()} {product.currency || currency}
                       </span>
                     )}
 
                     {product.discountPercent && (
-                      <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 text-xs font-bold font-mono">
+                      <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 text-xs font-bold">
                         -{product.discountPercent}% OFF
                       </span>
                     )}
@@ -315,9 +315,9 @@ export function ProductDetailSheet({
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-bold text-white/90">
                       {isAr ? "اختر اللون" : "Choose Color"}{" "}
-                      <span className="text-blue-400 font-mono">(+{colors.length})</span>
+                      <span className="text-blue-400">(+{colors.length})</span>
                     </span>
-                    <span className="text-white/60 text-[11px] font-medium font-mono">
+                    <span className="text-white/60 text-[11px] font-medium">
                       {selectedColor}
                     </span>
                   </div>
@@ -353,7 +353,7 @@ export function ProductDetailSheet({
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-bold text-white/90">
                       {isAr ? "اختر المقاس" : "Choose Size"}{" "}
-                      <span className="text-blue-400 font-mono">(+{sizes.length})</span>
+                      <span className="text-blue-400">(+{sizes.length})</span>
                     </span>
                     <button
                       type="button"
@@ -519,7 +519,7 @@ export function ProductDetailSheet({
 
               <div className="overflow-x-auto rounded-xl border border-white/10">
                 <table className="w-full text-left rtl:text-right text-xs">
-                  <thead className="bg-white/5 border-b border-white/10 text-white/50 font-mono uppercase text-[10px]">
+                  <thead className="bg-white/5 border-b border-white/10 text-white/50 uppercase text-[10px]">
                     <tr>
                       <th className="p-2.5 font-bold">Size</th>
                       <th className="p-2.5">Chest (cm)</th>
@@ -527,7 +527,7 @@ export function ProductDetailSheet({
                       <th className="p-2.5">Shoulder (cm)</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5 font-mono">
+                  <tbody className="divide-y divide-white/5">
                     <tr className="hover:bg-white/[0.02]">
                       <td className="p-2.5 font-bold text-blue-400">XS</td>
                       <td className="p-2.5">94</td>
@@ -587,13 +587,13 @@ export function ProductDetailSheet({
             {/* Quick Look Top Navigation Bar */}
             <div className="w-full max-w-5xl mx-auto flex items-center justify-between z-10">
               <div className="flex items-center gap-3">
-                <div className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-bold flex items-center gap-1.5">
+                <div className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                   <span>IN STOCK</span>
                 </div>
                 <div className="hidden sm:block">
                   <h4 className="text-sm font-bold truncate max-w-xs">{product.title}</h4>
-                  <p className="text-[10px] text-white/50 font-mono">
+                  <p className="text-[10px] text-white/50">
                     {product.brand || product.storeName} · {product.category}
                   </p>
                 </div>
@@ -672,7 +672,7 @@ export function ProductDetailSheet({
             <div className="w-full max-w-2xl mx-auto rounded-2xl bg-white/10 backdrop-blur-xl border border-white/15 p-3 flex items-center justify-between gap-4 z-10">
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm font-bold truncate">{product.title}</p>
-                <p className="text-xs font-mono font-bold text-blue-400">
+                <p className="text-xs font-bold text-blue-400">
                   {product.currency || currency} {product.price.toLocaleString()}
                 </p>
               </div>

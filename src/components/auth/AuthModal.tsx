@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useLanguage } from "@/i18n";
+import { useSmoothScroll } from "@/components/layout/SmoothScrollProvider";
 import { MatagerLogo } from "@/components/brand/MatagerLogo";
 import {
   X,
@@ -29,14 +30,85 @@ import {
   ChevronRight,
   ExternalLink,
   User,
+  Plus,
+  Minus,
 } from "lucide-react";
 import { APP_ROUTES } from "@/config/routes";
 import { setupStoreOwnerAccount } from "@/lib/firestore-service";
+import { auth } from "@/lib/firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { useDashboardLanguage } from "@/lib/i18n";
+import { StatusPill } from "@/components/ui/StatusPill";
+import { STORE_CATEGORIES, StoreCategory, CATEGORY_LABELS } from "@/lib/categories";
+import { WholesalerSignupWizard } from "@/components/auth/WholesalerSignupWizard";
+import type { InitialPlanOptions } from "@/components/landing/PricingCalculator";
+import {
+  ARAB_COUNTRIES,
+  type ArabCountry,
+  type ArabCity,
+  getCitiesForCountry,
+  getCityCoordinates,
+  generateGoogleMapsUrl,
+} from "@/lib/arab-countries";
+
+export { ARAB_COUNTRIES, type ArabCountry, type ArabCity };
+
+export interface VolumePricingOption {
+  id: string;
+  range: string;
+  rangeAr: string;
+  price: number;
+  dealBadge?: string;
+  dealBadgeAr?: string;
+  mappedPlan: "starter" | "pro" | "enterprise";
+}
+
+export const VOLUME_PRICING_OPTIONS: VolumePricingOption[] = [
+  {
+    id: "tier_1",
+    range: "5 - 20 products",
+    rangeAr: "5 - 20 منتج",
+    price: 170,
+    mappedPlan: "starter",
+  },
+  {
+    id: "tier_2",
+    range: "20 - 50 products",
+    rangeAr: "20 - 50 منتج",
+    price: 270,
+    mappedPlan: "starter",
+  },
+  {
+    id: "tier_3",
+    range: "50 - 100 products",
+    rangeAr: "50 - 100 منتج",
+    price: 570,
+    mappedPlan: "pro",
+  },
+  {
+    id: "tier_4",
+    range: "100 - 300 products",
+    rangeAr: "100 - 300 منتج",
+    price: 970,
+    mappedPlan: "pro",
+  },
+  {
+    id: "tier_5",
+    range: "300 - 550 products",
+    rangeAr: "300 - 550 منتج (أقصى سعة)",
+    price: 1500,
+    dealBadge: "Best Deal: Includes 2 Free POS Terminals",
+    dealBadgeAr: "أفضل صفقة: تتضمن نقطتي بيع (2 POS) مجاناً",
+    mappedPlan: "enterprise",
+  },
+];
 
 interface AuthModalProps {
   isOpen: boolean;
   initialMode?: "signin" | "signup";
-  initialRole?: "owner" | "employee";
+  initialRole?: "owner" | "employee" | "wholesaler";
+  initialPlanOptions?: InitialPlanOptions;
+  onOpenEnterpriseContact?: () => void;
   onClose: () => void;
 }
 
@@ -44,45 +116,257 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   initialMode = "signup",
   initialRole = "owner",
+  initialPlanOptions,
+  onOpenEnterpriseContact,
   onClose,
 }) => {
   const { dir, locale } = useLanguage();
+  const { t } = useDashboardLanguage();
   const isAr = locale === "ar";
   const prefersReducedMotion = useReducedMotion();
 
-  // Active flow: "signup" (7 steps, Store Owner only) or "signin" (4 steps)
+  // Screen 0: Role Chooser is bypassed for landing page per requirements (landing is strictly for Store Owners, Wholesaler CTA is for Wholesalers)
+  const [screen, setScreen] = useState<"role_chooser" | "auth">("auth");
+  const [selectedRole, setSelectedRole] = useState<"merchant" | "wholesaler">(
+    initialRole === "wholesaler" ? "wholesaler" : "merchant"
+  );
+  const [roleError, setRoleError] = useState<string | null>(null);
+
+  // Active flow: "signup" (6 steps, Store Owner only) or "signin" (4 steps)
   const [mode, setMode] = useState<"signin" | "signup">(initialMode);
+
+  // Smooth scroll controller & body lock
+  const { stop: stopScroll, start: startScroll } = useSmoothScroll();
 
   // Focus management
   const modalRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedElement = useRef<HTMLElement | null>(null);
 
-  // ─── SIGN UP STATE (7 Steps) ───
-  const [signupStep, setSignupStep] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7>(1);
+  // ─── SIGN UP STATE (6 Steps - Starts with Volume & Pricing) ───
+  const [signupStep, setSignupStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
 
-  // Step 1: Sales channels
+  // Pricing configuration inside modal
+  const [modalPricingMode, setModalPricingMode] = useState<"catalog" | "pos_only">("catalog");
+  const [modalPosCount, setModalPosCount] = useState<number>(0);
+  const [modalBilling, setModalBilling] = useState<"monthly" | "yearly">("monthly");
+
+  // Step 1: Expected Volume & Pricing
+  const [selectedVolumeTier, setSelectedVolumeTier] = useState<string>("tier_3");
+  const [expectedVolume, setExpectedVolume] = useState<string>("50 - 100 products");
+  const [tierPrice, setTierPrice] = useState<number>(570);
   const [salesChannel, setSalesChannel] = useState<"hybrid" | "online" | "pos">("hybrid");
+
+  // Synchronize pre-checked plan from landing pricing calculator
+  useEffect(() => {
+    if (initialPlanOptions && isOpen) {
+      if (initialPlanOptions.mode === "pos_only") {
+        setModalPricingMode("pos_only");
+        setSalesChannel("pos");
+        const count = initialPlanOptions.posCount || 1;
+        setModalPosCount(count);
+        const billingCycle = initialPlanOptions.billing || "monthly";
+        setModalBilling(billingCycle);
+        const price = billingCycle === "yearly" ? Math.round(count * 200 * 0.9) : count * 200;
+        setTierPrice(price);
+        setExpectedVolume(`${count} POS Cashier Terminals`);
+        setSelectedPlan("starter");
+      } else {
+        setModalPricingMode("catalog");
+        const planId = initialPlanOptions.planId || "tier_3";
+        setSelectedVolumeTier(planId);
+        const found =
+          VOLUME_PRICING_OPTIONS.find((p) => p.id === planId) || VOLUME_PRICING_OPTIONS[2];
+        setExpectedVolume(found.range);
+        const billingCycle = initialPlanOptions.billing || "monthly";
+        setModalBilling(billingCycle);
+        const price =
+          billingCycle === "yearly" ? Math.round(found.price * 0.9) : found.price;
+        setTierPrice(price);
+        setSelectedPlan(found.mappedPlan);
+        const pos = initialPlanOptions.posCount || 0;
+        setModalPosCount(pos);
+        setSalesChannel(pos > 0 || planId === "tier_5" ? "hybrid" : "online");
+      }
+    }
+  }, [initialPlanOptions, isOpen]);
+
+  const handleModalPricingModeChange = (newMode: "catalog" | "pos_only") => {
+    setModalPricingMode(newMode);
+    if (newMode === "pos_only") {
+      setSalesChannel("pos");
+      const count = modalPosCount > 0 ? modalPosCount : 1;
+      setModalPosCount(count);
+      const isYearly = modalBilling === "yearly";
+      const price = isYearly ? Math.round(count * 200 * 0.9) : count * 200;
+      setTierPrice(price);
+      setExpectedVolume(`${count} POS Cashier Terminals`);
+      setSelectedPlan("starter");
+    } else {
+      const found =
+        VOLUME_PRICING_OPTIONS.find((p) => p.id === selectedVolumeTier) || VOLUME_PRICING_OPTIONS[2];
+      const isYearly = modalBilling === "yearly";
+      const price = isYearly ? Math.round(found.price * 0.9) : found.price;
+      setTierPrice(price);
+      setExpectedVolume(found.range);
+      setSelectedPlan(found.mappedPlan);
+      setSalesChannel(modalPosCount > 0 || found.id === "tier_5" ? "hybrid" : "online");
+    }
+  };
+
+  const handleModalBillingChange = (billing: "monthly" | "yearly") => {
+    setModalBilling(billing);
+    const isYearly = billing === "yearly";
+    if (modalPricingMode === "pos_only") {
+      const price = isYearly ? Math.round(modalPosCount * 200 * 0.9) : modalPosCount * 200;
+      setTierPrice(price);
+    } else {
+      const found =
+        VOLUME_PRICING_OPTIONS.find((p) => p.id === selectedVolumeTier) || VOLUME_PRICING_OPTIONS[2];
+      const price = isYearly ? Math.round(found.price * 0.9) : found.price;
+      setTierPrice(price);
+    }
+  };
+
+  const handleModalPosCountChange = (delta: number) => {
+    const next = Math.max(1, Math.min(20, modalPosCount + delta));
+    setModalPosCount(next);
+    const isYearly = modalBilling === "yearly";
+    const price = isYearly ? Math.round(next * 200 * 0.9) : next * 200;
+    setTierPrice(price);
+    setExpectedVolume(`${next} POS Cashier Terminals`);
+  };
+
+  const handleModalTierSelect = (tier: (typeof VOLUME_PRICING_OPTIONS)[number]) => {
+    setSelectedVolumeTier(tier.id);
+    setExpectedVolume(tier.range);
+    const isYearly = modalBilling === "yearly";
+    const price = isYearly ? Math.round(tier.price * 0.9) : tier.price;
+    setTierPrice(price);
+    setSelectedPlan(tier.mappedPlan);
+  };
 
   // Step 2: Business details
   const [storeName, setStoreName] = useState("");
   const [legalName, setLegalName] = useState("");
 
-  // Step 3: Category
-  const [category, setCategory] = useState<string>("Retail & Fashion");
+  // Step 4: Category
+  const [category, setCategory] = useState<StoreCategory>("clothing");
 
-  // Step 4: Location
-  const [country, setCountry] = useState(isAr ? "Saudi Arabia" : "United States");
-  const [city, setCity] = useState("");
+  // Step 5: Location & Currency (22 Arab Countries Only, default Egypt + EGP + Cairo)
+  const [country, setCountry] = useState("Egypt");
+  const [currency, setCurrency] = useState("EGP");
+  const [city, setCity] = useState("Cairo");
   const [address, setAddress] = useState("");
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationUrl, setLocationUrl] = useState<string | null>(null);
+  const [locationStatus, setLocationStatus] = useState<string | null>(null);
 
-  // Step 5: Contact
+  const availableCities = useMemo(() => getCitiesForCountry(country), [country]);
+
+  const handleCountryChange = (cName: string) => {
+    setCountry(cName);
+    const found = ARAB_COUNTRIES.find((c) => c.name === cName || c.nameAr === cName);
+    if (found) {
+      setCurrency(found.currency);
+    }
+    const newCities = getCitiesForCountry(cName);
+    setCity(newCities.length > 0 ? newCities[0].name_en : "");
+    setLocationUrl(null);
+    setLocationStatus(null);
+  };
+
+  const handleLocateOnMap = () => {
+    setIsLocating(true);
+    setLocationStatus(null);
+
+    if (typeof window !== "undefined" && "geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = Number(pos.coords.latitude.toFixed(6));
+          const lng = Number(pos.coords.longitude.toFixed(6));
+          const gMapUrl = generateGoogleMapsUrl(lat, lng);
+          setLocationUrl(gMapUrl);
+          setIsLocating(false);
+          setLocationStatus(
+            isAr
+              ? `✓ تم تحديد إحداثيات موقعك بنجاح (${lat}, ${lng})`
+              : `✓ Location detected (${lat}, ${lng})`
+          );
+
+          setAddress((prev) => {
+            const clean = prev.trim();
+            if (!clean) {
+              return `${city || country} - ${gMapUrl}`;
+            }
+            if (clean.includes("google.com/maps")) {
+              return clean;
+            }
+            return `${clean} - ${gMapUrl}`;
+          });
+        },
+        (err) => {
+          // Fallback to coordinates of the selected city from dataset
+          const cityCoords = getCityCoordinates(country, city);
+          if (cityCoords) {
+            const gMapUrl = generateGoogleMapsUrl(cityCoords.lat, cityCoords.lng);
+            setLocationUrl(gMapUrl);
+            setLocationStatus(
+              isAr
+                ? `تم اعتماد إحداثيات مركز ${city || country} على خرائط جوجل`
+                : `Using coordinates for ${city || country}`
+            );
+            setAddress((prev) => {
+              const clean = prev.trim();
+              if (!clean) {
+                return `${city || country} - ${gMapUrl}`;
+              }
+              if (clean.includes("google.com/maps")) return clean;
+              return `${clean} - ${gMapUrl}`;
+            });
+          } else {
+            setLocationStatus(
+              isAr
+                ? "تعذر تحديد الإحداثيات آلياً. يرجى إدخال العنوان يدوياً."
+                : "Unable to detect GPS. Please enter your address."
+            );
+          }
+          setIsLocating(false);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 8000,
+          maximumAge: 60000,
+        }
+      );
+    } else {
+      const cityCoords = getCityCoordinates(country, city);
+      if (cityCoords) {
+        const gMapUrl = generateGoogleMapsUrl(cityCoords.lat, cityCoords.lng);
+        setLocationUrl(gMapUrl);
+        setLocationStatus(
+          isAr
+            ? `تم اعتماد إحداثيات مركز ${city || country} على خرائط جوجل`
+            : `Using coordinates for ${city || country}`
+        );
+      }
+      setIsLocating(false);
+    }
+  };
+
+  const activeCountryObj =
+    ARAB_COUNTRIES.find((c) => c.name === country || c.nameAr === country) || ARAB_COUNTRIES[0];
+  const activeCurrencySymbol = isAr ? activeCountryObj.currencyAr : activeCountryObj.currency;
+
+  // Step 6: Contact & Credentials
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [contactCode, setContactCode] = useState("");
   const [isContactVerified, setIsContactVerified] = useState(false);
   const [contactVerifySent, setContactVerifySent] = useState(false);
 
-  // Step 6: Plan
+  // Mapped plan tier for database schema compatibility
   const [selectedPlan, setSelectedPlan] = useState<"starter" | "pro" | "enterprise">("pro");
 
   // Step 7: Launching state
@@ -100,16 +384,36 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [selectedStore, setSelectedStore] = useState<string>("Apex Luxury Store");
-  const [signinRole, setSigninRole] = useState<"owner" | "employee">(initialRole);
+  const [signinRole, setSigninRole] = useState<"owner" | "employee">(
+    initialRole === "employee" ? "employee" : "owner"
+  );
   const [rememberDevice, setRememberDevice] = useState(true);
 
   const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Sync initialMode on prop change
+  // Sync initialMode & initialRole on prop change
   useEffect(() => {
     setMode(initialMode);
+    setSelectedRole(initialRole === "wholesaler" ? "wholesaler" : "merchant");
+    setScreen("auth");
     resetAllFlows();
-  }, [initialMode]);
+  }, [initialMode, initialRole]);
+
+  // Lock body & smooth scroll while modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      stopScroll?.();
+      const originalBodyOverflow = document.body.style.overflow;
+      const originalHtmlOverflow = document.documentElement.style.overflow;
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      return () => {
+        startScroll?.();
+        document.body.style.overflow = originalBodyOverflow;
+        document.documentElement.style.overflow = originalHtmlOverflow;
+      };
+    }
+  }, [isOpen, stopScroll, startScroll]);
 
   // Capture trigger focus and handle Escape
   useEffect(() => {
@@ -164,8 +468,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setResendCountdown(30);
     setPassword("");
     setShowPassword(false);
+    setSignupPassword("");
+    setShowSignupPassword(false);
     setResetSent(false);
     setIsLaunching(false);
+    setCountry("Egypt");
+    setCurrency("EGP");
+    setCity("Cairo");
+    setAddress("");
+    setIsLocating(false);
+    setLocationUrl(null);
+    setLocationStatus(null);
+    if (!initialPlanOptions) {
+      setModalPricingMode("catalog");
+      setSelectedVolumeTier("tier_3");
+      setExpectedVolume("50 - 100 products");
+      setTierPrice(570);
+      setModalPosCount(0);
+      setSalesChannel("hybrid");
+    }
   };
 
   const switchMode = (newMode: "signin" | "signup") => {
@@ -173,22 +494,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     resetAllFlows();
   };
 
-  // ─── STEP VALIDATION LOGIC ───
+  // ─── STEP VALIDATION LOGIC (6 Steps) ───
   const isSignupStepValid = () => {
     switch (signupStep) {
       case 1:
-        return !!salesChannel;
+        // Volume & Pricing step
+        return modalPricingMode === "pos_only"
+          ? modalPosCount >= 1
+          : !!expectedVolume && tierPrice > 0;
       case 2:
+        // Business details
         return storeName.trim().length > 0 && legalName.trim().length > 0;
       case 3:
+        // Category
         return category.trim().length > 0;
       case 4:
+        // Location & Currency
         return country.trim().length > 0 && city.trim().length > 0 && address.trim().length > 0;
       case 5:
+        // Contact & Credentials
         return email.includes("@") && phone.trim().length >= 7;
       case 6:
-        return !!selectedPlan;
-      case 7:
+        // Review & Launch
         return true;
       default:
         return false;
@@ -197,32 +524,70 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleSignupNext = () => {
     if (!isSignupStepValid()) return;
-    if (signupStep < 7) {
+    if (signupStep < 6) {
       setSignupStep((s) => (s + 1) as any);
     } else {
-      // Step 7: Launch & Setup in Firebase Cloud
+      // Step 6: Launch & Setup in Firebase Cloud
       setIsLaunching(true);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("matager_user_role", "merchant");
+      }
+
+      const finalAddress =
+        locationUrl && !address.includes("google.com/maps")
+          ? `${address.trim()} (${locationUrl})`
+          : address.trim();
+
+      const finalSalesChannel: "hybrid" | "online" | "pos" =
+        modalPricingMode === "pos_only"
+          ? "pos"
+          : modalPosCount > 0 || selectedVolumeTier === "tier_5"
+          ? "hybrid"
+          : "online";
+
       setupStoreOwnerAccount({
-        salesChannel,
+        salesChannel: finalSalesChannel,
+        expectedVolume,
+        tierPrice,
+        currency: activeCountryObj.currency,
         storeName,
         legalName,
         category,
         country,
         city,
-        address,
+        address: finalAddress,
         email,
         phone,
-        password,
+        password: signupPassword || "MatagerStore2026!",
         selectedPlan,
       })
-        .then(() => {
-          setTimeout(() => {
-            window.location.href = APP_ROUTES.dashboard;
-          }, 1200);
+        .then(({ store }) => {
+          const sId = store?.id || `store_${Date.now()}`;
+          if (typeof window !== "undefined") {
+            localStorage.setItem("matager_user_role", "merchant");
+            localStorage.setItem("matager_current_store_id", sId);
+            localStorage.setItem("matager_active_store_id", sId);
+            localStorage.setItem("matager_active_store_name", storeName);
+
+            // Automatically open two new tabs in the browser:
+            // Tab 1: Storefront URL (/storefront?storeId=${storeId})
+            // Tab 2: Dashboard URL (/dashboard?storeId=${storeId})
+            window.open(`/storefront?storeId=${sId}`, "_blank");
+            window.open(`/dashboard?storeId=${sId}`, "_blank");
+          }
+          handleClose();
         })
         .catch((err) => {
           console.error("Firebase store setup error:", err);
-          window.location.href = APP_ROUTES.dashboard;
+          const fallbackStoreId = `store_${Date.now()}`;
+          if (typeof window !== "undefined") {
+            localStorage.setItem("matager_user_role", "merchant");
+            localStorage.setItem("matager_current_store_id", fallbackStoreId);
+            localStorage.setItem("matager_active_store_id", fallbackStoreId);
+            window.open(`/storefront?storeId=${fallbackStoreId}`, "_blank");
+            window.open(`/dashboard?storeId=${fallbackStoreId}`, "_blank");
+          }
+          handleClose();
         });
     }
   };
@@ -274,19 +639,79 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const handleVerifyOtp = () => {
+    setRoleError(null);
+    if (
+      identifier.toLowerCase().includes("wholesaler") ||
+      identifier.toLowerCase().includes("nilegarments") ||
+      identifier.toLowerCase().includes("delta-home")
+    ) {
+      setRoleError(t.auth.wholesalerSignup.wrongRoleError);
+      return;
+    }
     if (isOtpComplete()) {
       // Advance to choose store (S4)
       setSigninStage("choose_store");
     }
   };
 
-  const handlePasswordSignIn = () => {
+  const handlePasswordSignIn = async () => {
+    setRoleError(null);
+    if (
+      identifier.toLowerCase().includes("wholesaler") ||
+      identifier.toLowerCase().includes("nilegarments") ||
+      identifier.toLowerCase().includes("delta-home")
+    ) {
+      setRoleError(t.auth.wholesalerSignup.wrongRoleError);
+      return;
+    }
+    // Attempt Firebase auth sign in if valid email
+    if (identifier.includes("@") && password.trim().length >= 6) {
+      try {
+        const cred = await signInWithEmailAndPassword(auth, identifier.trim(), password);
+        if (cred?.user?.uid) {
+          const sId = `store_${cred.user.uid}`;
+          if (typeof window !== "undefined") {
+            localStorage.setItem("matager_active_user_id", cred.user.uid);
+            localStorage.setItem("matager_user_role", "merchant");
+            localStorage.setItem("matager_current_store_id", sId);
+            localStorage.setItem("matager_active_store_id", sId);
+          }
+        }
+      } catch (err) {
+        console.warn("Firebase sign in fallback:", err);
+      }
+    }
     if (password.trim().length >= 4) {
       setSigninStage("choose_store");
     }
   };
 
+  const handleWholesalerSignIn = () => {
+    setRoleError(null);
+    if (
+      identifier.toLowerCase().includes("peacock") ||
+      identifier.toLowerCase().includes("urban") ||
+      identifier.toLowerCase().includes("owner") ||
+      identifier.toLowerCase().includes("mohamed@")
+    ) {
+      setRoleError(t.auth.wholesalerSignup.wrongRoleError);
+      return;
+    }
+    const wid = identifier.toLowerCase().includes("home")
+      ? "wholesaler_home_01"
+      : "wholesaler_clothing_01";
+    if (typeof window !== "undefined") {
+      localStorage.setItem("matager_user_role", "wholesaler");
+      localStorage.setItem("matager_wholesaler_id", wid);
+    }
+    handleClose();
+    window.location.href = `/wholesaler?wholesalerId=${wid}`;
+  };
+
   const handleChooseStoreContinue = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("matager_user_role", "merchant");
+    }
     setSigninStage("done");
   };
 
@@ -312,6 +737,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   return (
     <div
+      data-lenis-prevent
       className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
       role="dialog"
       aria-modal="true"
@@ -354,41 +780,45 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* Modal Header: Brand, Close Button & Non-Clickable Progress Dots */}
         <div className="relative mb-6">
           <div className="flex items-center justify-between pb-3 border-b border-[var(--color-border-subtle)]">
-            <MatagerLogo size="sm" showWordmark={true} animated={false} />
-
-            {/* Non-Clickable Progress Dots (7 dots for sign up, 4 dots for sign in) */}
-            <div
-              className="flex items-center gap-1.5"
-              aria-label={
-                mode === "signup"
-                  ? `Step ${signupStep} of 7`
-                  : `Step ${getSigninActiveDot()} of 4`
-              }
-            >
-              {mode === "signup"
-                ? [1, 2, 3, 4, 5, 6, 7].map((dot) => (
-                  <span
-                    key={dot}
-                    className={`msm-dot ${dot === signupStep
-                      ? "is-active"
-                      : dot < signupStep
-                        ? "is-passed"
-                        : ""
-                      }`}
-                  />
-                ))
-                : [1, 2, 3, 4].map((dot) => (
-                  <span
-                    key={dot}
-                    className={`msm-dot ${dot === getSigninActiveDot()
-                      ? "is-active"
-                      : dot < getSigninActiveDot()
-                        ? "is-passed"
-                        : ""
-                      }`}
-                  />
-                ))}
+            <div className="flex items-center gap-3">
+              <MatagerLogo size="sm" showWordmark={true} animated={false} />
             </div>
+
+            {/* Non-Clickable Progress Dots (6 dots for sign up, 4 dots for sign in) */}
+            {screen === "auth" && selectedRole === "merchant" && (
+              <div
+                className="flex items-center gap-1.5"
+                aria-label={
+                  mode === "signup"
+                    ? `Step ${signupStep} of 6`
+                    : `Step ${getSigninActiveDot()} of 4`
+                }
+              >
+                {mode === "signup"
+                  ? [1, 2, 3, 4, 5, 6].map((dot) => (
+                    <span
+                      key={dot}
+                      className={`msm-dot ${dot === signupStep
+                        ? "is-active"
+                        : dot < signupStep
+                          ? "is-passed"
+                          : ""
+                        }`}
+                    />
+                  ))
+                  : [1, 2, 3, 4].map((dot) => (
+                    <span
+                      key={dot}
+                      className={`msm-dot ${dot === getSigninActiveDot()
+                        ? "is-active"
+                        : dot < getSigninActiveDot()
+                          ? "is-passed"
+                          : ""
+                        }`}
+                    />
+                  ))}
+              </div>
+            )}
 
             {/* Close Button */}
             <button
@@ -402,95 +832,476 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         </div>
 
+        {/* Global Role Mismatch Warning Toast */}
+        {roleError && (
+          <div className="mb-4 p-3 rounded-xl bg-[var(--color-status-red-bg)] border border-[var(--color-status-red-border)] text-xs text-[var(--color-status-red)] flex items-center gap-2">
+            <StatusPill variant="danger">Access Refused</StatusPill>
+            <span>{roleError}</span>
+          </div>
+        )}
+
         {/* ══════════════════════════════════════════════════════════════════
-            FLOW A: SIGN UP (Store Owner Only — 7 Steps)
+            SCREEN 0: ROLE CHOOSER (Store Owner vs Wholesaler)
             ══════════════════════════════════════════════════════════════════ */}
-        {mode === "signup" && (
+        {screen === "role_chooser" && (
+          <div className="space-y-6">
+            <div>
+              <span className="text-[11px] font-ui uppercase tracking-wider text-gradient-primary font-bold block mb-1">
+                MATAGER ACCESS
+              </span>
+              <h2 className="font-heading text-2xl font-normal text-[var(--color-text-primary)]">
+                {t.auth.roleChooser.title}
+              </h2>
+              <p className="msm-sub text-xs text-[var(--color-text-secondary)] mt-1">
+                {t.auth.roleChooser.subtitle}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Merchant Option Card */}
+              <div
+                onClick={() => setSelectedRole("merchant")}
+                className={`p-4 rounded-2xl border cursor-pointer select-none transition-all flex flex-col justify-between ${selectedRole === "merchant"
+                    ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 shadow-sm"
+                    : "border-[var(--color-border-subtle)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)]"
+                  }`}
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-[var(--color-surface-hover)] border border-[var(--color-border-subtle)] flex items-center justify-center text-[var(--color-primary)]">
+                      <Store className="w-5 h-5" />
+                    </div>
+                    {selectedRole === "merchant" && (
+                      <StatusPill variant="info">
+                        {t.auth.roleChooser.selected}
+                      </StatusPill>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold font-heading text-[var(--color-text-primary)]">
+                      {t.auth.roleChooser.merchantCard.title}
+                    </h3>
+                    <p className="text-[11px] text-[var(--color-text-muted)] mt-1 leading-relaxed">
+                      {t.auth.roleChooser.merchantCard.subtitle}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Wholesaler Option Card */}
+              <div
+                onClick={() => setSelectedRole("wholesaler")}
+                className={`p-4 rounded-2xl border cursor-pointer select-none transition-all flex flex-col justify-between ${selectedRole === "wholesaler"
+                    ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 shadow-sm"
+                    : "border-[var(--color-border-subtle)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)]"
+                  }`}
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-[var(--color-surface-hover)] border border-[var(--color-border-subtle)] flex items-center justify-center text-[var(--color-primary)]">
+                      <Layers className="w-5 h-5" />
+                    </div>
+                    {selectedRole === "wholesaler" && (
+                      <StatusPill variant="info">
+                        {t.auth.roleChooser.selected}
+                      </StatusPill>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold font-heading text-[var(--color-text-primary)]">
+                      {t.auth.roleChooser.wholesalerCard.title}
+                    </h3>
+                    <p className="text-[11px] text-[var(--color-text-muted)] mt-1 leading-relaxed">
+                      {t.auth.roleChooser.wholesalerCard.subtitle}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setScreen("auth")}
+                className="msm-next w-full py-3"
+              >
+                <span>{t.auth.roleChooser.continue}</span>
+                <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════
+            SCREEN 1: WHOLESALER FLOWS (Sign Up Wizard / Sign In Portal)
+            ══════════════════════════════════════════════════════════════════ */}
+        {screen === "auth" && selectedRole === "wholesaler" && (
           <div className="space-y-5">
-            {/* ─── STEP 1: Sales channels ─── */}
-            {signupStep === 1 && (
+            {mode === "signup" ? (
+              <>
+                <WholesalerSignupWizard
+                  onClose={handleClose}
+                  onSuccess={(wid) => {
+                    handleClose();
+                    window.location.href = `/wholesaler?wholesalerId=${wid}`;
+                  }}
+                />
+                <div className="pt-3 text-center border-t border-[var(--color-border-subtle)]">
+                  <p className="text-xs text-[var(--color-text-secondary)]">
+                    {isAr ? "هل لديك حساب مورد بالفعل؟" : "Already have a wholesaler account?"}{" "}
+                    <button
+                      type="button"
+                      data-switch="signin"
+                      onClick={() => switchMode("signin")}
+                      className="msm-switch"
+                    >
+                      {t.auth.wholesalerSignup.signinTab}
+                    </button>
+                  </p>
+                </div>
+              </>
+            ) : (
               <div className="space-y-4">
                 <div>
                   <span className="text-[11px] font-ui uppercase tracking-wider text-gradient-primary font-bold block mb-1">
-                    {isAr ? "الخطوة 1: قنوات البيع" : "Step 1: Sales channels"}
+                    WHOLESALER ACCESS PORTAL
                   </span>
-                  <h2 className="font-heading text-xl sm:text-2xl font-normal text-[var(--color-text-primary)]">
-                    {isAr ? "ما هي استراتيجيتك الحالية؟" : "What is your current strategy?"}
+                  <h2 className="font-heading text-2xl font-normal text-[var(--color-text-primary)]">
+                    {t.auth.wholesalerSignup.signinTab}
+                  </h2>
+                  <p className="msm-sub text-xs text-[var(--color-text-secondary)] mt-1">
+                    {isAr
+                      ? "تسجيل الدخول إلى لوحة إدارة الكتالوج وشرائح الأسعار."
+                      : "Sign in to manage your wholesale catalog, volume tiers, and merchant inquiries."}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5">
+                    {isAr ? "البريد الإلكتروني أو رمز المورد" : "Email or Wholesaler ID"}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={identifier}
+                    onChange={(e) => {
+                      setIdentifier(e.target.value);
+                      setRoleError(null);
+                    }}
+                    placeholder="wholesale@nilegarments.eg"
+                    dir="ltr"
+                    className="input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-sm font-ui"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5">
+                    {isAr ? "كلمة المرور" : "Password"}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••••••"
+                      dir="ltr"
+                      className="input-theme-gradient w-full ps-3.5 pe-10 py-2.5 rounded-[10px] text-sm font-ui"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute end-3.5 top-3 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleWholesalerSignIn}
+                    disabled={!identifier.trim()}
+                    className="msm-next w-full py-3"
+                  >
+                    <span>{t.auth.wholesalerSignup.signinTab}</span>
+                    <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
+                  </button>
+                </div>
+
+                <div className="pt-3 text-center border-t border-[var(--color-border-subtle)]">
+                  <p className="text-xs text-[var(--color-text-secondary)]">
+                    {isAr ? "ليس لديك حساب مورد؟" : "Don't have a wholesaler account?"}{" "}
+                    <button
+                      type="button"
+                      data-switch="signup"
+                      onClick={() => switchMode("signup")}
+                      className="msm-switch"
+                    >
+                      {t.auth.wholesalerSignup.signupTab}
+                    </button>
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════
+            SCREEN 2: MERCHANT FLOWS (Flow A: Sign Up & Flow B: Sign In)
+            ══════════════════════════════════════════════════════════════════ */}
+        {screen === "auth" && selectedRole === "merchant" && mode === "signup" && (
+          <div className="space-y-5">
+            {/* ─── STEP 1: Plan & Volume Pricing ─── */}
+            {signupStep === 1 && (
+              <div className="space-y-3.5">
+                <div>
+                  <span className="text-[11px] font-ui uppercase tracking-wider text-gradient-primary font-bold block mb-1">
+                    {isAr ? "الخطوة 1: تحديد الباقة والأسعار" : "Step 1: Plan & Volume Pricing"}
+                  </span>
+                  <h2 className="font-heading text-lg sm:text-xl font-normal text-[var(--color-text-primary)]">
+                    {isAr ? "كم عدد المنتجات المتوقع عرضها شهرياً؟" : "How many products do you expect to showcase?"}
                   </h2>
                 </div>
 
-                <div className="space-y-2.5">
-                  {/* Option 1: Hybrid Unified Store (Default Selected) */}
-                  <div
-                    onClick={() => setSalesChannel("hybrid")}
-                    className={`msm-opt ${salesChannel === "hybrid" ? "is-selected" : ""}`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 rounded-[8px] bg-gradient-to-br from-[var(--color-primary-dark)]/20 to-[var(--color-primary-light)]/20 text-[var(--color-primary-light)] mt-0.5">
-                        <Layers className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold text-[var(--color-text-primary)]">
-                          {isAr ? "متجر موحد هجين" : "Hybrid Unified Store"}
-                        </div>
-                        <div className="msm-sub text-xs text-[var(--color-text-secondary)] mt-0.5">
-                          {isAr ? "نقاط بيع (POS) متزامنة مع موقعك الإلكتروني." : "POS synced with your website."}
-                        </div>
-                      </div>
-                    </div>
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${salesChannel === "hybrid" ? "border-transparent bg-gradient-to-r from-[var(--color-primary-dark)] to-[var(--color-primary-light)] text-white shadow-sm shadow-[var(--color-primary-dark)]/40" : "border-[var(--color-border)]"}`}>
-                      {salesChannel === "hybrid" && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
-                    </div>
+                {/* Mode Selector & Billing Toggle Header */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 p-1.5 rounded-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)]">
+                  {/* Mode: Unified Store vs POS Only */}
+                  <div className="grid grid-cols-2 gap-1 p-1 rounded-[8px] bg-[var(--color-surface)] border border-[var(--color-border-subtle)] text-xs">
+                    <button
+                      type="button"
+                      onClick={() => handleModalPricingModeChange("catalog")}
+                      className={`px-3 py-1.5 rounded-[6px] font-semibold text-center transition-all ${
+                        modalPricingMode === "catalog"
+                          ? "bg-[var(--color-primary-light)] text-white shadow-sm"
+                          : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                      }`}
+                    >
+                      {isAr ? "متجر موحد (كتالوج)" : "Unified Store (Catalog)"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleModalPricingModeChange("pos_only")}
+                      className={`px-3 py-1.5 rounded-[6px] font-semibold text-center transition-all ${
+                        modalPricingMode === "pos_only"
+                          ? "bg-[var(--color-primary-light)] text-white shadow-sm"
+                          : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                      }`}
+                    >
+                      {isAr ? "نقاط بيع فقط (POS)" : "POS & Admin Only"}
+                    </button>
                   </div>
 
-                  {/* Option 2: Online Store */}
-                  <div
-                    onClick={() => setSalesChannel("online")}
-                    className={`msm-opt ${salesChannel === "online" ? "is-selected" : ""}`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 rounded-[8px] bg-[var(--color-accent-mint)]/15 text-[var(--color-accent-mint)] mt-0.5">
-                        <Monitor className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold text-[var(--color-text-primary)]">
-                          {isAr ? "متجر إلكتروني" : "Online Store"}
-                        </div>
-                        <div className="msm-sub text-xs text-[var(--color-text-secondary)] mt-0.5">
-                          {isAr ? "البيع عبر موقع إلكتروني مخصص." : "Sell through a custom website."}
-                        </div>
-                      </div>
-                    </div>
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${salesChannel === "online" ? "border-transparent bg-gradient-to-r from-[var(--color-primary-dark)] to-[var(--color-primary-light)] text-white shadow-sm shadow-[var(--color-primary-dark)]/40" : "border-[var(--color-border)]"}`}>
-                      {salesChannel === "online" && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
-                    </div>
-                  </div>
-
-                  {/* Option 3: POS Setup */}
-                  <div
-                    onClick={() => setSalesChannel("pos")}
-                    className={`msm-opt ${salesChannel === "pos" ? "is-selected" : ""}`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 rounded-[8px] bg-gradient-to-br from-[var(--color-primary-dark)]/20 to-[var(--color-primary-light)]/20 text-[var(--color-primary-light)] mt-0.5">
-                        <Store className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold text-[var(--color-text-primary)]">
-                          {isAr ? "إعداد نقاط البيع" : "POS Setup"}
-                        </div>
-                        <div className="msm-sub text-xs text-[var(--color-text-secondary)] mt-0.5">
-                          {isAr ? "نظام كاشير نقاط بيع فقط." : "POS cashier system only."}
-                        </div>
-                      </div>
-                    </div>
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${salesChannel === "pos" ? "border-transparent bg-gradient-to-r from-[var(--color-primary-dark)] to-[var(--color-primary-light)] text-white shadow-sm shadow-[var(--color-primary-dark)]/40" : "border-[var(--color-border)]"}`}>
-                      {salesChannel === "pos" && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
-                    </div>
+                  {/* Billing Switch: Monthly vs Yearly */}
+                  <div className="inline-flex items-center justify-center gap-1 p-1 rounded-[8px] bg-[var(--color-surface)] border border-[var(--color-border-subtle)] text-xs">
+                    <button
+                      type="button"
+                      onClick={() => handleModalBillingChange("monthly")}
+                      className={`px-2.5 py-1 rounded-[6px] transition-all font-medium ${
+                        modalBilling === "monthly"
+                          ? "bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] font-semibold"
+                          : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+                      }`}
+                    >
+                      {isAr ? "شهري" : "Monthly"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleModalBillingChange("yearly")}
+                      className={`px-2.5 py-1 rounded-[6px] transition-all font-medium flex items-center gap-1 ${
+                        modalBilling === "yearly"
+                          ? "bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] font-semibold"
+                          : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+                      }`}
+                    >
+                      <span>{isAr ? "سنوي" : "Yearly"}</span>
+                      <span className="text-[10px] font-bold text-emerald-500">-10%</span>
+                    </button>
                   </div>
                 </div>
 
+                {/* Content: Catalog Mode (5 tiers + Enterprise Callout) */}
+                {modalPricingMode === "catalog" && (
+                  <div className="space-y-2">
+                    <div className="max-h-[220px] overflow-y-auto space-y-1.5 pe-1">
+                      {VOLUME_PRICING_OPTIONS.map((tier) => {
+                        const isSelected = selectedVolumeTier === tier.id;
+                        const displayPrice =
+                          modalBilling === "yearly" ? Math.round(tier.price * 0.9) : tier.price;
+                        return (
+                          <div
+                            key={tier.id}
+                            onClick={() => handleModalTierSelect(tier)}
+                            className={`msm-opt transition-all py-2 px-3 rounded-[10px] border cursor-pointer ${
+                              isSelected ? "is-selected" : ""
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2.5 w-full">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div
+                                  className={`p-1.5 rounded-[6px] shrink-0 transition-colors ${
+                                    isSelected
+                                      ? "bg-[var(--color-primary-dark)]/20 text-[var(--color-primary-light)]"
+                                      : "bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)]"
+                                  }`}
+                                >
+                                  <Layers className="w-3.5 h-3.5" />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className="text-xs sm:text-sm font-semibold text-[var(--color-text-primary)] truncate">
+                                      {isAr ? tier.rangeAr : tier.range}
+                                    </span>
+                                    {tier.dealBadge && (
+                                      <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold font-ui bg-[var(--color-primary-dark)]/20 text-[var(--color-primary-light)] border border-[var(--color-primary-light)]/40 shadow-sm animate-pulse">
+                                        ★ {isAr ? tier.dealBadgeAr : tier.dealBadge}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="msm-sub text-[11px] text-[var(--color-text-secondary)] mt-0.5 truncate">
+                                    {tier.id === "tier_5"
+                                      ? isAr
+                                        ? "يشمل واجهة متجر + 2 كاشير POS مجاناً"
+                                        : "Includes storefront + 2 free POS registers"
+                                      : isAr
+                                        ? "متجر موحد مع مزامنة سحابية"
+                                        : "Unified storefront with cloud inventory"}
+                                  </div>
+                                </div>
+                              </div>
 
+                              <div className="flex items-center gap-2.5 shrink-0">
+                                <div className="text-right rtl:text-left">
+                                  <span className="text-sm sm:text-base font-bold font-ui text-[var(--color-primary-light)]">
+                                    {displayPrice}
+                                  </span>
+                                  <span className="text-[10px] text-[var(--color-text-muted)] ms-1">
+                                    {activeCurrencySymbol} / {isAr ? "شهر" : "mo"}
+                                  </span>
+                                </div>
+                                <div
+                                  className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                                    isSelected
+                                      ? "border-transparent bg-gradient-to-r from-[var(--color-primary-dark)] to-[var(--color-primary-light)] text-white shadow-sm shadow-[var(--color-primary-dark)]/40"
+                                      : "border-[var(--color-border)]"
+                                  }`}
+                                >
+                                  {isSelected && <Check className="w-2 h-2 text-white stroke-[3]" />}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Enterprise Callout: Need more than 550 products? */}
+                    <div className="p-2.5 rounded-[10px] bg-[var(--color-surface-elevated)] border border-dashed border-[var(--color-border)] flex items-center justify-between gap-3 text-xs">
+                      <div>
+                        <div className="font-semibold text-[var(--color-text-primary)] text-[11px] sm:text-xs">
+                          {isAr ? "هل تحتاج لعرض أكثر من 550 منتج؟" : "Need more than 550 products?"}
+                        </div>
+                        <div className="text-[10px] text-[var(--color-text-muted)] mt-0.5">
+                          {isAr
+                            ? "تواصل مع مهندسينا لحلول المؤسسات الكبرى والسعات غير المحدودة"
+                            : "Contact our enterprise engineers for custom catalogs & scale"}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleClose();
+                          onOpenEnterpriseContact?.();
+                        }}
+                        className="px-3 py-1.5 rounded-[8px] bg-[var(--color-primary-light)] text-white font-semibold text-[11px] hover:opacity-90 transition-opacity shrink-0 flex items-center gap-1 shadow-sm"
+                      >
+                        <span>{isAr ? "تواصل معنا" : "Contact Us"}</span>
+                        <ArrowRight className="w-3 h-3 rtl:rotate-180" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Content: POS & Admin Only Mode */}
+                {modalPricingMode === "pos_only" && (
+                  <div className="space-y-3 p-3.5 rounded-[12px] bg-[var(--color-surface)] border border-[var(--color-border)]">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="block text-xs font-semibold text-[var(--color-text-primary)]">
+                          {isAr ? "عدد محطات الكاشير (POS):" : "Number of POS Registers:"}
+                        </label>
+                        <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                          {isAr
+                            ? "200 ج.م لكل نقطة بيع شهرياً (خصم 10% على السنوي)"
+                            : "200 EGP / register / mo (10% discount on yearly)"}
+                        </p>
+                      </div>
+
+                      {/* Stepper */}
+                      <div className="inline-flex items-center gap-2 p-1 rounded-[10px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)]">
+                        <button
+                          type="button"
+                          onClick={() => handleModalPosCountChange(-1)}
+                          disabled={modalPosCount <= 1}
+                          className="w-7 h-7 rounded-[6px] flex items-center justify-center text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] disabled:opacity-30 border border-[var(--color-border-subtle)] transition-colors"
+                          aria-label="Decrease POS count"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="font-mono font-bold text-sm w-7 text-center text-[var(--color-text-primary)]">
+                          {modalPosCount}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleModalPosCountChange(1)}
+                          disabled={modalPosCount >= 20}
+                          className="w-7 h-7 rounded-[6px] flex items-center justify-center text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] disabled:opacity-30 border border-[var(--color-border-subtle)] transition-colors"
+                          aria-label="Increase POS count"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Calculated Price Box */}
+                    <div className="p-3 rounded-[10px] bg-[var(--color-surface-elevated)] border border-[var(--color-primary-light)]/20 flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-semibold text-[var(--color-text-primary)]">
+                          {isAr ? "تكلفة نظام الكاشير ولوحة الإدارة" : "Total POS & Admin System"}
+                        </div>
+                        <div className="text-[10px] text-[var(--color-text-muted)]">
+                          {modalBilling === "yearly"
+                            ? isAr
+                              ? "سعر سنوي مخفض (180 ج.م × عدد الأجهزة)"
+                              : "Yearly rate (180 EGP × registers)"
+                            : isAr
+                              ? "سعر شهري اعتيادي (200 ج.م × عدد الأجهزة)"
+                              : "Standard monthly rate (200 EGP × registers)"}
+                        </div>
+                      </div>
+                      <div className="text-right rtl:text-left">
+                        <span className="text-base sm:text-lg font-bold font-ui text-[var(--color-primary-light)]">
+                          {tierPrice}
+                        </span>
+                        <span className="text-[10px] text-[var(--color-text-muted)] ms-1">
+                          {activeCurrencySymbol} / {isAr ? "شهرياً" : "mo"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1 text-[11px] text-[var(--color-text-secondary)]">
+                      <div className="flex items-center gap-1.5">
+                        <Check className="w-3 h-3 text-emerald-500 shrink-0" />
+                        <span>{isAr ? "لوحة تحكم إدارية سحابية كاملة ومجانية" : "Full cloud admin management dashboard included"}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Check className="w-3 h-3 text-emerald-500 shrink-0" />
+                        <span>{isAr ? "مزامنة سريعة مع طباعة فواتير حرارية" : "High-speed sync & thermal receipts printing"}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -501,7 +1312,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <span className="text-[11px] font-ui uppercase tracking-wider text-gradient-primary font-bold block mb-1">
                     {isAr ? "الخطوة 2: بيانات النشاط" : "Step 2: Business details"}
                   </span>
-
+                  <h2 className="font-heading text-xl sm:text-2xl font-normal text-[var(--color-text-primary)]">
+                    {isAr ? "ما اسم متجرك ونشاطك؟" : "What is your store name?"}
+                  </h2>
                 </div>
 
                 <div className="space-y-3">
@@ -543,25 +1356,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <span className="text-[11px] font-ui uppercase tracking-wider text-gradient-primary font-bold block mb-1">
                     {isAr ? "الخطوة 3: التصنيف" : "Step 3: Category"}
                   </span>
+                  <h2 className="font-heading text-xl sm:text-2xl font-normal text-[var(--color-text-primary)]">
+                    {isAr ? "اختر المجال الرئيسي لمتجرك" : "Select your primary category"}
+                  </h2>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {[
-                    "Retail & Fashion",
-                    "Food & Beverage",
-                    "Electronics & Tech",
-                    "Beauty & Cosmetics",
-                    "Grocery & Market",
-                    "Home & Living",
-                    "Services & Digital",
-                  ].map((cat) => (
+                  {STORE_CATEGORIES.map((cat) => (
                     <div
                       key={cat}
                       onClick={() => setCategory(cat)}
-                      className={`msm-opt text-xs py-2.5 px-3 ${category === cat ? "is-selected" : ""
-                        }`}
+                      className={`msm-opt text-xs py-2.5 px-3 ${category === cat ? "is-selected" : ""}`}
                     >
-                      <span className="font-medium text-[var(--color-text-primary)]">{cat}</span>
+                      <span className="font-medium text-[var(--color-text-primary)]">
+                        {CATEGORY_LABELS[cat][isAr ? "ar" : "en"]}
+                      </span>
                       {category === cat && (
                         <Check className="w-3.5 h-3.5 text-[var(--color-primary-light)] shrink-0" />
                       )}
@@ -578,72 +1387,183 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <span className="text-[11px] font-ui uppercase tracking-wider text-gradient-primary font-bold block mb-1">
                     {isAr ? "الخطوة 4: الموقع الجغرافي" : "Step 4: Location"}
                   </span>
+                  <h2 className="font-heading text-xl sm:text-2xl font-normal text-[var(--color-text-primary)]">
+                    {isAr ? "أين يقع متجرك الرئيسي؟" : "Where is your store located?"}
+                  </h2>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                    {isAr
+                      ? "اختر الدولة والمدينة بدقة من القائمة المعتمدة لضبط العملة والتوصيل، واستخدم خرائط جوجل لتحديد موقعك."
+                      : "Select your country and city from verified lists to configure currency and delivery, and link your Google Maps pin."}
+                  </p>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3.5">
+                  {/* Country Selection (22 Arab Countries) */}
                   <div>
                     <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
-                      {isAr ? "الدولة" : "Country"}
+                      {isAr ? "الدولة (22 دولة عربية)" : "Country (22 Arab Countries)"}
                     </label>
-                    <select
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                      className="input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-sm"
-                    >
-                      <option value="Saudi Arabia">Saudi Arabia (المملكة العربية السعودية)</option>
-                      <option value="United Arab Emirates">United Arab Emirates (الإمارات)</option>
-                      <option value="Egypt">Egypt (مصر)</option>
-                      <option value="United States">United States</option>
-                      <option value="United Kingdom">United Kingdom</option>
-                      <option value="Germany">Germany</option>
-                    </select>
+                    <div className="relative">
+                      <select
+                        value={country}
+                        onChange={(e) => handleCountryChange(e.target.value)}
+                        className="input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-sm font-ui bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] appearance-none cursor-pointer pr-10 rtl:pr-3.5 rtl:pl-10"
+                      >
+                        {ARAB_COUNTRIES.map((c) => (
+                          <option
+                            key={c.id}
+                            value={c.name}
+                            className="bg-[var(--color-surface)] text-[var(--color-text-primary)]"
+                          >
+                            {isAr ? `${c.nameAr} (${c.currencyAr})` : `${c.name} (${c.currency})`}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 end-0 flex items-center px-3 text-[var(--color-text-muted)]">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="text-[11px] text-[var(--color-text-muted)] flex items-center justify-between pt-1 font-ui">
+                      <span>{isAr ? "العملة الافتراضية للنظام:" : "Default system currency:"}</span>
+                      <span className="font-bold text-[var(--color-primary-light)]">
+                        {activeCountryObj.currency} ({activeCountryObj.currencyAr}) • {isAr ? activeCountryObj.currencyNameAr : activeCountryObj.currencyNameEn}
+                      </span>
+                    </div>
                   </div>
 
+                  {/* Strict City Selection */}
                   <div>
                     <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
-                      {isAr ? "المدينة" : "City"}
+                      {isAr ? "المدينة (اختيار إلزامي من المدن المعتمدة)" : "City (Strict Selection)"}
                     </label>
-                    <input
-                      type="text"
-                      required
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      placeholder={isAr ? "الرياض" : "City"}
-                      className="input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-sm"
-                    />
+                    <div className="relative">
+                      <select
+                        required
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        className="input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-sm font-ui bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] appearance-none cursor-pointer pr-10 rtl:pr-3.5 rtl:pl-10"
+                      >
+                        <option value="" disabled className="text-[var(--color-text-muted)]">
+                          {isAr ? "── اختر المدينة من القائمة ──" : "── Select city from list ──"}
+                        </option>
+                        {availableCities.map((c) => {
+                          const displayName = isAr
+                            ? c.name_ar && c.name_ar !== c.name_en
+                              ? `${c.name_ar} (${c.name_en})`
+                              : c.name_ar || c.name_en
+                            : c.name_en;
+                          return (
+                            <option
+                              key={c.id}
+                              value={c.name_en}
+                              className="bg-[var(--color-surface)] text-[var(--color-text-primary)]"
+                            >
+                              {displayName}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 end-0 flex items-center px-3 text-[var(--color-text-muted)]">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="text-[11px] text-[var(--color-text-muted)] flex items-center justify-between pt-1 font-ui">
+                      <span>{isAr ? "المدن المتوفرة لهذه الدولة:" : "Available cities for this country:"}</span>
+                      <span className="font-mono text-[var(--color-text-secondary)]">
+                        {availableCities.length} {isAr ? "مدينة" : "cities"}
+                      </span>
+                    </div>
                   </div>
 
+                  {/* Address & Google Maps Geolocation */}
                   <div>
-                    <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
-                      {isAr ? "العنوان أو الحي" : "Address"}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      placeholder={isAr ? "حي العليا، طريق الملك فهد" : "Street address"}
-                      className="input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-sm"
-                    />
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-medium text-[var(--color-text-secondary)]">
+                        {isAr ? "العنوان أو الحي وتحديد الخريطة" : "Address & Map Location"}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleLocateOnMap}
+                        disabled={isLocating}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[11px] font-medium bg-[var(--color-primary-light)]/10 text-[var(--color-primary-light)] hover:bg-[var(--color-primary-light)]/20 border border-[var(--color-primary-light)]/30 transition-colors disabled:opacity-50"
+                        title={isAr ? "تحديد موقعي الجغرافي عبر خرائط جوجل" : "Locate using Google Maps"}
+                      >
+                        {isLocating ? (
+                          <>
+                            <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            <span>{isAr ? "جاري التحديد..." : "Locating..."}</span>
+                          </>
+                        ) : (
+                          <>
+                            <MapPin className="w-3 h-3" />
+                            <span>{isAr ? "تحديد عبر خرائط جوجل" : "Locate on Google Maps"}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder={
+                          isAr
+                            ? "شارع التحرير، الدقي، أو رابط خريطة جوجل"
+                            : "Street address, building, or Google Maps URL"
+                        }
+                        className="input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-sm text-[var(--color-text-primary)]"
+                      />
+                    </div>
+
+                    {/* Location Status / Google Maps Pin URL Display */}
+                    {(locationUrl || locationStatus) && (
+                      <div className="mt-2 p-2.5 rounded-[8px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[11px] flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
+                          <MapPin className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          <span className="text-[var(--color-text-secondary)] truncate">
+                            {locationStatus || (isAr ? "تم إرفاق إحداثيات خرائط جوجل" : "Google Maps attached")}
+                          </span>
+                        </div>
+                        {locationUrl && (
+                          <a
+                            href={locationUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 font-semibold text-[var(--color-primary-light)] hover:underline shrink-0"
+                          >
+                            <span>{isAr ? "عرض على الخريطة" : "View Map"}</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* ─── STEP 5: Contact ─── */}
+            {/* ─── STEP 5: Contact & Credentials ─── */}
             {signupStep === 5 && (
               <div className="space-y-4">
                 <div>
                   <span className="text-[11px] font-ui uppercase tracking-wider text-gradient-primary font-bold block mb-1">
-                    {isAr ? "الخطوة 5: بيانات الاتصال" : "Step 5: Contact"}
+                    {isAr ? "الخطوة 5: بيانات الاتصال والحساب" : "Step 5: Contact & Credentials"}
                   </span>
-
+                  <h2 className="font-heading text-xl sm:text-2xl font-normal text-[var(--color-text-primary)]">
+                    {isAr ? "بيانات المالك وتسجيل الدخول" : "Owner Details & Password"}
+                  </h2>
                 </div>
 
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
-                      {isAr ? "البريد الإلكتروني للعمل" : "Email"}
+                      {isAr ? "البريد الإلكتروني للعمل" : "Business Email"}
                     </label>
                     <input
                       type="email"
@@ -665,10 +1585,34 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       required
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+966 50 123 4567"
+                      placeholder={`${activeCountryObj.dialCode} 10 1234 5678`}
                       dir="ltr"
                       className="input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-sm font-ui"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+                      {isAr ? "كلمة المرور لحساب صاحب المتجر" : "Store Owner Password"}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showSignupPassword ? "text" : "password"}
+                        required
+                        value={signupPassword}
+                        onChange={(e) => setSignupPassword(e.target.value)}
+                        placeholder="••••••••••••"
+                        dir="ltr"
+                        className="input-theme-gradient w-full ps-3.5 pe-10 py-2.5 rounded-[10px] text-sm font-ui"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSignupPassword(!showSignupPassword)}
+                        className="absolute end-3.5 top-3 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                      >
+                        {showSignupPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Verification Snippet */}
@@ -683,12 +1627,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         {isAr ? "إرسال رمز التحقق للاتصال" : "Send contact verification"}
                       </button>
                     ) : (
-                      <div className="p-3 rounded-[10px] bg-[var(--color-surface-elevated)] border border-[var(--color-accent-mint)]/40 space-y-2">
+                      <div className="p-3 rounded-[10px] bg-[var(--color-surface-elevated)] border border-[var(--color-primary-light)]/40 space-y-2">
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-[var(--color-text-secondary)]">
                             {isAr ? "أدخل رمز التحقق (اختباري: 123456)" : "Enter verification code (Demo: 123456)"}
                           </span>
-                          <span className="text-[var(--color-accent-mint)] font-ui font-bold">
+                          <span className="text-[var(--color-primary-light)] font-ui font-bold">
                             {isContactVerified ? "✓ Verified" : "Sent"}
                           </span>
                         </div>
@@ -708,7 +1652,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           <button
                             type="button"
                             onClick={() => setIsContactVerified(true)}
-                            className="px-3 py-1.5 rounded-[6px] bg-[var(--color-accent-mint)] text-black text-xs font-semibold"
+                            className="px-3 py-1.5 rounded-[6px] bg-[var(--color-primary-light)] text-white text-xs font-semibold"
                           >
                             {isAr ? "تحقق" : "Verify"}
                           </button>
@@ -720,91 +1664,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             )}
 
-            {/* ─── STEP 6: Plan ─── */}
+            {/* ─── STEP 6: Review & launch ─── */}
             {signupStep === 6 && (
               <div className="space-y-4">
                 <div>
                   <span className="text-[11px] font-ui uppercase tracking-wider text-gradient-primary font-bold block mb-1">
-                    {isAr ? "الخطوة 6: الباقة" : "Step 6: Plan"}
-                  </span>
-                </div>
-
-                <div className="space-y-2.5">
-                  {/* Plan 1: Starter */}
-                  <div
-                    data-planid="starter"
-                    data-price="29"
-                    onClick={() => setSelectedPlan("starter")}
-                    className={`msm-opt ${selectedPlan === "starter" ? "is-selected" : ""}`}
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-[var(--color-text-primary)]">Starter</span>
-                        <span className="text-xs font-ui text-[var(--color-text-muted)]">$29 / mo</span>
-                      </div>
-                      <div className="msm-sub text-xs text-[var(--color-text-secondary)] mt-0.5">
-                        {isAr ? "واجهة متجر واحدة + نقطة بيع أساسية" : "Single storefront + Essential POS"}
-                      </div>
-                    </div>
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${selectedPlan === "starter" ? "border-transparent bg-gradient-to-r from-[var(--color-primary-dark)] to-[var(--color-primary-light)] text-white shadow-sm shadow-[var(--color-primary-dark)]/40" : "border-[var(--color-border)]"}`}>
-                      {selectedPlan === "starter" && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
-                    </div>
-                  </div>
-
-                  {/* Plan 2: Professional (Popular) */}
-                  <div
-                    data-planid="pro"
-                    data-price="79"
-                    onClick={() => setSelectedPlan("pro")}
-                    className={`msm-opt ${selectedPlan === "pro" ? "is-selected" : ""}`}
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-[var(--color-text-primary)]">Professional</span>
-                        <span className="text-xs font-ui font-bold text-[var(--color-accent-mint)]">$79 / mo</span>
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-ui bg-gradient-to-r from-[var(--color-primary-dark)]/20 to-[var(--color-primary-light)]/20 text-[var(--color-primary-light)] border border-[var(--color-primary-light)]/30">
-                          Popular
-                        </span>
-                      </div>
-                      <div className="msm-sub text-xs text-[var(--color-text-secondary)] mt-0.5">
-                        {isAr ? "نقاط بيع متعددة الفروع + تكامل الشحن + عمولة 0%" : "Multi-branch POS + Carrier API + 0% fees"}
-                      </div>
-                    </div>
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${selectedPlan === "pro" ? "border-transparent bg-gradient-to-r from-[var(--color-primary-dark)] to-[var(--color-primary-light)] text-white shadow-sm shadow-[var(--color-primary-dark)]/40" : "border-[var(--color-border)]"}`}>
-                      {selectedPlan === "pro" && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
-                    </div>
-                  </div>
-
-                  {/* Plan 3: Enterprise */}
-                  <div
-                    data-planid="enterprise"
-                    data-price="199"
-                    onClick={() => setSelectedPlan("enterprise")}
-                    className={`msm-opt ${selectedPlan === "enterprise" ? "is-selected" : ""}`}
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-[var(--color-text-primary)]">Enterprise</span>
-                        <span className="text-xs font-ui text-[var(--color-text-muted)]">$199 / mo</span>
-                      </div>
-                      <div className="msm-sub text-xs text-[var(--color-text-secondary)] mt-0.5">
-                        {isAr ? "مساحة مخصصة بالكامل + دفتر حسابات متعدد التجار" : "Dedicated cluster + Multi-vendor ledger"}
-                      </div>
-                    </div>
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${selectedPlan === "enterprise" ? "border-transparent bg-gradient-to-r from-[var(--color-primary-dark)] to-[var(--color-primary-light)] text-white shadow-sm shadow-[var(--color-primary-dark)]/40" : "border-[var(--color-border)]"}`}>
-                      {selectedPlan === "enterprise" && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ─── STEP 7: Review & launch ─── */}
-            {signupStep === 7 && (
-              <div className="space-y-4">
-                <div>
-                  <span className="text-[11px] font-ui uppercase tracking-wider text-gradient-primary font-bold block mb-1">
-                    {isAr ? "الخطوة 7: المراجعة والإطلاق" : "Step 7: Review & launch"}
+                    {isAr ? "الخطوة 6: المراجعة والإطلاق" : "Step 6: Review & launch"}
                   </span>
                   <h2 className="font-heading text-xl sm:text-2xl font-normal text-[var(--color-text-primary)]">
                     {isAr ? "جاهز لإطلاق مساحة العمل" : "Review & launch"}
@@ -813,13 +1678,38 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                 <div className="p-4 rounded-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] space-y-2.5 text-xs">
                   <div className="flex justify-between py-1 border-b border-[var(--color-border-subtle)]">
-                    <span className="text-[var(--color-text-secondary)]">{isAr ? "الاستراتيجية" : "Strategy"}</span>
+                    <span className="text-[var(--color-text-secondary)]">{isAr ? "نوع الباقة" : "Plan Type"}</span>
                     <span className="font-medium text-[var(--color-text-primary)]">
-                      {salesChannel === "hybrid"
-                        ? "Hybrid Unified Store"
-                        : salesChannel === "online"
-                          ? "Online Store"
-                          : "POS Setup"}
+                      {modalPricingMode === "pos_only"
+                        ? isAr
+                          ? "نقاط بيع ولوحة تحكم فقط"
+                          : "POS & Admin Only"
+                        : isAr
+                          ? "متجر موحد (كتالوج)"
+                          : "Unified Store (Catalog)"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-[var(--color-border-subtle)]">
+                    <span className="text-[var(--color-text-secondary)]">
+                      {modalPricingMode === "pos_only"
+                        ? isAr
+                          ? "محطات الكاشير"
+                          : "POS Terminals"
+                        : isAr
+                          ? "سعة المنتجات المتوقعة"
+                          : "Expected Volume"}
+                    </span>
+                    <span className="font-medium text-[var(--color-text-primary)]">
+                      {expectedVolume}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-[var(--color-border-subtle)]">
+                    <span className="text-[var(--color-text-secondary)]">{isAr ? "دورة الفوترة والسعر" : "Billing & Price"}</span>
+                    <span className="font-bold text-[var(--color-primary-light)] font-ui">
+                      {tierPrice} {activeCurrencySymbol} {isAr ? "/ شهرياً" : "/ mo"}{" "}
+                      <span className="text-[10px] font-normal text-[var(--color-text-muted)]">
+                        ({modalBilling === "yearly" ? (isAr ? "فاتورة سنوية" : "billed yearly") : (isAr ? "فاتورة شهرية" : "billed monthly")})
+                      </span>
                     </span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-[var(--color-border-subtle)]">
@@ -828,25 +1718,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                   <div className="flex justify-between py-1 border-b border-[var(--color-border-subtle)]">
                     <span className="text-[var(--color-text-secondary)]">{isAr ? "التصنيف" : "Category"}</span>
-                    <span className="font-medium text-[var(--color-text-primary)]">{category}</span>
+                    <span className="font-medium text-[var(--color-text-primary)]">{CATEGORY_LABELS[category]?.[isAr ? "ar" : "en"] || category}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-[var(--color-border-subtle)]">
                     <span className="text-[var(--color-text-secondary)]">{isAr ? "الموقع" : "Location"}</span>
-                    <span className="font-medium text-[var(--color-text-primary)]">{city || "Riyadh"}, {country}</span>
+                    <div className="text-end">
+                      <span className="font-medium text-[var(--color-text-primary)] block">
+                        {city || (isAr ? "القاهرة" : "Cairo")}, {isAr ? activeCountryObj.nameAr : activeCountryObj.name}
+                      </span>
+                      {locationUrl && (
+                        <a
+                          href={locationUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] text-[var(--color-primary-light)] hover:underline mt-0.5"
+                        >
+                          <MapPin className="w-3 h-3" />
+                          <span>{isAr ? "خريطة جوجل" : "Google Maps"}</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-[var(--color-border-subtle)]">
-                    <span className="text-[var(--color-text-secondary)]">{isAr ? "الباقة المختارة" : "Plan"}</span>
-                    <span className="font-bold text-[var(--color-accent-mint)] font-ui uppercase">{selectedPlan}</span>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-[10px] bg-[var(--color-accent-mint)]/10 border border-[var(--color-accent-mint)]/30 text-xs text-[var(--color-text-secondary)] flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[var(--color-accent-mint)] shrink-0" />
-                  <span>
-                    {isAr
-                      ? "سيتم إنشاء مساحة عمل صاحب المتجر وتفعيل واجهة المتجر ونقاط البيع فوراً."
-                      : "Store Owner workspace and credentials will be provisioned in 30 seconds."}
-                  </span>
                 </div>
               </div>
             )}
@@ -877,7 +1770,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 ) : (
                   <>
                     <span>
-                      {signupStep === 7
+                      {signupStep === 6
                         ? isAr
                           ? "إطلاق مساحة العمل"
                           : "Launch Workspace"
@@ -911,47 +1804,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* ══════════════════════════════════════════════════════════════════
             FLOW B: SIGN IN (Store Owner OR Staff/Cashier — 4 Dots)
             ══════════════════════════════════════════════════════════════════ */}
-        {mode === "signin" && (
+        {screen === "auth" && selectedRole === "merchant" && mode === "signin" && (
           <div className="space-y-5">
-            {/* ─── S1. IDENTIFY & AUTH (Image 2 Layout) ─── */}
+            {/* ─── S1. IDENTIFY & AUTH (Store Owner Clean Portal) ─── */}
             {signinStage === "identify" && (
               <div className="space-y-4">
                 <div>
                   <span className="text-[11px] font-ui uppercase tracking-wider text-gradient-primary font-bold block mb-1">
-                    MATAGER AUTHENTICATION
+                    STORE OWNER ACCESS
                   </span>
                   <h2 className="font-heading text-2xl font-normal text-[var(--color-text-primary)]">
                     {isAr ? "تسجيل الدخول إلى متاجر" : "Sign In to Matager"}
                   </h2>
                   <p className="msm-sub text-xs text-[var(--color-text-secondary)] mt-1">
-                    {isAr ? "تسجيل الدخول إلى مساحة عمل متجرك." : "Sign in to your store workspace."}
+                    {isAr ? "تسجيل دخول صاحب المتجر إلى مساحة العمل." : "Store Owner sign in to your store workspace."}
                   </p>
-                </div>
-
-                {/* Role Switcher (Staff / Cashier vs Store Owner) */}
-                <div className="flex p-1 rounded-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border-subtle)]">
-                  <button
-                    type="button"
-                    onClick={() => setSigninRole("employee")}
-                    className={`flex-1 py-2 px-3 rounded-[9px] text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${signinRole === "employee"
-                      ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-sm border border-[var(--color-border)]"
-                      : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-                      }`}
-                  >
-                    <User className="w-3.5 h-3.5" />
-                    <span>{isAr ? "كاشير / موظف" : "Staff / Cashier"}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSigninRole("owner")}
-                    className={`flex-1 py-2 px-3 rounded-[9px] text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${signinRole === "owner"
-                      ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-sm border border-[var(--color-border)]"
-                      : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-                      }`}
-                  >
-                    <Store className="w-3.5 h-3.5" />
-                    <span>{isAr ? "صاحب المتجر" : "Store Owner"}</span>
-                  </button>
                 </div>
 
                 {/* Field 1: Email or Phone (2-Color Gradient Input) */}
@@ -1250,8 +2117,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <div className="p-4 rounded-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-accent-mint)]/40 text-center space-y-3">
-                    <CheckCircle2 className="w-8 h-8 text-[var(--color-accent-mint)] mx-auto" />
+                  <div className="p-4 rounded-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-primary-light)]/40 text-center space-y-3">
+                    <CheckCircle2 className="w-8 h-8 text-[var(--color-primary-light)] mx-auto" />
                     <div className="text-xs text-[var(--color-text-secondary)]">
                       {isAr
                         ? `تم إرسال تعليمات إعادة التعيين إلى ${identifier}.`
@@ -1287,8 +2154,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="space-y-2.5">
                   {[
                     { name: "Apex Luxury Store", role: isAr ? "صاحب المتجر (Owner)" : "Store Owner" },
-                    { name: "Riyadh Central Flagship", role: isAr ? "كاشير / موظف (Staff)" : "Staff / Cashier" },
-                    { name: "Jeddah Mall Express", role: isAr ? "كاشير / موظف (Staff)" : "Staff / Cashier" },
+                    { name: "Riyadh Central Flagship", role: isAr ? "صاحب المتجر (Owner)" : "Store Owner" },
+                    { name: "Cairo Nile Boutique", role: isAr ? "صاحب المتجر (Owner)" : "Store Owner" },
                   ].map((st) => (
                     <div
                       key={st.name}
@@ -1331,7 +2198,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {/* ─── S5. DONE ─── */}
             {signinStage === "done" && (
               <div className="py-8 text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-[var(--color-accent-mint)]/20 border border-[var(--color-accent-mint)]/40 flex items-center justify-center text-[var(--color-accent-mint)] mx-auto shadow-lg shadow-[var(--color-accent-mint)]/10 animate-bounce">
+                <div className="w-16 h-16 rounded-full bg-[var(--color-primary-dark)]/20 border border-[var(--color-primary-light)]/40 flex items-center justify-center text-[var(--color-primary-light)] mx-auto shadow-lg shadow-[var(--color-primary-dark)]/20 animate-bounce">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
                 <div>

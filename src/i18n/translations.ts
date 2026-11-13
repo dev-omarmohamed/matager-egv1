@@ -242,6 +242,45 @@ export interface TranslationDictionary {
       shippingDispatchedAlert: string;
     };
   };
+  surfaces: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    tabsAriaLabel: string;
+    deviceAriaLabel: string;
+    languageAriaLabel: string;
+    placeholderBadge: string;
+    tabs: {
+      storefront: string;
+      ownerDashboard: string;
+      posTerminal: string;
+    };
+    devices: {
+      desktop: string;
+      tablet: string;
+      mobile: string;
+    };
+    languages: {
+      en: string;
+      ar: string;
+    };
+    captions: {
+      storefront: string;
+      ownerDashboard: string;
+      posTerminal: string;
+    };
+    alts: {
+      storefrontMain: string;
+      storefrontCart: string;
+      storefrontStats: string;
+      ownerMain: string;
+      ownerModal: string;
+      ownerStats: string;
+      posMain: string;
+      posPayment: string;
+      posReceipt: string;
+    };
+  };
 }
 
 export const translations: Record<Locale, TranslationDictionary> = {
@@ -270,7 +309,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
       supporting:
         "The dark-terminal command center for modern commerce. Unify multi-vendor storefronts, lightning payments, autonomous logistics, and deep operational telemetry into a single connected platform.",
       primaryCta: "Start free",
-      secondaryCta: "Book a demo",
+      secondaryCta: "Download app",
       trustLine: "Powering 850+ high-velocity enterprise merchants across 24 global markets",
       terminalTab1: "Global Telemetry",
       terminalTab2: "Vendor Ledger",
@@ -387,7 +426,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
       subhead:
         "Deploy your high-velocity storefront, connect your vendors, and experience the dark observatory terminal designed for serious operators.",
       primaryButton: "Start free now",
-      secondaryButton: "Book architecture briefing",
+      secondaryButton: "Download app",
       noCardRequired: "No credit card required • Production sandbox ready in 90 seconds",
     },
     footer: {
@@ -503,6 +542,49 @@ export const translations: Record<Locale, TranslationDictionary> = {
         shippingDispatchedAlert: "Courier SMSA Express notified for pickup",
       },
     },
+    surfaces: {
+      badge: "ENTERPRISE OMNICHANNEL INFRASTRUCTURE",
+      title: "One Operating System. Every Enterprise Surface.",
+      subtitle:
+        "Architected for high-velocity conglomerates and flagship retail networks. Orchestrating consumer mobile storefronts, warehouse floor tablets, HQ command matrix, and hardware POS registers from a single synchronized state engine.",
+      tabsAriaLabel: "Matager product surfaces",
+      deviceAriaLabel: "Select device viewport",
+      languageAriaLabel: "Select preview language",
+      placeholderBadge: "SCREENSHOT PLACEHOLDER",
+      tabs: {
+        storefront: "Storefront",
+        ownerDashboard: "Store Owner Dashboard",
+        posTerminal: "Cashier Terminal (POS)",
+      },
+      devices: {
+        desktop: "Desktop",
+        tablet: "Tablet",
+        mobile: "Mobile",
+      },
+      languages: {
+        en: "EN",
+        ar: "العربية",
+      },
+      captions: {
+        storefront:
+          "High-conversion consumer storefront with sub-second catalog browsing, instant multi-payment checkout, and real-time inventory synchronization.",
+        ownerDashboard:
+          "Unified merchant control plane for real-time inventory management, financial settlement telemetry, multi-branch routing, and cross-channel orders.",
+        posTerminal:
+          "Resilient in-store checkout terminal with offline capability, hardware peripheral integration, barcode scanner interface, and instant ledger sync.",
+      },
+      alts: {
+        storefrontMain: "Matager Storefront catalog and hero showcase",
+        storefrontCart: "Slide-out shopping cart and instant checkout drawer",
+        storefrontStats: "Live stock availability and estimated delivery badge",
+        ownerMain: "Matager Merchant HQ dashboard with telemetry and KPI cards",
+        ownerModal: "Quick product editor modal with pricing and inventory rules",
+        ownerStats: "Consolidated payout schedule and low-stock telemetry card",
+        posMain: "High-speed cashier POS interface with barcode scanner and ticket register",
+        posPayment: "Payment tender modal with NFC, cash keypad, and split payment",
+        posReceipt: "Digital tax invoice and instant thermal receipt preview",
+      },
+    },
   },
   ar: {
     meta: {
@@ -529,7 +611,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
       supporting:
         "مركز القيادة والتحكم المتقدم للتجارة العصرية. وحّد واجهات المتاجر متعددة البائعين، وبوابات الدفع اللحظية، والخدمات اللوجستية الذكية، والمؤشرات التشغيلية الفورية في منصة متكاملة وواحدة.",
       primaryCta: "ابدأ مجاناً",
-      secondaryCta: "احجز عرضاً تجريبياً",
+      secondaryCta: "تحميل التطبيق",
       trustLine: "يدعم أكثر من 850 علامة تجارية رائدة وأسواق كبرى في 24 دولة",
       terminalTab1: "المؤشرات العالمية",
       terminalTab2: "دفتر حسابات التجار",
@@ -646,7 +728,7 @@ export const translations: Record<Locale, TranslationDictionary> = {
       subhead:
         "أطلق متجرك المتقدم، واربط شبكة تجارك، واكتشف منصة المراقبة والتحكم المصممة لقادة التجارة الجادين.",
       primaryButton: "ابدأ الآن مجاناً",
-      secondaryButton: "احجز جلسة استشارية فنية",
+      secondaryButton: "تحميل التطبيق",
       noCardRequired: "لا تتطلب بطاقة ائتمان • بيئة تجريبية كاملة جاهزة خلال 90 ثانية",
     },
     footer: {
@@ -760,6 +842,49 @@ export const translations: Record<Locale, TranslationDictionary> = {
         dispatchShipping: "طباعة البوليصة والشحن",
         orderAcceptedAlert: "تم قبول الطلب #MTG-9402 من مدير المتجر",
         shippingDispatchedAlert: "تم إرسال إشعار استلام الشحنة لشركة سمسا إكسبريس",
+      },
+    },
+    surfaces: {
+      badge: "منظومة الأجهزة الموحدة للشركات الكبرى",
+      title: "نظام تشغيل واحد. لكل شاشة ومنفذ بيع.",
+      subtitle:
+        "بنية تحتية موحدة مصممة للشركات والمجموعات التجارية الرائدة — تنسق وتزامن واجهات المتجر للجوال، أجهزة التابلت بالمخازن، منصة القيادة بالمقر الرئيسي، وماكينات الكاشير POS في الوقت الفعلي وبدون تأخير.",
+      tabsAriaLabel: "شاشات ومنظومات منصة متاجر",
+      deviceAriaLabel: "اختر نوع شاشة العرض",
+      languageAriaLabel: "اختر لغة واجهة العرض",
+      placeholderBadge: "موضع لقطة الشاشة",
+      tabs: {
+        storefront: "واجهة المتجر",
+        ownerDashboard: "لوحة تحكم التاجر",
+        posTerminal: "محطة نقاط البيع (POS)",
+      },
+      devices: {
+        desktop: "سطح المكتب",
+        tablet: "جهاز لوحي",
+        mobile: "هاتف جوال",
+      },
+      languages: {
+        en: "EN",
+        ar: "العربية",
+      },
+      captions: {
+        storefront:
+          "واجهة متجر استهلاكية فائقة السرعة مع تصفح فوري للكتالوج، بوابات دفع متعددة وفورية، ومزامنة حية للمخزون.",
+        ownerDashboard:
+          "لوحة تحكم مركزية متقدمة للتاجر لإدارة المخزون الفوري، التسويات المالية المباشرة، التوجيه الذكي للفروع، والتحليلات الشاملة.",
+        posTerminal:
+          "محطة كاشير حضورية سريعة وموثوقة تعمل حتى بدون اتصال بالإنترنت مع دعم قارئات الباركود والملحقات الهاردوير والمزامنة اللحظية.",
+      },
+      alts: {
+        storefrontMain: "كتالوج واجهة متجر متاجر والبانر الترويجي",
+        storefrontCart: "سلة التسوق الجانبية ونافذة الدفع السريع",
+        storefrontStats: "مؤشر توفر المخزون الحي وتقدير سرعة التوصيل",
+        ownerMain: "لوحة قيادة التاجر الرئيسية مع مؤشرات الأداء والتحليلات الحية",
+        ownerModal: "نافذة التعديل السريع للمنتجات وقواعد التسعير والمخزون",
+        ownerStats: "جدول التسويات المالية وتنبيهات نواقص المخزون",
+        posMain: "واجهة كاشير POS عالية السرعة مع قارئ الباركود وسجل الفاتورة",
+        posPayment: "نافذة تحصيل الدفع مع تمرير البطاقة والنقد وتقسيم الفاتورة",
+        posReceipt: "الفاتورة الضريبية الرقمية ومعاينة الإيصال الحراري الفوري",
       },
     },
   },

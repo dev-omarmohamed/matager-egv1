@@ -30,7 +30,12 @@ export interface User {
 export interface Store {
   id: string; // uuid / store_uid
   owner_id: string; // ref: User.id
+  client_id?: string;
   name: string; // e.g. Peacock Store
+  legal_name?: string;
+  owner_name?: string;
+  email?: string;
+  phone?: string;
   subdomain: string; // e.g. peacock.matager.com
   status: "Active" | "Trial" | "Past Due" | "Suspended";
   kyc_status: "Approved" | "Pending" | "Rejected";
@@ -38,7 +43,12 @@ export interface Store {
   orders_30d: number; // Cached metric for dashboard
   category?: string;
   sales_channel?: "hybrid" | "online" | "pos";
+  expected_volume?: string;
+  tier_price?: number;
+  currency?: string;
   plan?: "starter" | "pro" | "enterprise";
+  pos_count?: number;
+  branches?: Record<string, Branch>;
   location?: {
     country: string;
     city: string;
@@ -80,8 +90,13 @@ export interface Branch {
   store_id: string;
   name: string; // e.g. Heliopolis Branch, Flagship
   address: string;
+  city?: string;
+  country?: string;
   phone: string;
   status: "Active" | "Inactive";
+  is_default?: boolean;
+  pos_count?: number;
+  pos_systems?: Record<string, PosTerminal>;
   created_at: string;
 }
 

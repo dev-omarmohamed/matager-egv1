@@ -1,0 +1,480 @@
+{
+  "stores": {
+    "peacock_store": {
+      "id": "peacock_store",
+      "name": "Peacock Store",
+      "subdomain": "peacock.matager.com",
+      "owner_id": "owner_mohamed_001",
+      "category": "clothing",
+      "tagline": "Curated Luxury Fashion, Timepieces & Lifestyle",
+      "taglineAr": "منتجات عصرية فاخرة مختارة بعناية · فرع القاهرة الرئيسي",
+      "city": "Cairo",
+      "country": "Egypt",
+      "currency": "EGP",
+      "logo": "https://static.vecteezy.com/system/resources/previews/012/464/679/original/minimal-peacock-logo-vector.jpg",
+      "banner": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600&q=80&auto=format&fit=crop",
+      "verified": true,
+      "rating": 4.9,
+      "reviewsCount": 2340,
+      "productsCount": 1284,
+      "followersCount": 284,
+      "ownerName": "Mohamed Ahmed",
+      "ownerEmail": "mohamed@peacockstore.com",
+      "plan": "Matager-100",
+      "status": "Active",
+      "kyc_status": "Approved",
+      "gmv_30d": 84200,
+      "orders_30d": 412,
+      "created_at": "2026-01-15T10:00:00.000Z"
+    },
+    "urban_kicks": {
+      "id": "urban_kicks",
+      "name": "Urban Kicks",
+      "subdomain": "urbankicks.matager.com",
+      "owner_id": "owner_sara_002",
+      "category": "clothing",
+      "tagline": "Exclusive Sneaker Drops & Contemporary Streetwear",
+      "taglineAr": "أحدث صيحات الأحذية الرياضية والملابس الحضرية · الإسكندرية",
+      "city": "Alexandria",
+      "country": "Egypt",
+      "currency": "EGP",
+      "logo": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80",
+      "banner": "https://images.unsplash.com/photo-1552346154-21d32810aba3?w=1600&q=80&auto=format&fit=crop",
+      "verified": true,
+      "rating": 4.85,
+      "reviewsCount": 890,
+      "productsCount": 640,
+      "followersCount": 512,
+      "ownerName": "Sara Khaled",
+      "ownerEmail": "sara@urbankicks.co",
+      "plan": "Matager-250",
+      "status": "Active",
+      "kyc_status": "Approved",
+      "gmv_30d": 156900,
+      "orders_30d": 890,
+      "created_at": "2026-02-01T12:00:00.000Z"
+    },
+    "living_store": {
+      "id": "living_store",
+      "name": "Living Store",
+      "subdomain": "living.matager.com",
+      "owner_id": "owner_living_003",
+      "category": "home-appliances",
+      "tagline": "Modern Living & Smart Home Appliances",
+      "taglineAr": "الأجهزة المنزلية العصرية ومستلزمات المعيشة الذكية",
+      "city": "Giza",
+      "country": "Egypt",
+      "currency": "EGP",
+      "logo": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=400&q=80",
+      "banner": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=1600&q=80&auto=format&fit=crop",
+      "verified": true,
+      "rating": 4.8,
+      "reviewsCount": 512,
+      "productsCount": 240,
+      "followersCount": 180,
+      "ownerName": "Tarek Hassan",
+      "ownerEmail": "tarek@livingstore.eg",
+      "plan": "Matager-100",
+      "status": "Active",
+      "kyc_status": "Approved",
+      "gmv_30d": 62400,
+      "orders_30d": 210,
+      "created_at": "2026-02-10T10:00:00.000Z"
+    }
+  },
+  "users": {
+    "owner_mohamed_001": {
+      "role": "merchant"
+    },
+    "owner_sara_002": {
+      "role": "merchant"
+    },
+    "owner_living_003": {
+      "role": "merchant"
+    },
+    "wholesaler_clothing_01": {
+      "role": "wholesaler"
+    },
+    "wholesaler_home_01": {
+      "role": "wholesaler"
+    }
+  },
+  "wholesalers": {
+    "wholesaler_clothing_01": {
+      "profile": {
+        "name": "Nile Garments & Textiles",
+        "nameAr": "شركة النيل للملابس والمنسوجات",
+        "logoUrl": "",
+        "description": "Direct manufacturer & bulk distributor of premium Egyptian cotton apparel.",
+        "descriptionAr": "المصنّع والموزع المباشر للملابس القطنية المصرية الفاخرة وتجارة الجملة.",
+        "categories": {
+          "0": "clothing",
+          "clothing": true
+        },
+        "country": "Egypt",
+        "city": "Cairo",
+        "contact": {
+          "email": "wholesale@nilegarments.eg",
+          "phone": "+201011112222",
+          "whatsapp": "+201011112222"
+        },
+        "minOrderValue": 2500,
+        "currency": "EGP",
+        "status": "active",
+        "createdAt": "2026-01-15T09:00:00Z"
+      },
+      "products": {
+        "prod_cloth_01": {
+          "id": "prod_cloth_01",
+          "sku": "NGT-TEE-01",
+          "name": "Premium Combed Cotton Crew Neck T-Shirt",
+          "nameAr": "تيشيرت قطن كومباكت فاخر ياقة دائرية",
+          "category": "clothing",
+          "basePrice": 180,
+          "msrp": 320,
+          "moq": 12,
+          "unit": "piece",
+          "tiers": [
+            {
+              "minQty": 12,
+              "price": 170
+            },
+            {
+              "minQty": 50,
+              "price": 155
+            },
+            {
+              "minQty": 100,
+              "price": 135
+            }
+          ],
+          "stock": 1200,
+          "status": "active",
+          "updatedAt": "2026-03-01T12:00:00Z"
+        },
+        "prod_cloth_02": {
+          "id": "prod_cloth_02",
+          "sku": "NGT-HOOD-02",
+          "name": "Heavyweight Brushed Fleece Hoodie",
+          "nameAr": "سويت شيرت هودي صوف ثقيل مبطن",
+          "category": "clothing",
+          "basePrice": 420,
+          "msrp": 750,
+          "moq": 10,
+          "unit": "piece",
+          "tiers": [
+            {
+              "minQty": 10,
+              "price": 400
+            },
+            {
+              "minQty": 40,
+              "price": 370
+            },
+            {
+              "minQty": 100,
+              "price": 330
+            }
+          ],
+          "stock": 650,
+          "status": "active",
+          "updatedAt": "2026-03-01T12:00:00Z"
+        }
+      }
+    },
+    "wholesaler_home_01": {
+      "profile": {
+        "name": "Delta Electro-Home Appliances",
+        "nameAr": "شركة دلتا للأجهزة المنزلية والكهربائية",
+        "logoUrl": "",
+        "description": "Official factory distributor of modern smart kitchen and household appliances.",
+        "descriptionAr": "الموزع المعتمد من المصنع لأجهزة المطبخ الذكية والأجهزة المنزلية الحديثة.",
+        "categories": {
+          "0": "home-appliances",
+          "home-appliances": true
+        },
+        "country": "Egypt",
+        "city": "Giza",
+        "contact": {
+          "email": "supply@delta-home.eg",
+          "phone": "+201099998888",
+          "whatsapp": "+201099998888"
+        },
+        "minOrderValue": 5000,
+        "currency": "EGP",
+        "status": "active",
+        "createdAt": "2026-01-20T11:00:00Z"
+      },
+      "products": {
+        "prod_home_01": {
+          "id": "prod_home_01",
+          "sku": "DHA-AIR-01",
+          "name": "Rapid Vortex Digital Air Fryer 6.5L",
+          "nameAr": "قلاية هوائية رقمية سريعة سعة 6.5 لتر",
+          "category": "home-appliances",
+          "basePrice": 2200,
+          "msrp": 3400,
+          "moq": 5,
+          "unit": "piece",
+          "tiers": [
+            {
+              "minQty": 5,
+              "price": 2100
+            },
+            {
+              "minQty": 20,
+              "price": 1950
+            },
+            {
+              "minQty": 50,
+              "price": 1800
+            }
+          ],
+          "stock": 140,
+          "status": "active",
+          "updatedAt": "2026-03-02T14:30:00Z"
+        },
+        "prod_home_02": {
+          "id": "prod_home_02",
+          "sku": "DHA-BLND-02",
+          "name": "Pro-Crush Multi-Blade Blender 1200W",
+          "nameAr": "خلاط كهربائي عالي القوة متعدد الشفرات 1200 واط",
+          "category": "home-appliances",
+          "basePrice": 850,
+          "msrp": 1450,
+          "moq": 6,
+          "unit": "piece",
+          "tiers": [
+            {
+              "minQty": 6,
+              "price": 810
+            },
+            {
+              "minQty": 24,
+              "price": 760
+            },
+            {
+              "minQty": 60,
+              "price": 710
+            }
+          ],
+          "stock": 320,
+          "status": "active",
+          "updatedAt": "2026-03-02T14:30:00Z"
+        }
+      }
+    }
+  },
+  "wholesalerInquiries": {
+    "inq_seed_01": {
+      "id": "inq_seed_01",
+      "storeId": "peacock_store",
+      "wholesalerId": "wholesaler_clothing_01",
+      "productId": "prod_cloth_01",
+      "sku": "NGT-TEE-01",
+      "qty": 50,
+      "offeredPrice": 155,
+      "note": "Looking to stock our Heliopolis branch for summer collection.",
+      "createdAt": "2026-03-25T10:00:00Z",
+      "status": "new"
+    }
+  },
+  "branches": {
+    "peacock_store": {
+      "branch_01": {
+        "id": "branch_01",
+        "store_id": "peacock_store",
+        "name": "Cairo Heliopolis Flagship",
+        "address": "14 Baghdad Street, Korba, Heliopolis, Cairo",
+        "phone": "+20 100 458 9201",
+        "status": "Active",
+        "created_at": "2026-01-15T10:00:00.000Z"
+      },
+      "branch_02": {
+        "id": "branch_02",
+        "store_id": "peacock_store",
+        "name": "New Cairo Mall Branch",
+        "address": "5th Settlement, 90th Street North, Cairo",
+        "phone": "+20 100 458 9202",
+        "status": "Active",
+        "created_at": "2026-02-10T10:00:00.000Z"
+      }
+    }
+  },
+  "pos_terminals": {
+    "peacock_store": {
+      "TERM-01": {
+        "id": "TERM-01",
+        "name": "Main Register 01",
+        "branch": "Cairo Heliopolis Flagship",
+        "staffName": "Mohamed Ahmed",
+        "pin": "1234",
+        "status": "Active",
+        "todaySales": 18450,
+        "todayOrders": 24,
+        "lastActive": "Just now"
+      },
+      "TERM-02": {
+        "id": "TERM-02",
+        "name": "Express Counter 02",
+        "branch": "Cairo Heliopolis Flagship",
+        "staffName": "Sara Khaled",
+        "pin": "5678",
+        "status": "Active",
+        "todaySales": 9800,
+        "todayOrders": 14,
+        "lastActive": "4m ago"
+      },
+      "TERM-03": {
+        "id": "TERM-03",
+        "name": "VIP Lounge Mobile POS",
+        "branch": "New Cairo Branch",
+        "staffName": "Omar Tarek",
+        "pin": "9012",
+        "status": "Break",
+        "todaySales": 4300,
+        "todayOrders": 5,
+        "lastActive": "18m ago"
+      },
+      "TERM-04": {
+        "id": "TERM-04",
+        "name": "Warehouse Dispatch POS",
+        "branch": "Alexandria Depot",
+        "staffName": "Youssef Nabil",
+        "pin": "3456",
+        "status": "Offline",
+        "todaySales": 0,
+        "todayOrders": 0,
+        "lastActive": "Yesterday"
+      }
+    }
+  },
+  "categories": {
+    "peacock_store": {
+      "cat_01": {
+        "id": "cat_01",
+        "name": "Footwear",
+        "slug": "footwear",
+        "level": 1,
+        "is_active": true
+      },
+      "cat_02": {
+        "id": "cat_02",
+        "name": "Apparel",
+        "slug": "apparel",
+        "level": 1,
+        "is_active": true
+      },
+      "cat_03": {
+        "id": "cat_03",
+        "name": "Accessories",
+        "slug": "accessories",
+        "level": 1,
+        "is_active": true
+      },
+      "cat_04": {
+        "id": "cat_04",
+        "name": "Limited",
+        "slug": "limited",
+        "level": 1,
+        "is_active": true
+      }
+    }
+  },
+  "products": {
+    "peacock_store": {
+      "PEA_001": {
+        "id": "PEA_001",
+        "title": "Adidas Classic Graphic Tee",
+        "brand": "ADIDAS",
+        "category": "Apparel",
+        "storeId": "peacock_store",
+        "storeName": "Peacock Store",
+        "price": 4500,
+        "originalPrice": 9000,
+        "discountPercent": 50,
+        "stock": 18,
+        "image": "https://assets.adidas.com/images/w_1880,f_auto,q_auto/a4ff4a779ee34deca8cc9a6f1f411440_9366/KC6611_HM1.jpg",
+        "badge": "50% OFF",
+        "currency": "EGP"
+      },
+      "PEA_002": {
+        "id": "PEA_002",
+        "title": "Adidas Ultraboost 22 Running",
+        "brand": "ADIDAS",
+        "category": "Footwear",
+        "storeId": "peacock_store",
+        "storeName": "Peacock Store",
+        "price": 2200,
+        "originalPrice": 2800,
+        "discountPercent": 21,
+        "stock": 42,
+        "image": "https://assets.adidas.com/images/w_1880,f_auto,q_auto/6f20fbc592f5410d83e7e3dd3e0926f0_9366/JS3268_01_00_standard.jpg",
+        "badge": "BEST SELLER",
+        "currency": "EGP"
+      },
+      "PEA_003": {
+        "id": "PEA_003",
+        "title": "Performance Crew Socks (3-Pack)",
+        "brand": "ADIDAS",
+        "category": "Accessories",
+        "storeId": "peacock_store",
+        "storeName": "Peacock Store",
+        "price": 120,
+        "originalPrice": 160,
+        "discountPercent": 25,
+        "stock": 120,
+        "image": "https://resources.mandmdirect.com/Images/_default/a/d/3/ad30709_1_cloudzoom.jpg",
+        "badge": "ESSENTIAL",
+        "currency": "EGP"
+      }
+    }
+  },
+  "orders": {
+    "peacock_store": {
+      "ord_demo_01": {
+        "id": "ord_demo_01",
+        "store_id": "peacock_store",
+        "amount": 4500,
+        "commission_earned": 225,
+        "gateway_fee": 90,
+        "status": "Completed",
+        "type": "Order",
+        "channel": "Online",
+        "payment_method": "Card",
+        "customer_name": "Karim Mahmoud",
+        "customer_phone": "+20 101 234 5678",
+        "shipping_address": "Zamalek, Cairo, Egypt",
+        "items_count": 1,
+        "created_at": "2026-03-28T14:22:00.000Z"
+      },
+      "ord_demo_02": {
+        "id": "ord_demo_02",
+        "store_id": "peacock_store",
+        "amount": 2320,
+        "commission_earned": 116,
+        "gateway_fee": 0,
+        "status": "Completed",
+        "type": "Order",
+        "channel": "POS",
+        "payment_method": "Cash",
+        "customer_name": "Walk-in Guest",
+        "customer_phone": "N/A",
+        "shipping_address": "In-Store Pickup · Terminal Main Register 01",
+        "items_count": 2,
+        "created_at": "2026-03-29T11:45:00.000Z"
+      }
+    }
+  },
+  "subscriptions": {
+    "peacock_store": {
+      "id": "sub_peacock_store",
+      "store_id": "peacock_store",
+      "plan_id": "pro",
+      "status": "Active",
+      "mrr": 1299,
+      "current_period_start": "2026-01-15T10:00:00.000Z",
+      "current_period_end": "2026-12-31T23:59:59.000Z"
+    }
+  }
+}
