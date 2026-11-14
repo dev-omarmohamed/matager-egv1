@@ -33,7 +33,7 @@ export const HowItWorks: React.FC = () => {
   ];
 
   return (
-    <section id="how-it-works" dir={dir} className="w-full py-20 sm:py-28 relative border-t border-[var(--color-border-subtle)] overflow-hidden">
+    <section id="how-it-works" dir={dir} className="w-full py-20 sm:py-28 relative overflow-hidden">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
         {/* Section Header (No Badges) */}
         <div className="text-center max-w-[720px] mx-auto mb-14 sm:mb-16">

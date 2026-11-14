@@ -281,6 +281,63 @@ export interface TranslationDictionary {
       posReceipt: string;
     };
   };
+  devices: {
+    eyebrow: string;
+    heading: string;
+    subtitle: string;
+    stackAriaLabel: string;
+    chips: {
+      formFactors: string;
+      renderLatency: string;
+      offlineReady: string;
+      oneCodebase: string;
+    };
+    ctaPrimary: string;
+    ctaSecondary: string;
+    items: {
+      mobile: {
+        tag: string;
+        title: string;
+        desc: string;
+      };
+      tablet: {
+        tag: string;
+        title: string;
+        desc: string;
+      };
+      laptop: {
+        tag: string;
+        title: string;
+        desc: string;
+      };
+      desktop: {
+        tag: string;
+        title: string;
+        desc: string;
+      };
+      pos: {
+        tag: string;
+        title: string;
+        desc: string;
+      };
+      tv: {
+        tag: string;
+        title: string;
+        desc: string;
+      };
+    };
+    screenLabels: {
+      preparing: string;
+      ready: string;
+      order: string;
+      terminalId: string;
+      offlineMode: string;
+      charge: string;
+      liveStream: string;
+      stockStatus: string;
+      fastCart: string;
+    };
+  };
 }
 
 export const translations: Record<Locale, TranslationDictionary> = {
@@ -585,6 +642,65 @@ export const translations: Record<Locale, TranslationDictionary> = {
         posReceipt: "Digital tax invoice and instant thermal receipt preview",
       },
     },
+    devices: {
+      eyebrow: "DEVICE_MATRIX / 06 FORM FACTORS",
+      heading: "Native on every screen. Built for every counter.",
+      subtitle:
+        "From the phone in your pocket to the cashier terminal and the TV above your counter, Matager adapts its layout, input model, and density to each screen. One system, zero compromises.",
+      stackAriaLabel:
+        "Interactive cross-platform device showcase demonstrating Matager on mobile, tablet, laptop, desktop PC, cashier POS terminal, and TV display.",
+      chips: {
+        formFactors: "6 form factors",
+        renderLatency: "<85ms render",
+        offlineReady: "Offline-ready POS",
+        oneCodebase: "One codebase",
+      },
+      ctaPrimary: "Start free",
+      ctaSecondary: "Download app",
+      items: {
+        mobile: {
+          tag: "DEVICE_01",
+          title: "Mobile",
+          desc: "Shop, track and manage on the go. Thumb-first navigation.",
+        },
+        tablet: {
+          tag: "DEVICE_02",
+          title: "Tablet",
+          desc: "Floor-ready catalog and order management.",
+        },
+        laptop: {
+          tag: "DEVICE_03",
+          title: "Laptop",
+          desc: "Full vendor dashboard with live telemetry.",
+        },
+        desktop: {
+          tag: "DEVICE_04",
+          title: "Desktop",
+          desc: "Multi-pane analytics and bulk catalog tools.",
+        },
+        pos: {
+          tag: "DEVICE_05",
+          title: "Cashier Terminal",
+          desc: "Touch POS with barcode, offline mode and receipt printing.",
+        },
+        tv: {
+          tag: "DEVICE_06",
+          title: "TV / Display",
+          desc: "Live order boards, queue screens and branch KPIs.",
+        },
+      },
+      screenLabels: {
+        preparing: "Preparing",
+        ready: "Ready for Pickup",
+        order: "Order",
+        terminalId: "POS #01",
+        offlineMode: "Offline Ready",
+        charge: "Charge",
+        liveStream: "Live Telemetry",
+        stockStatus: "In Stock",
+        fastCart: "Cart",
+      },
+    },
   },
   ar: {
     meta: {
@@ -885,6 +1001,65 @@ export const translations: Record<Locale, TranslationDictionary> = {
         posMain: "واجهة كاشير POS عالية السرعة مع قارئ الباركود وسجل الفاتورة",
         posPayment: "نافذة تحصيل الدفع مع تمرير البطاقة والنقد وتقسيم الفاتورة",
         posReceipt: "الفاتورة الضريبية الرقمية ومعاينة الإيصال الحراري الفوري",
+      },
+    },
+    devices: {
+      eyebrow: "مصفوفة الأجهزة / ٦ أحجام شاشات",
+      heading: "يعمل أصلاً على كل شاشة. ومصمم لكل كاونتر.",
+      subtitle:
+        "من الهاتف في جيبك إلى شاشة الكاشير والتلفاز فوق الكاونتر، يتكيّف ماتاجر تلقائياً مع كل شاشة في التخطيط وطريقة الإدخال وكثافة العرض. نظام واحد بلا أي تنازلات.",
+      stackAriaLabel:
+        "عرض تفاعلي لتوافق ماتاجر عبر مختلف الأجهزة: الجوال، التابلت، اللابتوب، الكمبيوتر المكتبي، محطة الكاشير، وشاشة التلفاز.",
+      chips: {
+        formFactors: "٦ أحجام شاشات",
+        renderLatency: "أقل من 85ms",
+        offlineReady: "نقطة بيع تعمل بدون إنترنت",
+        oneCodebase: "قاعدة كود واحدة",
+      },
+      ctaPrimary: "ابدأ مجاناً",
+      ctaSecondary: "حمّل التطبيق",
+      items: {
+        mobile: {
+          tag: "DEVICE_01",
+          title: "الجوال",
+          desc: "تسوق، تتبّع وأدر مبيعاتك أثناء التنقل. تحكم سلس ومصمم للإبهام.",
+        },
+        tablet: {
+          tag: "DEVICE_02",
+          title: "التابلت",
+          desc: "كتالوج جاهز لصالة العرض وإدارة فورية للطلبات.",
+        },
+        laptop: {
+          tag: "DEVICE_03",
+          title: "اللابتوب",
+          desc: "لوحة تحكم كاملة للمتاجر مع قياسات أداء حية ومباشرة.",
+        },
+        desktop: {
+          tag: "DEVICE_04",
+          title: "الكمبيوتر المكتبي",
+          desc: "تحليلات متعددة النوافذ وأدوات إدارة جماعية للكتالوج.",
+        },
+        pos: {
+          tag: "DEVICE_05",
+          title: "شاشة الكاشير",
+          desc: "نظام كاشير باللمس مع باركود وعمل دون إنترنت وطباعة فواتير.",
+        },
+        tv: {
+          tag: "DEVICE_06",
+          title: "شاشة التلفاز",
+          desc: "لوحات طلبات حية وشاشات طوابير ومؤشرات أداء للفروع.",
+        },
+      },
+      screenLabels: {
+        preparing: "قيد التحضير",
+        ready: "جاهز للاستلام",
+        order: "طلب",
+        terminalId: "كاشير #01",
+        offlineMode: "يعمل بدون إنترنت",
+        charge: "تحصيل",
+        liveStream: "بيانات حية",
+        stockStatus: "متوفر",
+        fastCart: "السلة",
       },
     },
   },
