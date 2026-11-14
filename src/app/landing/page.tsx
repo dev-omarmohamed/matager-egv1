@@ -5,6 +5,7 @@ import { useLanguage } from "@/i18n";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { SystemShowcaseSection } from "@/components/landing/SystemShowcaseSection";
 import { ValuePillars } from "@/components/landing/ValuePillars";
+import { MultiDeviceExperience } from "@/components/landing/MultiDeviceExperience";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { EcosystemGrid } from "@/components/landing/EcosystemGrid";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
@@ -152,6 +153,15 @@ export default function LandingPage() {
               SECTION 3: VALUE PILLARS (4 Carbon Cards Marquee)
               ══════════════════════════════════════════════════════════════════════ */}
           <ValuePillars />
+
+          {/* ══════════════════════════════════════════════════════════════════════
+              SECTION 3.5: MULTI-DEVICE EXPERIENCE (#devices)
+              6-Device Layered Stack: TV, Desktop, Laptop, POS, Tablet, Phone
+              ══════════════════════════════════════════════════════════════════════ */}
+          <MultiDeviceExperience
+            onOpenAuth={handleOpenAuth}
+            onOpenDownload={() => handleDownload()}
+          />
 
           {/* ══════════════════════════════════════════════════════════════════════
               SECTION 4: HOW IT WORKS (3 Steps Flow Marquee)
