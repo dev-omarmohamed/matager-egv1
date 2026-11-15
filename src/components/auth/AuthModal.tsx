@@ -50,6 +50,14 @@ import {
   getCityCoordinates,
   generateGoogleMapsUrl,
 } from "@/lib/arab-countries";
+import {
+  PRICING_PLANS,
+  POS_ONLY_PLAN,
+  calculatePlanTotal,
+  POS_ONLY_TERMINAL_PRICE,
+  YEARLY_DISCOUNT,
+  type PlanDefinition,
+} from "@/lib/pricing-calculator";
 
 export { ARAB_COUNTRIES, type ArabCountry, type ArabCity };
 
@@ -150,11 +158,76 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [modalPosCount, setModalPosCount] = useState<number>(0);
   const [modalBilling, setModalBilling] = useState<"monthly" | "yearly">("monthly");
 
-  // Step 1: Expected Volume & Pricing
+  // Step 1: Expected Volume & Pricing via 5-stop slider (0..4)
+  const [activeSliderIndex, setActiveSliderIndex] = useState<number>(2);
   const [selectedVolumeTier, setSelectedVolumeTier] = useState<string>("tier_3");
-  const [expectedVolume, setExpectedVolume] = useState<string>("50 - 100 products");
+  const [expectedVolume, setExpectedVolume] = useState<string>("50-100 products");
   const [tierPrice, setTierPrice] = useState<number>(570);
   const [salesChannel, setSalesChannel] = useState<"hybrid" | "online" | "pos">("hybrid");
+
+  const modalSliderRef = useRef<HTMLDivElement>(null);
+  const isDraggingModalSliderRef = useRef<boolean>(false);
+
+  const currentSelectedPlan: PlanDefinition = PRICING_PLANS[activeSliderIndex] || PRICING_PLANS[2];
+
+  const handleSliderIndexChange = (newIndex: number) => {
+    const bounded = Math.max(0, Math.min(PRICING_PLANS.length - 1, newIndex));
+    setActiveSliderIndex(bounded);
+    const plan = PRICING_PLANS[bounded];
+    setSelectedVolumeTier(plan.id);
+    setExpectedVolume(`${plan.range} products`);
+    const isYearly = modalBilling === "yearly";
+    const price = isYearly ? Math.round(plan.monthlyBasePrice * (1 - YEARLY_DISCOUNT)) : plan.monthlyBasePrice;
+    setTierPrice(price);
+    setSelectedPlan(plan.id === "tier_5" ? "enterprise" : plan.id === "tier_3" || plan.id === "tier_4" ? "pro" : "starter");
+    if (plan.id === "tier_5") {
+      setSalesChannel("hybrid");
+    }
+  };
+
+  const updateModalSliderFromPointer = (clientX: number) => {
+    if (!modalSliderRef.current) return;
+    const rect = modalSliderRef.current.getBoundingClientRect();
+    const relativeX = clientX - rect.left;
+    const ratio = Math.max(0, Math.min(1, relativeX / rect.width));
+    const normalizedRatio = isAr ? 1 - ratio : ratio;
+    const nearestIndex = Math.round(normalizedRatio * (PRICING_PLANS.length - 1));
+    handleSliderIndexChange(nearestIndex);
+  };
+
+  const handleModalSliderPointerDown = (e: React.PointerEvent) => {
+    isDraggingModalSliderRef.current = true;
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    updateModalSliderFromPointer(e.clientX);
+  };
+
+  const handleModalSliderPointerMove = (e: React.PointerEvent) => {
+    if (!isDraggingModalSliderRef.current) return;
+    updateModalSliderFromPointer(e.clientX);
+  };
+
+  const handleModalSliderPointerUp = (e: React.PointerEvent) => {
+    isDraggingModalSliderRef.current = false;
+    try {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {}
+  };
+
+  const handleModalSliderKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      handleSliderIndexChange(isAr ? activeSliderIndex - 1 : activeSliderIndex + 1);
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      handleSliderIndexChange(isAr ? activeSliderIndex + 1 : activeSliderIndex - 1);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      handleSliderIndexChange(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      handleSliderIndexChange(PRICING_PLANS.length - 1);
+    }
+  };
 
   // Synchronize pre-checked plan from landing pricing calculator
   useEffect(() => {
@@ -166,26 +239,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setModalPosCount(count);
         const billingCycle = initialPlanOptions.billing || "monthly";
         setModalBilling(billingCycle);
-        const price = billingCycle === "yearly" ? Math.round(count * 200 * 0.9) : count * 200;
+        const price = billingCycle === "yearly" ? Math.round(count * POS_ONLY_TERMINAL_PRICE * 0.9) : count * POS_ONLY_TERMINAL_PRICE;
         setTierPrice(price);
         setExpectedVolume(`${count} POS Cashier Terminals`);
         setSelectedPlan("starter");
       } else {
         setModalPricingMode("catalog");
         const planId = initialPlanOptions.planId || "tier_3";
-        setSelectedVolumeTier(planId);
-        const found =
-          VOLUME_PRICING_OPTIONS.find((p) => p.id === planId) || VOLUME_PRICING_OPTIONS[2];
-        setExpectedVolume(found.range);
+        const foundIdx = PRICING_PLANS.findIndex((p) => p.id === planId);
+        const resolvedIdx = foundIdx >= 0 ? foundIdx : 2;
+        setActiveSliderIndex(resolvedIdx);
+        const plan = PRICING_PLANS[resolvedIdx];
+        setSelectedVolumeTier(plan.id);
+        setExpectedVolume(`${plan.range} products`);
         const billingCycle = initialPlanOptions.billing || "monthly";
         setModalBilling(billingCycle);
         const price =
-          billingCycle === "yearly" ? Math.round(found.price * 0.9) : found.price;
+          billingCycle === "yearly" ? Math.round(plan.monthlyBasePrice * 0.9) : plan.monthlyBasePrice;
         setTierPrice(price);
-        setSelectedPlan(found.mappedPlan);
+        setSelectedPlan(plan.id === "tier_5" ? "enterprise" : plan.id === "tier_3" || plan.id === "tier_4" ? "pro" : "starter");
         const pos = initialPlanOptions.posCount || 0;
         setModalPosCount(pos);
-        setSalesChannel(pos > 0 || planId === "tier_5" ? "hybrid" : "online");
+        setSalesChannel(pos > 0 || plan.id === "tier_5" ? "hybrid" : "online");
       }
     }
   }, [initialPlanOptions, isOpen]);
@@ -197,19 +272,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       const count = modalPosCount > 0 ? modalPosCount : 1;
       setModalPosCount(count);
       const isYearly = modalBilling === "yearly";
-      const price = isYearly ? Math.round(count * 200 * 0.9) : count * 200;
+      const price = isYearly ? Math.round(count * POS_ONLY_TERMINAL_PRICE * 0.9) : count * POS_ONLY_TERMINAL_PRICE;
       setTierPrice(price);
       setExpectedVolume(`${count} POS Cashier Terminals`);
       setSelectedPlan("starter");
     } else {
-      const found =
-        VOLUME_PRICING_OPTIONS.find((p) => p.id === selectedVolumeTier) || VOLUME_PRICING_OPTIONS[2];
+      const plan = PRICING_PLANS[activeSliderIndex] || PRICING_PLANS[2];
       const isYearly = modalBilling === "yearly";
-      const price = isYearly ? Math.round(found.price * 0.9) : found.price;
+      const price = isYearly ? Math.round(plan.monthlyBasePrice * 0.9) : plan.monthlyBasePrice;
       setTierPrice(price);
-      setExpectedVolume(found.range);
-      setSelectedPlan(found.mappedPlan);
-      setSalesChannel(modalPosCount > 0 || found.id === "tier_5" ? "hybrid" : "online");
+      setExpectedVolume(`${plan.range} products`);
+      setSelectedPlan(plan.id === "tier_5" ? "enterprise" : plan.id === "tier_3" || plan.id === "tier_4" ? "pro" : "starter");
+      setSalesChannel(modalPosCount > 0 || plan.id === "tier_5" ? "hybrid" : "online");
     }
   };
 
@@ -217,12 +291,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setModalBilling(billing);
     const isYearly = billing === "yearly";
     if (modalPricingMode === "pos_only") {
-      const price = isYearly ? Math.round(modalPosCount * 200 * 0.9) : modalPosCount * 200;
+      const price = isYearly ? Math.round(modalPosCount * POS_ONLY_TERMINAL_PRICE * 0.9) : modalPosCount * POS_ONLY_TERMINAL_PRICE;
       setTierPrice(price);
     } else {
-      const found =
-        VOLUME_PRICING_OPTIONS.find((p) => p.id === selectedVolumeTier) || VOLUME_PRICING_OPTIONS[2];
-      const price = isYearly ? Math.round(found.price * 0.9) : found.price;
+      const plan = PRICING_PLANS[activeSliderIndex] || PRICING_PLANS[2];
+      const price = isYearly ? Math.round(plan.monthlyBasePrice * 0.9) : plan.monthlyBasePrice;
       setTierPrice(price);
     }
   };
@@ -231,18 +304,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const next = Math.max(1, Math.min(20, modalPosCount + delta));
     setModalPosCount(next);
     const isYearly = modalBilling === "yearly";
-    const price = isYearly ? Math.round(next * 200 * 0.9) : next * 200;
+    const price = isYearly ? Math.round(next * POS_ONLY_TERMINAL_PRICE * 0.9) : next * POS_ONLY_TERMINAL_PRICE;
     setTierPrice(price);
     setExpectedVolume(`${next} POS Cashier Terminals`);
   };
 
   const handleModalTierSelect = (tier: (typeof VOLUME_PRICING_OPTIONS)[number]) => {
-    setSelectedVolumeTier(tier.id);
-    setExpectedVolume(tier.range);
-    const isYearly = modalBilling === "yearly";
-    const price = isYearly ? Math.round(tier.price * 0.9) : tier.price;
-    setTierPrice(price);
-    setSelectedPlan(tier.mappedPlan);
+    const foundIdx = PRICING_PLANS.findIndex((p) => p.id === tier.id);
+    if (foundIdx >= 0) {
+      handleSliderIndexChange(foundIdx);
+    } else {
+      setSelectedVolumeTier(tier.id);
+      setExpectedVolume(tier.range);
+      const isYearly = modalBilling === "yearly";
+      const price = isYearly ? Math.round(tier.price * 0.9) : tier.price;
+      setTierPrice(price);
+      setSelectedPlan(tier.mappedPlan);
+    }
   };
 
   // Step 2: Business details
@@ -360,11 +438,46 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   // Step 6: Contact & Credentials
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [phoneCountryCode, setPhoneCountryCode] = useState<string>("+20");
   const [signupPassword, setSignupPassword] = useState("");
   const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [passwordNotice, setPasswordNotice] = useState<string | null>(null);
   const [contactCode, setContactCode] = useState("");
   const [isContactVerified, setIsContactVerified] = useState(false);
   const [contactVerifySent, setContactVerifySent] = useState(false);
+
+  // Dynamic store slug helper for Step 2 hint (www.[storename].com)
+  const formatStoreSlug = (name: string): string => {
+    const trimmed = name.trim().toLowerCase();
+    if (!trimmed) return "storename";
+    const slug = trimmed
+      .replace(/[^\w\u0600-\u06FF]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    return slug || "storename";
+  };
+
+  // Strong password generator for Step 5:
+  // Formula: "m" + half the email username + half phone number (last 5 digits) + symbol + "matager"
+  const generateStrongPassword = () => {
+    const emailUser = (email.split("@")[0] || "owner").replace(/[^a-zA-Z0-9]/g, "");
+    const halfEmailLen = Math.max(2, Math.ceil(emailUser.length / 2));
+    const emailPart = (emailUser.slice(0, halfEmailLen) || "adm").toLowerCase();
+
+    const cleanPhoneDigits = phone.replace(/\D/g, "");
+    const phonePart = cleanPhoneDigits.length >= 5 ? cleanPhoneDigits.slice(-5) : (cleanPhoneDigits || "12345");
+
+    const symbol = "@";
+    const generated = `m${emailPart}${phonePart}${symbol}matager`;
+
+    setSignupPassword(generated);
+    setShowSignupPassword(true);
+    setPasswordNotice(
+      isAr
+        ? "✓ تم توليد كلمة مرور قوية وتطبيقها بنجاح!"
+        : "✓ Strong password generated and applied!"
+    );
+    setTimeout(() => setPasswordNotice(null), 4000);
+  };
 
   // Mapped plan tier for database schema compatibility
   const [selectedPlan, setSelectedPlan] = useState<"starter" | "pro" | "enterprise">("pro");
@@ -479,10 +592,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsLocating(false);
     setLocationUrl(null);
     setLocationStatus(null);
+    setPhoneCountryCode("+20");
+    setPasswordNotice(null);
     if (!initialPlanOptions) {
       setModalPricingMode("catalog");
+      setActiveSliderIndex(2);
       setSelectedVolumeTier("tier_3");
-      setExpectedVolume("50 - 100 products");
+      setExpectedVolume("50-100 products");
       setTierPrice(570);
       setModalPosCount(0);
       setSalesChannel("hybrid");
@@ -509,11 +625,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         // Category
         return category.trim().length > 0;
       case 4:
-        // Location & Currency
+        // Location & Currency (Egypt only active currently)
         return country.trim().length > 0 && city.trim().length > 0 && address.trim().length > 0;
       case 5:
         // Contact & Credentials
-        return email.includes("@") && phone.trim().length >= 7;
+        // Egyptian phone number must be strictly 11 digits
+        // Password must exceed 10 characters (>10)
+        const cleanPhoneDigits = phone.replace(/\D/g, "");
+        return (
+          email.includes("@") &&
+          email.includes(".") &&
+          cleanPhoneDigits.length === 11 &&
+          signupPassword.length > 10
+        );
       case 6:
         // Review & Launch
         return true;
@@ -545,6 +669,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           ? "hybrid"
           : "online";
 
+      const cleanPhoneDigits = phone.replace(/\D/g, "");
+      const fullPhone = `${phoneCountryCode}${cleanPhoneDigits}`;
+
       setupStoreOwnerAccount({
         salesChannel: finalSalesChannel,
         expectedVolume,
@@ -557,7 +684,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         city,
         address: finalAddress,
         email,
-        phone,
+        phone: fullPhone,
         password: signupPassword || "MatagerStore2026!",
         selectedPlan,
       })
@@ -569,11 +696,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             localStorage.setItem("matager_active_store_id", sId);
             localStorage.setItem("matager_active_store_name", storeName);
 
-            // Automatically open two new tabs in the browser:
-            // Tab 1: Storefront URL (/storefront?storeId=${storeId})
-            // Tab 2: Dashboard URL (/dashboard?storeId=${storeId})
-            window.open(`/storefront?storeId=${sId}`, "_blank");
-            window.open(`/dashboard?storeId=${sId}`, "_blank");
+            // Redirect user directly to their dashboard: "it will redirect you to your dashboard and you are in"
+            window.location.href = `/dashboard?storeId=${sId}`;
           }
           handleClose();
         })
@@ -584,8 +708,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             localStorage.setItem("matager_user_role", "merchant");
             localStorage.setItem("matager_current_store_id", fallbackStoreId);
             localStorage.setItem("matager_active_store_id", fallbackStoreId);
-            window.open(`/storefront?storeId=${fallbackStoreId}`, "_blank");
-            window.open(`/dashboard?storeId=${fallbackStoreId}`, "_blank");
+            window.location.href = `/dashboard?storeId=${fallbackStoreId}`;
           }
           handleClose();
         });
@@ -1121,79 +1244,148 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                 </div>
 
-                {/* Content: Catalog Mode (5 tiers + Enterprise Callout) */}
+                {/* Content: Catalog Mode (Slider + Single Selected Plan Card + Enterprise Callout) */}
                 {modalPricingMode === "catalog" && (
-                  <div className="space-y-2">
-                    <div className="max-h-[220px] overflow-y-auto space-y-1.5 pe-1">
-                      {VOLUME_PRICING_OPTIONS.map((tier) => {
-                        const isSelected = selectedVolumeTier === tier.id;
-                        const displayPrice =
-                          modalBilling === "yearly" ? Math.round(tier.price * 0.9) : tier.price;
-                        return (
-                          <div
-                            key={tier.id}
-                            onClick={() => handleModalTierSelect(tier)}
-                            className={`msm-opt transition-all py-2 px-3 rounded-[10px] border cursor-pointer ${
-                              isSelected ? "is-selected" : ""
+                  <div className="space-y-3">
+                    {/* ─── 5-STOP DRAGGABLE / CLICKABLE SLIDER ─── */}
+                    <div className="p-3 rounded-[12px] bg-[var(--color-surface)] border border-[var(--color-border)] space-y-2">
+                      <div className="flex items-center justify-between text-xs font-semibold text-[var(--color-text-secondary)] font-ui">
+                        <span>{isAr ? "اختر نطاق المنتجات:" : "Select product volume range:"}</span>
+                        <span className="text-[var(--color-primary-light)] font-bold">
+                          {isAr ? currentSelectedPlan.rangeAr : currentSelectedPlan.range} {isAr ? "منتج" : "products"}
+                        </span>
+                      </div>
+
+                      <div
+                        ref={modalSliderRef}
+                        role="slider"
+                        tabIndex={0}
+                        aria-label={isAr ? "محدد باقة المنتجات" : "Product volume range slider"}
+                        aria-valuemin={0}
+                        aria-valuemax={PRICING_PLANS.length - 1}
+                        aria-valuenow={activeSliderIndex}
+                        aria-valuetext={`${currentSelectedPlan.name} (${currentSelectedPlan.range} products)`}
+                        onKeyDown={handleModalSliderKeyDown}
+                        onPointerDown={handleModalSliderPointerDown}
+                        onPointerMove={handleModalSliderPointerMove}
+                        onPointerUp={handleModalSliderPointerUp}
+                        className="relative h-8 flex items-center cursor-pointer touch-none select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-light)] rounded-full"
+                      >
+                        {/* Rail */}
+                        <div className="absolute inset-x-0 h-2 rounded-full bg-[var(--color-surface-elevated)] border border-[var(--color-border)]" />
+
+                        {/* Active Track */}
+                        <div
+                          className="absolute h-2 rounded-full bg-[var(--color-primary-light)]"
+                          style={{
+                            [isAr ? "right" : "left"]: 0,
+                            width: `${(activeSliderIndex / (PRICING_PLANS.length - 1)) * 100}%`,
+                          }}
+                        />
+
+                        {/* 5 Stops Points */}
+                        <div className="absolute inset-x-0 flex items-center justify-between px-1 pointer-events-none">
+                          {PRICING_PLANS.map((plan, idx) => (
+                            <div
+                              key={plan.id}
+                              className={`w-3 h-3 rounded-full border transition-all ${
+                                idx <= activeSliderIndex
+                                  ? "bg-[var(--color-primary-light)] border-white/70 shadow-xs"
+                                  : "bg-[var(--color-surface)] border-[var(--color-border)]"
+                              }`}
+                            />
+                          ))}
+                        </div>
+
+                        {/* Draggable Thumb */}
+                        <div
+                          className="absolute w-5 h-5 rounded-full bg-white dark:bg-zinc-100 border-2 border-[var(--color-primary-light)] shadow-md top-1/2 -translate-y-1/2 pointer-events-none transition-transform active:scale-110"
+                          style={{
+                            [isAr ? "right" : "left"]: `calc(${(activeSliderIndex / (PRICING_PLANS.length - 1)) * 100}% - 10px)`,
+                          }}
+                        />
+                      </div>
+
+                      {/* Stop Labels under rail */}
+                      <div className="flex items-center justify-between text-[10px] text-[var(--color-text-muted)] font-mono">
+                        {PRICING_PLANS.map((plan, idx) => (
+                          <button
+                            type="button"
+                            key={plan.id}
+                            onClick={() => handleSliderIndexChange(idx)}
+                            className={`hover:text-[var(--color-text-primary)] transition-colors px-1 py-0.5 rounded ${
+                              idx === activeSliderIndex
+                                ? "font-bold text-[var(--color-primary-light)] bg-[var(--color-surface-elevated)]"
+                                : ""
                             }`}
                           >
-                            <div className="flex items-center justify-between gap-2.5 w-full">
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <div
-                                  className={`p-1.5 rounded-[6px] shrink-0 transition-colors ${
-                                    isSelected
-                                      ? "bg-[var(--color-primary-dark)]/20 text-[var(--color-primary-light)]"
-                                      : "bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)]"
-                                  }`}
-                                >
-                                  <Layers className="w-3.5 h-3.5" />
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="flex flex-wrap items-center gap-1.5">
-                                    <span className="text-xs sm:text-sm font-semibold text-[var(--color-text-primary)] truncate">
-                                      {isAr ? tier.rangeAr : tier.range}
-                                    </span>
-                                    {tier.dealBadge && (
-                                      <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold font-ui bg-[var(--color-primary-dark)]/20 text-[var(--color-primary-light)] border border-[var(--color-primary-light)]/40 shadow-sm animate-pulse">
-                                        ★ {isAr ? tier.dealBadgeAr : tier.dealBadge}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="msm-sub text-[11px] text-[var(--color-text-secondary)] mt-0.5 truncate">
-                                    {tier.id === "tier_5"
-                                      ? isAr
-                                        ? "يشمل واجهة متجر + 2 كاشير POS مجاناً"
-                                        : "Includes storefront + 2 free POS registers"
-                                      : isAr
-                                        ? "متجر موحد مع مزامنة سحابية"
-                                        : "Unified storefront with cloud inventory"}
-                                  </div>
-                                </div>
-                              </div>
+                            {isAr ? plan.rangeAr : plan.range}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                              <div className="flex items-center gap-2.5 shrink-0">
-                                <div className="text-right rtl:text-left">
-                                  <span className="text-sm sm:text-base font-bold font-ui text-[var(--color-primary-light)]">
-                                    {displayPrice}
-                                  </span>
-                                  <span className="text-[10px] text-[var(--color-text-muted)] ms-1">
-                                    {activeCurrencySymbol} / {isAr ? "شهر" : "mo"}
-                                  </span>
-                                </div>
-                                <div
-                                  className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
-                                    isSelected
-                                      ? "border-transparent bg-gradient-to-r from-[var(--color-primary-dark)] to-[var(--color-primary-light)] text-white shadow-sm shadow-[var(--color-primary-dark)]/40"
-                                      : "border-[var(--color-border)]"
-                                  }`}
-                                >
-                                  {isSelected && <Check className="w-2 h-2 text-white stroke-[3]" />}
-                                </div>
-                              </div>
-                            </div>
+                    {/* ─── ONLY ONE PLAN CARD (Matches user slider selection) ─── */}
+                    <div className="p-3.5 rounded-[12px] bg-[var(--color-surface)] border-2 border-[var(--color-primary-light)]/50 shadow-sm space-y-2.5 relative overflow-hidden">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-heading text-base font-bold text-[var(--color-text-primary)]">
+                              {isAr ? currentSelectedPlan.nameAr : currentSelectedPlan.name}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[var(--color-primary-light)]/15 text-[var(--color-primary-light)] border border-[var(--color-primary-light)]/30">
+                              {isAr ? `${currentSelectedPlan.rangeAr} منتج` : `${currentSelectedPlan.range} products`}
+                            </span>
                           </div>
-                        );
-                      })}
+                          <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                            {currentSelectedPlan.id === "tier_5"
+                              ? isAr
+                                ? "أعلى سعة للكتالوج مع نقطتي بيع (2 POS) مجاناً"
+                                : "Maximum catalog capacity + 2 free POS registers"
+                              : isAr
+                              ? "متجر موحد مع مزامنة سحابية وحماية تلقائية"
+                              : "Unified storefront with cloud inventory & automated sync"}
+                          </p>
+                        </div>
+
+                        <div className="text-right rtl:text-left shrink-0">
+                          <div className="text-base sm:text-lg font-bold font-ui text-[var(--color-primary-light)]">
+                            {tierPrice}
+                            <span className="text-xs font-normal text-[var(--color-text-muted)] ms-1">
+                              {activeCurrencySymbol} / {isAr ? "شهر" : "mo"}
+                            </span>
+                          </div>
+                          {modalBilling === "yearly" && (
+                            <span className="text-[10px] text-emerald-500 font-semibold block">
+                              {isAr ? "مشمول خصم 10% السنوي" : "Includes 10% yearly discount"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Best Deal Banner if tier_5 */}
+                      {currentSelectedPlan.id === "tier_5" && (
+                        <div className="px-2.5 py-1 rounded-[8px] bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[11px] font-semibold flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                          <span>
+                            {isAr
+                              ? "أفضل قيمة: يتضمن نقطتي بيع كاشير (2 POS Terminals) مجاناً بالكامل!"
+                              : "Best Value: Includes 2 POS Cashier Terminals 100% Free!"}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Capabilities Checkmarks */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1.5 border-t border-[var(--color-border-subtle)] text-[11px] text-[var(--color-text-secondary)]">
+                        {(isAr ? currentSelectedPlan.capabilitiesAr : currentSelectedPlan.capabilities)
+                          .slice(0, 4)
+                          .map((cap, i) => (
+                            <div key={i} className="flex items-center gap-1.5">
+                              <Check className="w-3 h-3 text-emerald-500 shrink-0" />
+                              <span className="truncate">{cap}</span>
+                            </div>
+                          ))}
+                      </div>
                     </div>
 
                     {/* Enterprise Callout: Need more than 550 products? */}
@@ -1330,6 +1522,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       placeholder={isAr ? "متجر الأناقة" : "Store name"}
                       className="input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-sm"
                     />
+                    {/* Dynamic Store Name URL Hint */}
+                    <div className="flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-[6px] bg-[var(--color-surface-elevated)] border border-[var(--color-border-subtle)] text-[11px] font-mono text-[var(--color-text-secondary)]">
+                      <span className="text-[var(--color-primary-light)] font-bold">🌐</span>
+                      <span className="text-[var(--color-text-muted)]">{isAr ? "رابط المتجر المقترح:" : "Suggested store URL:"}</span>
+                      <span className="font-semibold text-[var(--color-primary-light)]" dir="ltr">
+                        www.{formatStoreSlug(storeName)}.com
+                      </span>
+                    </div>
                   </div>
 
                   <div>
@@ -1361,21 +1561,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {STORE_CATEGORIES.map((cat) => (
-                    <div
-                      key={cat}
-                      onClick={() => setCategory(cat)}
-                      className={`msm-opt text-xs py-2.5 px-3 ${category === cat ? "is-selected" : ""}`}
-                    >
-                      <span className="font-medium text-[var(--color-text-primary)]">
-                        {CATEGORY_LABELS[cat][isAr ? "ar" : "en"]}
-                      </span>
-                      {category === cat && (
-                        <Check className="w-3.5 h-3.5 text-[var(--color-primary-light)] shrink-0" />
-                      )}
-                    </div>
-                  ))}
+                <div className="max-h-[260px] overflow-y-auto pe-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {STORE_CATEGORIES.map((cat) => (
+                      <div
+                        key={cat}
+                        onClick={() => setCategory(cat)}
+                        className={`msm-opt text-xs py-2.5 px-3 ${category === cat ? "is-selected" : ""}`}
+                      >
+                        <span className="font-medium text-[var(--color-text-primary)]">
+                          {CATEGORY_LABELS[cat]?.[isAr ? "ar" : "en"] || cat}
+                        </span>
+                        {category === cat && (
+                          <Check className="w-3.5 h-3.5 text-[var(--color-primary-light)] shrink-0" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -1398,10 +1600,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
 
                 <div className="space-y-3.5">
-                  {/* Country Selection (22 Arab Countries) */}
+                  {/* Country Selection (Egypt active currently, others Coming Soon) */}
                   <div>
                     <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
-                      {isAr ? "الدولة (22 دولة عربية)" : "Country (22 Arab Countries)"}
+                      {isAr ? "الدولة (مصر فقط حالياً)" : "Country (Egypt Only Currently)"}
                     </label>
                     <div className="relative">
                       <select
@@ -1409,21 +1611,40 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         onChange={(e) => handleCountryChange(e.target.value)}
                         className="input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-sm font-ui bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] appearance-none cursor-pointer pr-10 rtl:pr-3.5 rtl:pl-10"
                       >
-                        {ARAB_COUNTRIES.map((c) => (
-                          <option
-                            key={c.id}
-                            value={c.name}
-                            className="bg-[var(--color-surface)] text-[var(--color-text-primary)]"
-                          >
-                            {isAr ? `${c.nameAr} (${c.currencyAr})` : `${c.name} (${c.currency})`}
-                          </option>
-                        ))}
+                        {ARAB_COUNTRIES.map((c) => {
+                          const isEgypt = c.name === "Egypt";
+                          return (
+                            <option
+                              key={c.id}
+                              value={c.name}
+                              disabled={!isEgypt}
+                              className={
+                                !isEgypt
+                                  ? "text-gray-400 bg-[var(--color-surface)]"
+                                  : "bg-[var(--color-surface)] text-[var(--color-text-primary)] font-bold"
+                              }
+                            >
+                              {isAr
+                                ? `${c.nameAr} (${c.currencyAr}) ${!isEgypt ? "— قريباً" : ""}`
+                                : `${c.name} (${c.currency}) ${!isEgypt ? "— Coming Soon" : ""}`}
+                            </option>
+                          );
+                        })}
                       </select>
                       <div className="pointer-events-none absolute inset-y-0 end-0 flex items-center px-3 text-[var(--color-text-muted)]">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                         </svg>
                       </div>
+                    </div>
+                    {/* Notice that other Arab countries are coming soon */}
+                    <div className="mt-1.5 p-2 rounded-[8px] bg-blue-500/10 border border-blue-500/20 text-[11px] text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                      <Info className="w-3.5 h-3.5 shrink-0" />
+                      <span>
+                        {isAr
+                          ? "الخدمة متاحة حالياً في جمهورية مصر العربية فقط، وباقي الدول العربية ستتاح قريباً."
+                          : "Service is currently available in Egypt only. Other Arab countries are coming soon."}
+                      </span>
                     </div>
                     <div className="text-[11px] text-[var(--color-text-muted)] flex items-center justify-between pt-1 font-ui">
                       <span>{isAr ? "العملة الافتراضية للنظام:" : "Default system currency:"}</span>
@@ -1578,30 +1799,100 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                   <div>
                     <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
-                      {isAr ? "رقم الهاتف" : "Phone"}
+                      {isAr ? "رقم الهاتف المحمول (مصر +20)" : "Mobile Phone (Egypt +20)"}
                     </label>
-                    <input
-                      type="tel"
-                      required
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder={`${activeCountryObj.dialCode} 10 1234 5678`}
-                      dir="ltr"
-                      className="input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-sm font-ui"
-                    />
+                    <div className="flex gap-2">
+                      <div className="w-28 sm:w-32 shrink-0">
+                        <select
+                          value={phoneCountryCode}
+                          onChange={(e) => setPhoneCountryCode(e.target.value)}
+                          className="input-theme-gradient w-full px-2 py-2.5 rounded-[10px] text-xs font-mono font-bold bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] cursor-pointer"
+                        >
+                          {ARAB_COUNTRIES.map((c) => {
+                            const isEgypt = c.dialCode === "+20";
+                            return (
+                              <option
+                                key={c.id}
+                                value={c.dialCode}
+                                disabled={!isEgypt}
+                                className={
+                                  !isEgypt
+                                    ? "text-gray-400 bg-[var(--color-surface)]"
+                                    : "bg-[var(--color-surface)] text-[var(--color-text-primary)] font-bold"
+                                }
+                              >
+                                {c.dialCode} ({isAr ? c.nameAr : c.name}) {!isEgypt ? (isAr ? "- قريباً" : "- Soon") : ""}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                      <div className="flex-1">
+                        <input
+                          type="tel"
+                          required
+                          value={phone}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, "").slice(0, 11);
+                            setPhone(val);
+                          }}
+                          placeholder="01012345678"
+                          dir="ltr"
+                          className="input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-sm font-ui"
+                        />
+                      </div>
+                    </div>
+                    {/* Egyptian Phone 11-digit Validation */}
+                    <div className="flex items-center justify-between text-[11px] mt-1 font-ui">
+                      <span
+                        className={
+                          phone.replace(/\D/g, "").length === 11
+                            ? "text-emerald-500 font-medium"
+                            : "text-[var(--color-text-muted)]"
+                        }
+                      >
+                        {phone.replace(/\D/g, "").length === 11
+                          ? isAr
+                            ? "✓ رقم هاتف مصري صحيح (11 رقماً)"
+                            : "✓ Valid Egyptian phone (11 digits)"
+                          : isAr
+                          ? "يجب أن يتكون رقم الهاتف من 11 رقماً (مثال: 01012345678)"
+                          : "Must be exactly 11 digits starting with 01"}
+                      </span>
+                      <span
+                        className={`font-mono text-xs ${
+                          phone.replace(/\D/g, "").length === 11
+                            ? "text-emerald-500 font-bold"
+                            : "text-[var(--color-text-muted)]"
+                        }`}
+                      >
+                        {phone.replace(/\D/g, "").length}/11
+                      </span>
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
-                      {isAr ? "كلمة المرور لحساب صاحب المتجر" : "Store Owner Password"}
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-medium text-[var(--color-text-secondary)]">
+                        {isAr ? "كلمة المرور لحساب صاحب المتجر" : "Store Owner Password"}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={generateStrongPassword}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--color-primary-light)] hover:underline"
+                        title={isAr ? "توليد كلمة مرور قوية تلقائياً" : "Generate strong password automatically"}
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>{isAr ? "✨ توليد كلمة مرور قوية" : "✨ Generate Password"}</span>
+                      </button>
+                    </div>
                     <div className="relative">
                       <input
                         type={showSignupPassword ? "text" : "password"}
                         required
                         value={signupPassword}
                         onChange={(e) => setSignupPassword(e.target.value)}
-                        placeholder="••••••••••••"
+                        placeholder={isAr ? "أدخل كلمة مرور تتجاوز 10 خانات" : "Enter password exceeding 10 characters"}
                         dir="ltr"
                         className="input-theme-gradient w-full ps-3.5 pe-10 py-2.5 rounded-[10px] text-sm font-ui"
                       />
@@ -1613,6 +1904,42 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         {showSignupPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+
+                    {/* Real-time Password validation: must exceed 10 chars */}
+                    <div className="flex items-center justify-between text-[11px] mt-1 font-ui">
+                      <span
+                        className={
+                          signupPassword.length > 10
+                            ? "text-emerald-500 font-medium"
+                            : "text-amber-500 font-medium"
+                        }
+                      >
+                        {signupPassword.length > 10
+                          ? isAr
+                            ? "✓ كلمة المرور مقبولة وتتجاوز 10 خانات"
+                            : "✓ Password exceeds 10 characters"
+                          : isAr
+                          ? "كلمة المرور يجب أن تزيد عن 10 خانات"
+                          : "Password must exceed 10 characters"}
+                      </span>
+                      <span
+                        className={`font-mono text-xs ${
+                          signupPassword.length > 10
+                            ? "text-emerald-500 font-bold"
+                            : "text-amber-500 font-semibold"
+                        }`}
+                      >
+                        {signupPassword.length} {isAr ? "حرف" : "chars"} {signupPassword.length <= 10 && "(>10)"}
+                      </span>
+                    </div>
+
+                    {/* Notice when generated */}
+                    {passwordNotice && (
+                      <div className="mt-1.5 p-2 rounded-[6px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-medium flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 shrink-0" />
+                        <span>{passwordNotice}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Verification Snippet */}
@@ -1741,6 +2068,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </div>
                   </div>
                 </div>
+
+                {/* Pay & Launch Instant Redirect Callout */}
+                <div className="p-3.5 rounded-[12px] bg-gradient-to-r from-emerald-500/10 via-[var(--color-primary-light)]/10 to-blue-500/10 border border-emerald-500/30 text-xs text-[var(--color-text-primary)] space-y-1.5 shadow-sm">
+                  <div className="flex items-center gap-2 font-bold text-emerald-600 dark:text-emerald-400">
+                    <Rocket className="w-4 h-4 shrink-0" />
+                    <span>{isAr ? "تنبيه الإطلاق والدخول المباشر:" : "Launch & Instant Redirect Notice:"}</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-[var(--color-text-secondary)]">
+                    {isAr
+                      ? "ملاحظة: بعد الدفع والضغط على زر 'ادفع وأطلق مساحة عملك'، سيتم تحويلك مباشرة وتلقائياً إلى لوحة التحكم الخاصة بك وتكون داخل مساحة عملك."
+                      : "Note: After you pay and click on 'Pay & Launch your workspace', it will redirect you to your dashboard and you are in."}
+                  </p>
+                </div>
               </div>
             )}
 
@@ -1772,8 +2112,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <span>
                       {signupStep === 6
                         ? isAr
-                          ? "إطلاق مساحة العمل"
-                          : "Launch Workspace"
+                          ? "ادفع وأطلق مساحة عملك"
+                          : "Pay & Launch your workspace"
                         : isAr
                           ? "المتابعة"
                           : "Continue"}
