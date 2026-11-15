@@ -210,7 +210,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     isDraggingModalSliderRef.current = false;
     try {
       (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch {}
+    } catch { }
   };
 
   const handleModalSliderKeyDown = (e: React.KeyboardEvent) => {
@@ -666,8 +666,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         modalPricingMode === "pos_only"
           ? "pos"
           : modalPosCount > 0 || selectedVolumeTier === "tier_5"
-          ? "hybrid"
-          : "online";
+            ? "hybrid"
+            : "online";
 
       const cleanPhoneDigits = phone.replace(/\D/g, "");
       const fullPhone = `${phoneCountryCode}${cleanPhoneDigits}`;
@@ -985,8 +985,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div
                 onClick={() => setSelectedRole("merchant")}
                 className={`p-4 rounded-2xl border cursor-pointer select-none transition-all flex flex-col justify-between ${selectedRole === "merchant"
-                    ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 shadow-sm"
-                    : "border-[var(--color-border-subtle)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)]"
+                  ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 shadow-sm"
+                  : "border-[var(--color-border-subtle)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)]"
                   }`}
               >
                 <div className="space-y-3">
@@ -1015,8 +1015,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div
                 onClick={() => setSelectedRole("wholesaler")}
                 className={`p-4 rounded-2xl border cursor-pointer select-none transition-all flex flex-col justify-between ${selectedRole === "wholesaler"
-                    ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 shadow-sm"
-                    : "border-[var(--color-border-subtle)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)]"
+                  ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 shadow-sm"
+                  : "border-[var(--color-border-subtle)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)]"
                   }`}
               >
                 <div className="space-y-3">
@@ -1195,22 +1195,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleModalPricingModeChange("catalog")}
-                      className={`px-3 py-1.5 rounded-[6px] font-semibold text-center transition-all ${
-                        modalPricingMode === "catalog"
-                          ? "bg-[var(--color-primary-light)] text-white shadow-sm"
-                          : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-                      }`}
+                      className={`px-3 py-1.5 rounded-[6px] font-semibold text-center transition-all ${modalPricingMode === "catalog"
+                        ? "bg-[var(--color-primary-light)] text-white shadow-sm"
+                        : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                        }`}
                     >
                       {isAr ? "متجر موحد (كتالوج)" : "Unified Store (Catalog)"}
                     </button>
                     <button
                       type="button"
                       onClick={() => handleModalPricingModeChange("pos_only")}
-                      className={`px-3 py-1.5 rounded-[6px] font-semibold text-center transition-all ${
-                        modalPricingMode === "pos_only"
-                          ? "bg-[var(--color-primary-light)] text-white shadow-sm"
-                          : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-                      }`}
+                      className={`px-3 py-1.5 rounded-[6px] font-semibold text-center transition-all ${modalPricingMode === "pos_only"
+                        ? "bg-[var(--color-primary-light)] text-white shadow-sm"
+                        : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                        }`}
                     >
                       {isAr ? "نقاط بيع فقط (POS)" : "POS & Admin Only"}
                     </button>
@@ -1221,22 +1219,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleModalBillingChange("monthly")}
-                      className={`px-2.5 py-1 rounded-[6px] transition-all font-medium ${
-                        modalBilling === "monthly"
-                          ? "bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] font-semibold"
-                          : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
-                      }`}
+                      className={`px-2.5 py-1 rounded-[6px] transition-all font-medium ${modalBilling === "monthly"
+                        ? "bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] font-semibold"
+                        : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+                        }`}
                     >
                       {isAr ? "شهري" : "Monthly"}
                     </button>
                     <button
                       type="button"
                       onClick={() => handleModalBillingChange("yearly")}
-                      className={`px-2.5 py-1 rounded-[6px] transition-all font-medium flex items-center gap-1 ${
-                        modalBilling === "yearly"
-                          ? "bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] font-semibold"
-                          : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
-                      }`}
+                      className={`px-2.5 py-1 rounded-[6px] transition-all font-medium flex items-center gap-1 ${modalBilling === "yearly"
+                        ? "bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] font-semibold"
+                        : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+                        }`}
                     >
                       <span>{isAr ? "سنوي" : "Yearly"}</span>
                       <span className="text-[10px] font-bold text-emerald-500">-10%</span>
@@ -1288,11 +1284,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           {PRICING_PLANS.map((plan, idx) => (
                             <div
                               key={plan.id}
-                              className={`w-3 h-3 rounded-full border transition-all ${
-                                idx <= activeSliderIndex
-                                  ? "bg-[var(--color-primary-light)] border-white/70 shadow-xs"
-                                  : "bg-[var(--color-surface)] border-[var(--color-border)]"
-                              }`}
+                              className={`w-3 h-3 rounded-full border transition-all ${idx <= activeSliderIndex
+                                ? "bg-[var(--color-primary-light)] border-white/70 shadow-xs"
+                                : "bg-[var(--color-surface)] border-[var(--color-border)]"
+                                }`}
                             />
                           ))}
                         </div>
@@ -1313,11 +1308,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             type="button"
                             key={plan.id}
                             onClick={() => handleSliderIndexChange(idx)}
-                            className={`hover:text-[var(--color-text-primary)] transition-colors px-1 py-0.5 rounded ${
-                              idx === activeSliderIndex
-                                ? "font-bold text-[var(--color-primary-light)] bg-[var(--color-surface-elevated)]"
-                                : ""
-                            }`}
+                            className={`hover:text-[var(--color-text-primary)] transition-colors px-1 py-0.5 rounded ${idx === activeSliderIndex
+                              ? "font-bold text-[var(--color-primary-light)] bg-[var(--color-surface-elevated)]"
+                              : ""
+                              }`}
                           >
                             {isAr ? plan.rangeAr : plan.range}
                           </button>
@@ -1343,8 +1337,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                 ? "أعلى سعة للكتالوج مع نقطتي بيع (2 POS) مجاناً"
                                 : "Maximum catalog capacity + 2 free POS registers"
                               : isAr
-                              ? "متجر موحد مع مزامنة سحابية وحماية تلقائية"
-                              : "Unified storefront with cloud inventory & automated sync"}
+                                ? "متجر موحد مع مزامنة سحابية وحماية تلقائية"
+                                : "Unified storefront with cloud inventory & automated sync"}
                           </p>
                         </div>
 
@@ -1365,12 +1359,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                       {/* Best Deal Banner if tier_5 */}
                       {currentSelectedPlan.id === "tier_5" && (
-                        <div className="px-2.5 py-1 rounded-[8px] bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[11px] font-semibold flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                        <div className="px-2.5 py-1 rounded-[8px] text-[11px] font-semibold flex items-center gap-1.5">
                           <span>
                             {isAr
                               ? "أفضل قيمة: يتضمن نقطتي بيع كاشير (2 POS Terminals) مجاناً بالكامل!"
-                              : "Best Value: Includes 2 POS Cashier Terminals 100% Free!"}
+                              : "Includes 2 POS Cashier Terminals 100% Free!"}
                           </span>
                         </div>
                       )}
@@ -1856,15 +1849,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             ? "✓ رقم هاتف مصري صحيح (11 رقماً)"
                             : "✓ Valid Egyptian phone (11 digits)"
                           : isAr
-                          ? "يجب أن يتكون رقم الهاتف من 11 رقماً (مثال: 01012345678)"
-                          : "Must be exactly 11 digits starting with 01"}
+                            ? "يجب أن يتكون رقم الهاتف من 11 رقماً (مثال: 01012345678)"
+                            : "Must be exactly 11 digits starting with 01"}
                       </span>
                       <span
-                        className={`font-mono text-xs ${
-                          phone.replace(/\D/g, "").length === 11
-                            ? "text-emerald-500 font-bold"
-                            : "text-[var(--color-text-muted)]"
-                        }`}
+                        className={`font-mono text-xs ${phone.replace(/\D/g, "").length === 11
+                          ? "text-emerald-500 font-bold"
+                          : "text-[var(--color-text-muted)]"
+                          }`}
                       >
                         {phone.replace(/\D/g, "").length}/11
                       </span>
@@ -1919,15 +1911,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             ? "✓ كلمة المرور مقبولة وتتجاوز 10 خانات"
                             : "✓ Password exceeds 10 characters"
                           : isAr
-                          ? "كلمة المرور يجب أن تزيد عن 10 خانات"
-                          : "Password must exceed 10 characters"}
+                            ? "كلمة المرور يجب أن تزيد عن 10 خانات"
+                            : "Password must exceed 10 characters"}
                       </span>
                       <span
-                        className={`font-mono text-xs ${
-                          signupPassword.length > 10
-                            ? "text-emerald-500 font-bold"
-                            : "text-amber-500 font-semibold"
-                        }`}
+                        className={`font-mono text-xs ${signupPassword.length > 10
+                          ? "text-emerald-500 font-bold"
+                          : "text-amber-500 font-semibold"
+                          }`}
                       >
                         {signupPassword.length} {isAr ? "حرف" : "chars"} {signupPassword.length <= 10 && "(>10)"}
                       </span>

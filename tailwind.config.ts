@@ -47,14 +47,14 @@ const config: Config = {
         expo: "var(--ease-expo)",
       },
       fontFamily: {
-        sans: ["var(--font-ui)", "system-ui", "sans-serif"],
-        heading: ["var(--font-heading)", "system-ui", "sans-serif"],
-        subtitle: ["var(--font-subtitle)", "system-ui", "sans-serif"],
-        ui: ["var(--font-ui)", "system-ui", "sans-serif"],
-        body: ["var(--font-body)", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "system-ui", "sans-serif"],
-        josefin: ["var(--font-josefin)", "sans-serif"],
-        "el-messiri": ["var(--font-el-messiri)", "sans-serif"],
+        sans: ["var(--font-ui)", "'Josefin Sans'", "system-ui", "sans-serif"],
+        heading: ["var(--font-heading)", "'Josefin Sans'", "system-ui", "sans-serif"],
+        subtitle: ["var(--font-subtitle)", "'Josefin Sans'", "system-ui", "sans-serif"],
+        ui: ["var(--font-ui)", "'Josefin Sans'", "system-ui", "sans-serif"],
+        body: ["var(--font-body)", "'Josefin Sans'", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "'Josefin Sans'", "system-ui", "sans-serif"],
+        josefin: ["'Josefin Sans'", "var(--font-josefin)", "sans-serif"],
+        "el-messiri": ["'El Messiri'", "var(--font-el-messiri)", "sans-serif"],
       },
       keyframes: {
         "pulse-subtle": {
