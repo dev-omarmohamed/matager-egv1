@@ -1,24 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Josefin_Sans, El_Messiri } from "next/font/google";
 import "./globals.css";
 import { SITE_CONFIG } from "@/config/site";
 import { ThemeProvider, noFlashScript } from "@/theme";
 import { LanguageProvider } from "@/i18n";
 import { SmoothScrollProvider } from "@/components/layout/SmoothScrollProvider";
-
-const josefinSans = Josefin_Sans({
-  subsets: ["latin"],
-  weight: ["300", "400", "600", "700"],
-  display: "swap",
-  variable: "--font-josefin",
-});
-
-const elMessiri = El_Messiri({
-  subsets: ["arabic"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-  variable: "--font-el-messiri",
-});
 
 export const metadata: Metadata = {
   title: `${SITE_CONFIG.name} — Next Generation of Commerce`,
@@ -61,10 +46,16 @@ export default function RootLayout({
       lang="en"
       dir="ltr"
       data-theme="dark"
-      className={`dark ${josefinSans.variable} ${elMessiri.variable}`}
+      className="dark"
       suppressHydrationWarning
     >
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=El+Messiri:wght@400;500;600;700&family=Josefin+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600;1,700&display=swap"
+        />
         <script
           id="no-flash-script"
           dangerouslySetInnerHTML={{ __html: noFlashScript }}

@@ -28,22 +28,22 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ className = 
       disabled={isSwitching}
       aria-label={label}
       title={label}
-      className={`group relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface)] text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-hover)] hover:bg-[var(--color-surface-hover)] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-violet)] select-none shadow-sm active:scale-95 disabled:opacity-60 ${className}`}
+      className={`relative inline-flex items-center justify-center w-8 h-8 rounded-[6px] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-hover)] hover:bg-[var(--color-surface-hover)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-violet)]  ${className}`}
     >
       <motion.span
         animate={{ rotate: rotation }}
         transition={{ type: "spring", stiffness: 260, damping: 20 }}
-        className="inline-flex items-center justify-center text-[var(--color-accent-violet)]"
+        className="inline-flex items-center justify-center"
       >
         <Globe className="w-3.5 h-3.5" aria-hidden="true" />
       </motion.span>
 
-      <span className="font-medium tracking-tight">
+      {/* <span className="font-medium tracking-tight">
         {displayLabel}
-      </span>
+      </span> */}
 
       {/* Subtle indicator dot */}
-      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent-mint)] opacity-70 group-hover:opacity-100 transition-opacity" />
+      {/* <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent-mint)] opacity-70 group-hover:opacity-100 transition-opacity" /> */}
     </button>
   );
 };
