@@ -10,6 +10,7 @@ import {
   X,
   ArrowRight,
   ArrowLeft,
+  ChevronDown,
   Check,
   CheckCircle2,
   Store,
@@ -72,34 +73,10 @@ export interface VolumePricingOption {
 }
 
 export const VOLUME_PRICING_OPTIONS: VolumePricingOption[] = [
-  {
-    id: "tier_1",
-    range: "5 - 20 products",
-    rangeAr: "5 - 20 منتج",
-    price: 170,
-    mappedPlan: "starter",
-  },
-  {
-    id: "tier_2",
-    range: "20 - 50 products",
-    rangeAr: "20 - 50 منتج",
-    price: 270,
-    mappedPlan: "starter",
-  },
-  {
-    id: "tier_3",
-    range: "50 - 100 products",
-    rangeAr: "50 - 100 منتج",
-    price: 570,
-    mappedPlan: "pro",
-  },
-  {
-    id: "tier_4",
-    range: "100 - 300 products",
-    rangeAr: "100 - 300 منتج",
-    price: 970,
-    mappedPlan: "pro",
-  },
+  { id: "tier_1", range: "5 - 20 products", rangeAr: "5 - 20 منتج", price: 170, mappedPlan: "starter" },
+  { id: "tier_2", range: "20 - 50 products", rangeAr: "20 - 50 منتج", price: 270, mappedPlan: "starter" },
+  { id: "tier_3", range: "50 - 100 products", rangeAr: "50 - 100 منتج", price: 570, mappedPlan: "pro" },
+  { id: "tier_4", range: "100 - 300 products", rangeAr: "100 - 300 منتج", price: 970, mappedPlan: "pro" },
   {
     id: "tier_5",
     range: "300 - 550 products",
@@ -133,32 +110,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const isAr = locale === "ar";
   const prefersReducedMotion = useReducedMotion();
 
-  // Screen 0: Role Chooser is bypassed for landing page per requirements (landing is strictly for Store Owners, Wholesaler CTA is for Wholesalers)
   const [screen, setScreen] = useState<"role_chooser" | "auth">("auth");
   const [selectedRole, setSelectedRole] = useState<"merchant" | "wholesaler">(
     initialRole === "wholesaler" ? "wholesaler" : "merchant"
   );
+  const [showCapabilities, setShowCapabilities] = useState(false);
   const [roleError, setRoleError] = useState<string | null>(null);
 
-  // Active flow: "signup" (6 steps, Store Owner only) or "signin" (4 steps)
   const [mode, setMode] = useState<"signin" | "signup">(initialMode);
 
-  // Smooth scroll controller & body lock
   const { stop: stopScroll, start: startScroll } = useSmoothScroll();
 
-  // Focus management
   const modalRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedElement = useRef<HTMLElement | null>(null);
 
-  // ─── SIGN UP STATE (6 Steps - Starts with Volume & Pricing) ───
   const [signupStep, setSignupStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
 
-  // Pricing configuration inside modal
   const [modalPricingMode, setModalPricingMode] = useState<"catalog" | "pos_only">("catalog");
   const [modalPosCount, setModalPosCount] = useState<number>(0);
   const [modalBilling, setModalBilling] = useState<"monthly" | "yearly">("monthly");
 
-  // Step 1: Expected Volume & Pricing via 5-stop slider (0..4)
   const [activeSliderIndex, setActiveSliderIndex] = useState<number>(2);
   const [selectedVolumeTier, setSelectedVolumeTier] = useState<string>("tier_3");
   const [expectedVolume, setExpectedVolume] = useState<string>("50-100 products");
@@ -169,6 +140,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const isDraggingModalSliderRef = useRef<boolean>(false);
 
   const currentSelectedPlan: PlanDefinition = PRICING_PLANS[activeSliderIndex] || PRICING_PLANS[2];
+
+  // Mapped plan tier for DB compatibility (moved up so it is available to all handlers)
+  const [selectedPlan, setSelectedPlan] = useState<"starter" | "pro" | "enterprise">("pro");
 
   const handleSliderIndexChange = (newIndex: number) => {
     const bounded = Math.max(0, Math.min(PRICING_PLANS.length - 1, newIndex));
@@ -229,7 +203,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  // Synchronize pre-checked plan from landing pricing calculator
+  // Auto-collapse capabilities when the selected plan changes
+  useEffect(() => {
+    setShowCapabilities(false);
+  }, [activeSliderIndex, modalPricingMode]);
+
   useEffect(() => {
     if (initialPlanOptions && isOpen) {
       if (initialPlanOptions.mode === "pos_only") {
@@ -254,8 +232,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setExpectedVolume(`${plan.range} products`);
         const billingCycle = initialPlanOptions.billing || "monthly";
         setModalBilling(billingCycle);
-        const price =
-          billingCycle === "yearly" ? Math.round(plan.monthlyBasePrice * 0.9) : plan.monthlyBasePrice;
+        const price = billingCycle === "yearly" ? Math.round(plan.monthlyBasePrice * 0.9) : plan.monthlyBasePrice;
         setTierPrice(price);
         setSelectedPlan(plan.id === "tier_5" ? "enterprise" : plan.id === "tier_3" || plan.id === "tier_4" ? "pro" : "starter");
         const pos = initialPlanOptions.posCount || 0;
@@ -323,14 +300,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  // Step 2: Business details
   const [storeName, setStoreName] = useState("");
   const [legalName, setLegalName] = useState("");
-
-  // Step 4: Category
   const [category, setCategory] = useState<StoreCategory>("clothing");
-
-  // Step 5: Location & Currency (22 Arab Countries Only, default Egypt + EGP + Cairo)
   const [country, setCountry] = useState("Egypt");
   const [currency, setCurrency] = useState("EGP");
   const [city, setCity] = useState("Cairo");
@@ -366,24 +338,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           setLocationUrl(gMapUrl);
           setIsLocating(false);
           setLocationStatus(
-            isAr
-              ? `✓ تم تحديد إحداثيات موقعك بنجاح (${lat}, ${lng})`
-              : `✓ Location detected (${lat}, ${lng})`
+            isAr ? `✓ تم تحديد إحداثيات موقعك بنجاح (${lat}, ${lng})` : `✓ Location detected (${lat}, ${lng})`
           );
-
           setAddress((prev) => {
             const clean = prev.trim();
-            if (!clean) {
-              return `${city || country} - ${gMapUrl}`;
-            }
-            if (clean.includes("google.com/maps")) {
-              return clean;
-            }
+            if (!clean) return `${city || country} - ${gMapUrl}`;
+            if (clean.includes("google.com/maps")) return clean;
             return `${clean} - ${gMapUrl}`;
           });
         },
-        (err) => {
-          // Fallback to coordinates of the selected city from dataset
+        () => {
           const cityCoords = getCityCoordinates(country, city);
           if (cityCoords) {
             const gMapUrl = generateGoogleMapsUrl(cityCoords.lat, cityCoords.lng);
@@ -395,26 +359,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             );
             setAddress((prev) => {
               const clean = prev.trim();
-              if (!clean) {
-                return `${city || country} - ${gMapUrl}`;
-              }
+              if (!clean) return `${city || country} - ${gMapUrl}`;
               if (clean.includes("google.com/maps")) return clean;
               return `${clean} - ${gMapUrl}`;
             });
           } else {
             setLocationStatus(
-              isAr
-                ? "تعذر تحديد الإحداثيات آلياً. يرجى إدخال العنوان يدوياً."
-                : "Unable to detect GPS. Please enter your address."
+              isAr ? "تعذر تحديد الإحداثيات آلياً. يرجى إدخال العنوان يدوياً." : "Unable to detect GPS. Please enter your address."
             );
           }
           setIsLocating(false);
         },
-        {
-          enableHighAccuracy: true,
-          timeout: 8000,
-          maximumAge: 60000,
-        }
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
       );
     } else {
       const cityCoords = getCityCoordinates(country, city);
@@ -422,9 +378,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         const gMapUrl = generateGoogleMapsUrl(cityCoords.lat, cityCoords.lng);
         setLocationUrl(gMapUrl);
         setLocationStatus(
-          isAr
-            ? `تم اعتماد إحداثيات مركز ${city || country} على خرائط جوجل`
-            : `Using coordinates for ${city || country}`
+          isAr ? `تم اعتماد إحداثيات مركز ${city || country} على خرائط جوجل` : `Using coordinates for ${city || country}`
         );
       }
       setIsLocating(false);
@@ -435,58 +389,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     ARAB_COUNTRIES.find((c) => c.name === country || c.nameAr === country) || ARAB_COUNTRIES[0];
   const activeCurrencySymbol = isAr ? activeCountryObj.currencyAr : activeCountryObj.currency;
 
-  // Step 6: Contact & Credentials
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [phoneCountryCode, setPhoneCountryCode] = useState<string>("+20");
   const [signupPassword, setSignupPassword] = useState("");
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [passwordNotice, setPasswordNotice] = useState<string | null>(null);
-  const [contactCode, setContactCode] = useState("");
-  const [isContactVerified, setIsContactVerified] = useState(false);
-  const [contactVerifySent, setContactVerifySent] = useState(false);
 
-  // Dynamic store slug helper for Step 2 hint (www.[storename].com)
   const formatStoreSlug = (name: string): string => {
     const trimmed = name.trim().toLowerCase();
     if (!trimmed) return "storename";
-    const slug = trimmed
-      .replace(/[^\w\u0600-\u06FF]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+    const slug = trimmed.replace(/[^\w\u0600-\u06FF]+/g, "-").replace(/^-+|-+$/g, "");
     return slug || "storename";
   };
 
-  // Strong password generator for Step 5:
-  // Formula: "m" + half the email username + half phone number (last 5 digits) + symbol + "matager"
   const generateStrongPassword = () => {
     const emailUser = (email.split("@")[0] || "owner").replace(/[^a-zA-Z0-9]/g, "");
     const halfEmailLen = Math.max(2, Math.ceil(emailUser.length / 2));
     const emailPart = (emailUser.slice(0, halfEmailLen) || "adm").toLowerCase();
-
     const cleanPhoneDigits = phone.replace(/\D/g, "");
-    const phonePart = cleanPhoneDigits.length >= 5 ? cleanPhoneDigits.slice(-5) : (cleanPhoneDigits || "12345");
-
-    const symbol = "@";
-    const generated = `m${emailPart}${phonePart}${symbol}matager`;
-
+    const phonePart = cleanPhoneDigits.length >= 5 ? cleanPhoneDigits.slice(-5) : cleanPhoneDigits || "12345";
+    const generated = `m${emailPart}${phonePart}@matager`;
     setSignupPassword(generated);
     setShowSignupPassword(true);
-    setPasswordNotice(
-      isAr
-        ? "✓ تم توليد كلمة مرور قوية وتطبيقها بنجاح!"
-        : "✓ Strong password generated and applied!"
-    );
+    setPasswordNotice(isAr ? "✓ تم توليد كلمة مرور قوية وتطبيقها بنجاح!" : "✓ Strong password generated and applied!");
     setTimeout(() => setPasswordNotice(null), 4000);
   };
 
-  // Mapped plan tier for database schema compatibility
-  const [selectedPlan, setSelectedPlan] = useState<"starter" | "pro" | "enterprise">("pro");
-
-  // Step 7: Launching state
   const [isLaunching, setIsLaunching] = useState(false);
 
-  // ─── SIGN IN STATE (S1 to S5) ───
-  // S1 Identify -> S2 Verify (OTP) or S3 Password -> S3b Reset -> S4 Choose Store -> S5 Done
   const [signinStage, setSigninStage] = useState<
     "identify" | "verify" | "password" | "reset" | "choose_store" | "done"
   >("identify");
@@ -504,7 +435,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Sync initialMode & initialRole on prop change
+  const handleClose = () => {
+    resetAllFlows();
+    onClose();
+  };
+
   useEffect(() => {
     setMode(initialMode);
     setSelectedRole(initialRole === "wholesaler" ? "wholesaler" : "merchant");
@@ -512,7 +447,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     resetAllFlows();
   }, [initialMode, initialRole]);
 
-  // Lock body & smooth scroll while modal is opened
   useEffect(() => {
     if (isOpen) {
       stopScroll?.();
@@ -528,19 +462,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   }, [isOpen, stopScroll, startScroll]);
 
-  // Capture trigger focus and handle Escape
   useEffect(() => {
     if (isOpen) {
       previouslyFocusedElement.current = document.activeElement as HTMLElement;
-      // Focus modal on open
-      setTimeout(() => {
-        modalRef.current?.focus();
-      }, 50);
-
+      setTimeout(() => modalRef.current?.focus(), 50);
       const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === "Escape") {
-          handleClose();
-        }
+        if (e.key === "Escape") handleClose();
       };
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
@@ -549,17 +476,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   }, [isOpen]);
 
-  // Resend Countdown timer for OTP
   useEffect(() => {
     if (mode === "signin" && signinStage === "verify" && resendCountdown > 0) {
-      const timer = setTimeout(() => {
-        setResendCountdown((c) => c - 1);
-      }, 1000);
+      const timer = setTimeout(() => setResendCountdown((c) => c - 1), 1000);
       return () => clearTimeout(timer);
     }
   }, [mode, signinStage, resendCountdown]);
 
-  // S5 Done auto-redirect after 1.5s to APP_ROUTES.dashboard
   useEffect(() => {
     if (mode === "signin" && signinStage === "done") {
       const redirectTimer = setTimeout(() => {
@@ -568,11 +491,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return () => clearTimeout(redirectTimer);
     }
   }, [mode, signinStage]);
-
-  const handleClose = () => {
-    resetAllFlows();
-    onClose();
-  };
 
   const resetAllFlows = () => {
     setSignupStep(1);
@@ -594,6 +512,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setLocationStatus(null);
     setPhoneCountryCode("+20");
     setPasswordNotice(null);
+    setShowCapabilities(false);
     if (!initialPlanOptions) {
       setModalPricingMode("catalog");
       setActiveSliderIndex(2);
@@ -610,36 +529,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     resetAllFlows();
   };
 
-  // ─── STEP VALIDATION LOGIC (6 Steps) ───
   const isSignupStepValid = () => {
     switch (signupStep) {
       case 1:
-        // Volume & Pricing step
-        return modalPricingMode === "pos_only"
-          ? modalPosCount >= 1
-          : !!expectedVolume && tierPrice > 0;
+        return modalPricingMode === "pos_only" ? modalPosCount >= 1 : !!expectedVolume && tierPrice > 0;
       case 2:
-        // Business details
         return storeName.trim().length > 0 && legalName.trim().length > 0;
       case 3:
-        // Category
         return category.trim().length > 0;
       case 4:
-        // Location & Currency (Egypt only active currently)
         return country.trim().length > 0 && city.trim().length > 0 && address.trim().length > 0;
-      case 5:
-        // Contact & Credentials
-        // Egyptian phone number must be strictly 11 digits
-        // Password must exceed 10 characters (>10)
+      case 5: {
         const cleanPhoneDigits = phone.replace(/\D/g, "");
-        return (
-          email.includes("@") &&
-          email.includes(".") &&
-          cleanPhoneDigits.length === 11 &&
-          signupPassword.length > 10
-        );
+        return email.includes("@") && email.includes(".") && cleanPhoneDigits.length === 11 && signupPassword.length > 10;
+      }
       case 6:
-        // Review & Launch
         return true;
       default:
         return false;
@@ -651,16 +555,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     if (signupStep < 6) {
       setSignupStep((s) => (s + 1) as any);
     } else {
-      // Step 6: Launch & Setup in Firebase Cloud
       setIsLaunching(true);
       if (typeof window !== "undefined") {
         localStorage.setItem("matager_user_role", "merchant");
       }
 
       const finalAddress =
-        locationUrl && !address.includes("google.com/maps")
-          ? `${address.trim()} (${locationUrl})`
-          : address.trim();
+        locationUrl && !address.includes("google.com/maps") ? `${address.trim()} (${locationUrl})` : address.trim();
 
       const finalSalesChannel: "hybrid" | "online" | "pos" =
         modalPricingMode === "pos_only"
@@ -695,8 +596,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             localStorage.setItem("matager_current_store_id", sId);
             localStorage.setItem("matager_active_store_id", sId);
             localStorage.setItem("matager_active_store_name", storeName);
-
-            // Redirect user directly to their dashboard: "it will redirect you to your dashboard and you are in"
             window.location.href = `/dashboard?storeId=${sId}`;
           }
           handleClose();
@@ -716,22 +615,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const handleSignupBack = () => {
-    if (signupStep > 1) {
-      setSignupStep((s) => (s - 1) as any);
-    }
+    if (signupStep > 1) setSignupStep((s) => (s - 1) as any);
   };
 
-  // Signin validation
-  const isSigninIdentifyValid = () => {
-    return identifier.trim().length >= 4;
-  };
-
-  const isOtpComplete = () => {
-    return otpValues.every((digit) => digit.length === 1);
-  };
+  const isSigninIdentifyValid = () => identifier.trim().length >= 4;
+  const isOtpComplete = () => otpValues.every((digit) => digit.length === 1);
 
   const handleOtpChange = (index: number, value: string) => {
-    // Handle single character or paste
     if (value.length > 1) {
       const digits = value.replace(/\D/g, "").slice(0, 6).split("");
       const newOtp = [...otpValues];
@@ -743,16 +633,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       otpInputsRef.current[nextIndex]?.focus();
       return;
     }
-
     const digit = value.replace(/\D/g, "");
     const newOtp = [...otpValues];
     newOtp[index] = digit;
     setOtpValues(newOtp);
-
-    // Auto-advance
-    if (digit && index < 5) {
-      otpInputsRef.current[index + 1]?.focus();
-    }
+    if (digit && index < 5) otpInputsRef.current[index + 1]?.focus();
   };
 
   const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -771,10 +656,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setRoleError(t.auth.wholesalerSignup.wrongRoleError);
       return;
     }
-    if (isOtpComplete()) {
-      // Advance to choose store (S4)
-      setSigninStage("choose_store");
-    }
+    if (isOtpComplete()) setSigninStage("choose_store");
   };
 
   const handlePasswordSignIn = async () => {
@@ -787,7 +669,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setRoleError(t.auth.wholesalerSignup.wrongRoleError);
       return;
     }
-    // Attempt Firebase auth sign in if valid email
     if (identifier.includes("@") && password.trim().length >= 6) {
       try {
         const cred = await signInWithEmailAndPassword(auth, identifier.trim(), password);
@@ -804,9 +685,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         console.warn("Firebase sign in fallback:", err);
       }
     }
-    if (password.trim().length >= 4) {
-      setSigninStage("choose_store");
-    }
+    if (password.trim().length >= 4) setSigninStage("choose_store");
   };
 
   const handleWholesalerSignIn = () => {
@@ -820,9 +699,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setRoleError(t.auth.wholesalerSignup.wrongRoleError);
       return;
     }
-    const wid = identifier.toLowerCase().includes("home")
-      ? "wholesaler_home_01"
-      : "wholesaler_clothing_01";
+    const wid = identifier.toLowerCase().includes("home") ? "wholesaler_home_01" : "wholesaler_clothing_01";
     if (typeof window !== "undefined") {
       localStorage.setItem("matager_user_role", "wholesaler");
       localStorage.setItem("matager_wholesaler_id", wid);
@@ -838,7 +715,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setSigninStage("done");
   };
 
-  // Compute Active Dots Position for Sign-In
   const getSigninActiveDot = () => {
     switch (signinStage) {
       case "identify":
@@ -858,6 +734,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   if (!isOpen) return null;
 
+  const capabilitiesCount = (isAr ? currentSelectedPlan.capabilitiesAr : currentSelectedPlan.capabilities).length;
+
   return (
     <div
       data-lenis-prevent
@@ -866,7 +744,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       aria-modal="true"
       dir={dir}
     >
-      {/* Frosted Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -876,7 +753,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         className="fixed inset-0 bg-black/80 backdrop-blur-md"
       />
 
-      {/* Main Dialog Modal Panel */}
       <motion.div
         ref={modalRef}
         tabIndex={-1}
@@ -886,11 +762,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
         className="relative w-full max-w-[500px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[20px] p-6 sm:p-7 shadow-2xl text-[var(--color-text-primary)] z-10 overflow-hidden my-auto outline-none"
         style={{
-          boxShadow:
-            "0 30px 70px -15px rgba(0, 0, 0, 0.75), 0 0 0 1px var(--color-border-subtle)",
+          boxShadow: "0 30px 70px -15px rgba(0, 0, 0, 0.75), 0 0 0 1px var(--color-border-subtle)",
         }}
       >
-        {/* Atmospheric Radial Wash */}
         <div
           className="absolute -top-24 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 w-80 h-36 pointer-events-none blur-3xl opacity-50"
           style={{
@@ -900,50 +774,36 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           aria-hidden="true"
         />
 
-        {/* Modal Header: Brand, Close Button & Non-Clickable Progress Dots */}
+        {/* Header */}
         <div className="relative mb-6">
           <div className="flex items-center justify-between pb-3 border-b border-[var(--color-border-subtle)]">
             <div className="flex items-center gap-3">
               <MatagerLogo size="sm" showWordmark={true} animated={false} />
             </div>
 
-            {/* Non-Clickable Progress Dots (6 dots for sign up, 4 dots for sign in) */}
             {screen === "auth" && selectedRole === "merchant" && (
               <div
                 className="flex items-center gap-1.5"
                 aria-label={
-                  mode === "signup"
-                    ? `Step ${signupStep} of 6`
-                    : `Step ${getSigninActiveDot()} of 4`
+                  mode === "signup" ? `Step ${signupStep} of 6` : `Step ${getSigninActiveDot()} of 4`
                 }
               >
                 {mode === "signup"
                   ? [1, 2, 3, 4, 5, 6].map((dot) => (
                     <span
                       key={dot}
-                      className={`msm-dot ${dot === signupStep
-                        ? "is-active"
-                        : dot < signupStep
-                          ? "is-passed"
-                          : ""
-                        }`}
+                      className={`msm-dot ${dot === signupStep ? "is-active" : dot < signupStep ? "is-passed" : ""}`}
                     />
                   ))
                   : [1, 2, 3, 4].map((dot) => (
                     <span
                       key={dot}
-                      className={`msm-dot ${dot === getSigninActiveDot()
-                        ? "is-active"
-                        : dot < getSigninActiveDot()
-                          ? "is-passed"
-                          : ""
-                        }`}
+                      className={`msm-dot ${dot === getSigninActiveDot() ? "is-active" : dot < getSigninActiveDot() ? "is-passed" : ""}`}
                     />
                   ))}
               </div>
             )}
 
-            {/* Close Button */}
             <button
               type="button"
               onClick={handleClose}
@@ -955,7 +815,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         </div>
 
-        {/* Global Role Mismatch Warning Toast */}
         {roleError && (
           <div className="mb-4 p-3 rounded-xl bg-[var(--color-status-red-bg)] border border-[var(--color-status-red-border)] text-xs text-[var(--color-status-red)] flex items-center gap-2">
             <StatusPill variant="danger">Access Refused</StatusPill>
@@ -963,13 +822,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════════
-            SCREEN 0: ROLE CHOOSER (Store Owner vs Wholesaler)
-            ══════════════════════════════════════════════════════════════════ */}
+        {/* Role chooser (kept as future path) */}
         {screen === "role_chooser" && (
           <div className="space-y-6">
             <div>
-              <span className="text-[11px] font-ui uppercase tracking-wider text-gradient-primary font-bold block mb-1">
+              <span className="text-[11px] font-ui text-[var(--color-text-muted)] tracking-wider font-bold block mb-1">
                 MATAGER ACCESS
               </span>
               <h2 className="font-heading text-2xl font-normal text-[var(--color-text-primary)]">
@@ -979,75 +836,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {t.auth.roleChooser.subtitle}
               </p>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Merchant Option Card */}
-              <div
-                onClick={() => setSelectedRole("merchant")}
-                className={`p-4 rounded-2xl border cursor-pointer select-none transition-all flex flex-col justify-between ${selectedRole === "merchant"
-                  ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 shadow-sm"
-                  : "border-[var(--color-border-subtle)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)]"
-                  }`}
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-[var(--color-surface-hover)] border border-[var(--color-border-subtle)] flex items-center justify-center text-[var(--color-primary)]">
-                      <Store className="w-5 h-5" />
-                    </div>
-                    {selectedRole === "merchant" && (
-                      <StatusPill variant="info">
-                        {t.auth.roleChooser.selected}
-                      </StatusPill>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold font-heading text-[var(--color-text-primary)]">
-                      {t.auth.roleChooser.merchantCard.title}
-                    </h3>
-                    <p className="text-[11px] text-[var(--color-text-muted)] mt-1 leading-relaxed">
-                      {t.auth.roleChooser.merchantCard.subtitle}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Wholesaler Option Card */}
-              <div
-                onClick={() => setSelectedRole("wholesaler")}
-                className={`p-4 rounded-2xl border cursor-pointer select-none transition-all flex flex-col justify-between ${selectedRole === "wholesaler"
-                  ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 shadow-sm"
-                  : "border-[var(--color-border-subtle)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-hover)]"
-                  }`}
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-[var(--color-surface-hover)] border border-[var(--color-border-subtle)] flex items-center justify-center text-[var(--color-primary)]">
-                      <Layers className="w-5 h-5" />
-                    </div>
-                    {selectedRole === "wholesaler" && (
-                      <StatusPill variant="info">
-                        {t.auth.roleChooser.selected}
-                      </StatusPill>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold font-heading text-[var(--color-text-primary)]">
-                      {t.auth.roleChooser.wholesalerCard.title}
-                    </h3>
-                    <p className="text-[11px] text-[var(--color-text-muted)] mt-1 leading-relaxed">
-                      {t.auth.roleChooser.wholesalerCard.subtitle}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => setScreen("auth")}
-                className="msm-next w-full py-3"
-              >
+              <button type="button" onClick={() => setScreen("auth")} className="msm-next w-full py-3">
                 <span>{t.auth.roleChooser.continue}</span>
                 <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
               </button>
@@ -1055,9 +845,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════════
-            SCREEN 1: WHOLESALER FLOWS (Sign Up Wizard / Sign In Portal)
-            ══════════════════════════════════════════════════════════════════ */}
+        {/* Wholesaler flows */}
         {screen === "auth" && selectedRole === "wholesaler" && (
           <div className="space-y-5">
             {mode === "signup" ? (
@@ -1072,12 +860,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="pt-3 text-center border-t border-[var(--color-border-subtle)]">
                   <p className="text-xs text-[var(--color-text-secondary)]">
                     {isAr ? "هل لديك حساب مورد بالفعل؟" : "Already have a wholesaler account?"}{" "}
-                    <button
-                      type="button"
-                      data-switch="signin"
-                      onClick={() => switchMode("signin")}
-                      className="msm-switch"
-                    >
+                    <button type="button" data-switch="signin" onClick={() => switchMode("signin")} className="msm-switch">
                       {t.auth.wholesalerSignup.signinTab}
                     </button>
                   </p>
@@ -1086,7 +869,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             ) : (
               <div className="space-y-4">
                 <div>
-                  <span className="text-[11px] font-ui uppercase tracking-wider text-gradient-primary font-bold block mb-1">
+                  <span className="text-[11px] font-ui text-[var(--color-text-muted)] tracking-wider font-bold block mb-1">
                     WHOLESALER ACCESS PORTAL
                   </span>
                   <h2 className="font-heading text-2xl font-normal text-[var(--color-text-primary)]">
@@ -1156,12 +939,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="pt-3 text-center border-t border-[var(--color-border-subtle)]">
                   <p className="text-xs text-[var(--color-text-secondary)]">
                     {isAr ? "ليس لديك حساب مورد؟" : "Don't have a wholesaler account?"}{" "}
-                    <button
-                      type="button"
-                      data-switch="signup"
-                      onClick={() => switchMode("signup")}
-                      className="msm-switch"
-                    >
+                    <button type="button" data-switch="signup" onClick={() => switchMode("signup")} className="msm-switch">
                       {t.auth.wholesalerSignup.signupTab}
                     </button>
                   </p>
@@ -1171,16 +949,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════════
-            SCREEN 2: MERCHANT FLOWS (Flow A: Sign Up & Flow B: Sign In)
-            ══════════════════════════════════════════════════════════════════ */}
+        {/* Merchant signup */}
         {screen === "auth" && selectedRole === "merchant" && mode === "signup" && (
           <div className="space-y-5">
-            {/* ─── STEP 1: Plan & Volume Pricing ─── */}
+            {/* STEP 1 */}
             {signupStep === 1 && (
               <div className="space-y-3.5">
                 <div>
-                  <span className="text-[11px] font-ui uppercase tracking-wider text-gradient-primary font-bold block mb-1">
+                  <span className="text-[11px] font-ui text-[var(--color-text-muted)] tracking-wider font-bold block mb-1">
                     {isAr ? "الخطوة 1: تحديد الباقة والأسعار" : "Step 1: Plan & Volume Pricing"}
                   </span>
                   <h2 className="font-heading text-lg sm:text-xl font-normal text-[var(--color-text-primary)]">
@@ -1188,15 +964,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </h2>
                 </div>
 
-                {/* Mode Selector & Billing Toggle Header */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 p-1.5 rounded-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)]">
-                  {/* Mode: Unified Store vs POS Only */}
-                  <div className="grid grid-cols-2 gap-1 p-1 rounded-[8px] bg-[var(--color-surface)] border border-[var(--color-border-subtle)] text-xs">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 p-1.5">
+                  <div className="grid grid-cols-2 gap-1 p-1 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border-subtle)] text-[9px]">
                     <button
                       type="button"
                       onClick={() => handleModalPricingModeChange("catalog")}
-                      className={`px-3 py-1.5 rounded-[6px] font-semibold text-center transition-all ${modalPricingMode === "catalog"
-                        ? "bg-[var(--color-primary-light)] text-white shadow-sm"
+                      className={`px-3 py-1.5 rounded-lg font-semibold text-center transition-all ${modalPricingMode === "catalog"
+                        ? "bg-[var(--color-surface-hover)] shadow-sm"
                         : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                         }`}
                     >
@@ -1205,8 +979,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleModalPricingModeChange("pos_only")}
-                      className={`px-3 py-1.5 rounded-[6px] font-semibold text-center transition-all ${modalPricingMode === "pos_only"
-                        ? "bg-[var(--color-primary-light)] text-white shadow-sm"
+                      className={`px-3 py-1.5 rounded-lg font-semibold text-center transition-all ${modalPricingMode === "pos_only"
+                        ? "bg-[var(--color-surface-hover)] shadow-sm"
                         : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                         }`}
                     >
@@ -1214,12 +988,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </button>
                   </div>
 
-                  {/* Billing Switch: Monthly vs Yearly */}
-                  <div className="inline-flex items-center justify-center gap-1 p-1 rounded-[8px] bg-[var(--color-surface)] border border-[var(--color-border-subtle)] text-xs">
+                  <div className="inline-flex items-center justify-center gap-1 p-1 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border-subtle)] text-[9px]">
                     <button
                       type="button"
                       onClick={() => handleModalBillingChange("monthly")}
-                      className={`px-2.5 py-1 rounded-[6px] transition-all font-medium ${modalBilling === "monthly"
+                      className={`px-2.5 py-1 rounded-lg transition-all font-medium ${modalBilling === "monthly"
                         ? "bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] font-semibold"
                         : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
                         }`}
@@ -1229,7 +1002,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleModalBillingChange("yearly")}
-                      className={`px-2.5 py-1 rounded-[6px] transition-all font-medium flex items-center gap-1 ${modalBilling === "yearly"
+                      className={`px-2.5 py-1 rounded-lg transition-all font-medium flex items-center gap-1 ${modalBilling === "yearly"
                         ? "bg-[var(--color-surface-hover)] text-[var(--color-text-primary)] font-semibold"
                         : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
                         }`}
@@ -1240,98 +1013,76 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                 </div>
 
-                {/* Content: Catalog Mode (Slider + Single Selected Plan Card + Enterprise Callout) */}
                 {modalPricingMode === "catalog" && (
                   <div className="space-y-3">
-                    {/* ─── 5-STOP DRAGGABLE / CLICKABLE SLIDER ─── */}
-                    <div className="p-3 rounded-[12px] bg-[var(--color-surface)] border border-[var(--color-border)] space-y-2">
-                      <div className="flex items-center justify-between text-xs font-semibold text-[var(--color-text-secondary)] font-ui">
-                        <span>{isAr ? "اختر نطاق المنتجات:" : "Select product volume range:"}</span>
-                        <span className="text-[var(--color-primary-light)] font-bold">
-                          {isAr ? currentSelectedPlan.rangeAr : currentSelectedPlan.range} {isAr ? "منتج" : "products"}
-                        </span>
-                      </div>
-
-                      <div
-                        ref={modalSliderRef}
-                        role="slider"
-                        tabIndex={0}
-                        aria-label={isAr ? "محدد باقة المنتجات" : "Product volume range slider"}
-                        aria-valuemin={0}
-                        aria-valuemax={PRICING_PLANS.length - 1}
-                        aria-valuenow={activeSliderIndex}
-                        aria-valuetext={`${currentSelectedPlan.name} (${currentSelectedPlan.range} products)`}
-                        onKeyDown={handleModalSliderKeyDown}
-                        onPointerDown={handleModalSliderPointerDown}
-                        onPointerMove={handleModalSliderPointerMove}
-                        onPointerUp={handleModalSliderPointerUp}
-                        className="relative h-8 flex items-center cursor-pointer touch-none select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-light)] rounded-full"
-                      >
-                        {/* Rail */}
-                        <div className="absolute inset-x-0 h-2 rounded-full bg-[var(--color-surface-elevated)] border border-[var(--color-border)]" />
-
-                        {/* Active Track */}
+                    <div className="p-3.5 rounded-[12px] bg-[var(--color-surface)] border border-[var(--color-border)] space-y-3">
+                      {/* Slider section */}
+                      <div className="space-y-2">
                         <div
-                          className="absolute h-2 rounded-full bg-[var(--color-primary-light)]"
-                          style={{
-                            [isAr ? "right" : "left"]: 0,
-                            width: `${(activeSliderIndex / (PRICING_PLANS.length - 1)) * 100}%`,
-                          }}
-                        />
-
-                        {/* 5 Stops Points */}
-                        <div className="absolute inset-x-0 flex items-center justify-between px-1 pointer-events-none">
-                          {PRICING_PLANS.map((plan, idx) => (
-                            <div
-                              key={plan.id}
-                              className={`w-3 h-3 rounded-full border transition-all ${idx <= activeSliderIndex
-                                ? "bg-[var(--color-primary-light)] border-white/70 shadow-xs"
-                                : "bg-[var(--color-surface)] border-[var(--color-border)]"
-                                }`}
-                            />
-                          ))}
+                          ref={modalSliderRef}
+                          role="slider"
+                          tabIndex={0}
+                          aria-label={isAr ? "محدد باقة المنتجات" : "Product volume range slider"}
+                          aria-valuemin={0}
+                          aria-valuemax={PRICING_PLANS.length - 1}
+                          aria-valuenow={activeSliderIndex}
+                          aria-valuetext={`${currentSelectedPlan.name} (${currentSelectedPlan.range} products)`}
+                          onKeyDown={handleModalSliderKeyDown}
+                          onPointerDown={handleModalSliderPointerDown}
+                          onPointerMove={handleModalSliderPointerMove}
+                          onPointerUp={handleModalSliderPointerUp}
+                          className="relative h-8 flex items-center cursor-pointer touch-none select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-light)] rounded-full"
+                        >
+                          <div className="absolute inset-x-0 h-2 rounded-full bg-[var(--color-surface-elevated)] border border-[var(--color-border)]" />
+                          <div
+                            className="absolute h-2 rounded-full bg-[var(--color-primary-light)]"
+                            style={{
+                              [isAr ? "right" : "left"]: 0,
+                              width: `${(activeSliderIndex / (PRICING_PLANS.length - 1)) * 100}%`,
+                            }}
+                          />
+                          <div className="absolute inset-x-0 flex items-center justify-between px-1 pointer-events-none">
+                            {PRICING_PLANS.map((plan, idx) => (
+                              <div
+                                key={plan.id}
+                                className={`w-3 h-3 rounded-full border transition-all ${idx <= activeSliderIndex
+                                  ? "bg-[var(--color-primary-light)] border-white/70 shadow-xs"
+                                  : "bg-[var(--color-surface)] border-[var(--color-border)]"
+                                  }`}
+                              />
+                            ))}
+                          </div>
                         </div>
 
-                        {/* Draggable Thumb */}
-                        <div
-                          className="absolute w-5 h-5 rounded-full bg-white dark:bg-zinc-100 border-2 border-[var(--color-primary-light)] shadow-md top-1/2 -translate-y-1/2 pointer-events-none transition-transform active:scale-110"
-                          style={{
-                            [isAr ? "right" : "left"]: `calc(${(activeSliderIndex / (PRICING_PLANS.length - 1)) * 100}% - 10px)`,
-                          }}
-                        />
+                        <div className="flex items-center justify-between text-[10px] text-[var(--color-text-muted)]">
+                          {PRICING_PLANS.map((plan, idx) => (
+                            <button
+                              type="button"
+                              key={plan.id}
+                              onClick={() => handleSliderIndexChange(idx)}
+                              className={`hover:text-[var(--color-text-primary)] transition-colors px-1 py-0.5 rounded ${idx === activeSliderIndex
+                                ? "font-bold text-[var(--color-primary-light)] bg-[var(--color-surface-elevated)]"
+                                : ""
+                                }`}
+                            >
+                              {isAr ? plan.rangeAr : plan.range}
+                            </button>
+                          ))}
+                        </div>
                       </div>
 
-                      {/* Stop Labels under rail */}
-                      <div className="flex items-center justify-between text-[10px] text-[var(--color-text-muted)] font-mono">
-                        {PRICING_PLANS.map((plan, idx) => (
-                          <button
-                            type="button"
-                            key={plan.id}
-                            onClick={() => handleSliderIndexChange(idx)}
-                            className={`hover:text-[var(--color-text-primary)] transition-colors px-1 py-0.5 rounded ${idx === activeSliderIndex
-                              ? "font-bold text-[var(--color-primary-light)] bg-[var(--color-surface-elevated)]"
-                              : ""
-                              }`}
-                          >
-                            {isAr ? plan.rangeAr : plan.range}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* ─── ONLY ONE PLAN CARD (Matches user slider selection) ─── */}
-                    <div className="p-3.5 rounded-[12px] bg-[var(--color-surface)] border-2 border-[var(--color-primary-light)]/50 shadow-sm space-y-2.5 relative overflow-hidden">
+                      {/* Plan + price */}
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-heading text-base font-bold text-[var(--color-text-primary)]">
                               {isAr ? currentSelectedPlan.nameAr : currentSelectedPlan.name}
                             </span>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[var(--color-primary-light)]/15 text-[var(--color-primary-light)] border border-[var(--color-primary-light)]/30">
+                            <span className="px-3 py-0.5 text-[12px] rounded-lg bg-[var(--color-surface-hover)] shadow-sm">
                               {isAr ? `${currentSelectedPlan.rangeAr} منتج` : `${currentSelectedPlan.range} products`}
                             </span>
                           </div>
-                          <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                          <p className="text-[11px] text-[var(--color-text-muted)] mt-1.5">
                             {currentSelectedPlan.id === "tier_5"
                               ? isAr
                                 ? "أعلى سعة للكتالوج مع نقطتي بيع (2 POS) مجاناً"
@@ -1351,64 +1102,68 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           </div>
                           {modalBilling === "yearly" && (
                             <span className="text-[10px] text-emerald-500 font-semibold block">
-                              {isAr ? "مشمول خصم 10% السنوي" : "Includes 10% yearly discount"}
+                              {isAr ? "شامل خصم 10% للسنوي" : "Includes 10% yearly discount"}
                             </span>
                           )}
                         </div>
                       </div>
 
-                      {/* Best Deal Banner if tier_5 */}
-                      {currentSelectedPlan.id === "tier_5" && (
-                        <div className="px-2.5 py-1 rounded-[8px] text-[11px] font-semibold flex items-center gap-1.5">
-                          <span>
-                            {isAr
-                              ? "أفضل قيمة: يتضمن نقطتي بيع كاشير (2 POS Terminals) مجاناً بالكامل!"
-                              : "Includes 2 POS Cashier Terminals 100% Free!"}
-                          </span>
-                        </div>
-                      )}
 
-                      {/* Capabilities Checkmarks */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1.5 border-t border-[var(--color-border-subtle)] text-[11px] text-[var(--color-text-secondary)]">
+
+                      {/* ── Capabilities Toggle (always visible) ── */}
+                      <button
+                        type="button"
+                        onClick={() => setShowCapabilities((v) => !v)}
+                        aria-expanded={showCapabilities}
+                        aria-controls="plan-capabilities"
+                        className="w-full flex items-center justify-between gap-2 pt-2 border-t border-[var(--color-border-subtle)] text-[11px] font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <ChevronDown
+                            className={`w-3.5 h-3.5 transition-transform duration-200 ${showCapabilities ? "rotate-180" : ""
+                              }`}
+                          />
+                          {isAr ? "عرض إمكانيات الباقة" : "View plan capabilities"}
+                          <span className="text-[var(--color-text-muted)] font-normal">({capabilitiesCount})</span>
+                        </span>
+                      </button>
+
+                      {/* ── Capabilities Grid (hidden by default) ── */}
+                      <div
+                        id="plan-capabilities"
+                        className={
+                          showCapabilities
+                            ? "grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] text-[var(--color-text-secondary)]"
+                            : "hidden"
+                        }
+                      >
                         {(isAr ? currentSelectedPlan.capabilitiesAr : currentSelectedPlan.capabilities)
                           .slice(0, 4)
                           .map((cap, i) => (
                             <div key={i} className="flex items-center gap-1.5">
-                              <Check className="w-3 h-3 text-emerald-500 shrink-0" />
+                              <Check className="w-3 h-3 text-blue-500 shrink-0" />
                               <span className="truncate">{cap}</span>
                             </div>
                           ))}
                       </div>
-                    </div>
 
-                    {/* Enterprise Callout: Need more than 550 products? */}
-                    <div className="p-2.5 rounded-[10px] bg-[var(--color-surface-elevated)] border border-dashed border-[var(--color-border)] flex items-center justify-between gap-3 text-xs">
-                      <div>
-                        <div className="font-semibold text-[var(--color-text-primary)] text-[11px] sm:text-xs">
+                      {/* Enterprise Callout */}
+                      <div className="p-2.5 flex items-center justify-end gap-3 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleClose();
+                            onOpenEnterpriseContact?.();
+                          }}
+                          className="font-semibold text-[var(--color-primary-light)] hover:opacity-90 hover:underline underline-offset-2 transition-opacity text-[11px] sm:text-xs cursor-pointer bg-transparent border-0 p-0"
+                        >
                           {isAr ? "هل تحتاج لعرض أكثر من 550 منتج؟" : "Need more than 550 products?"}
-                        </div>
-                        <div className="text-[10px] text-[var(--color-text-muted)] mt-0.5">
-                          {isAr
-                            ? "تواصل مع مهندسينا لحلول المؤسسات الكبرى والسعات غير المحدودة"
-                            : "Contact our enterprise engineers for custom catalogs & scale"}
-                        </div>
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleClose();
-                          onOpenEnterpriseContact?.();
-                        }}
-                        className="px-3 py-1.5 rounded-[8px] bg-[var(--color-primary-light)] text-white font-semibold text-[11px] hover:opacity-90 transition-opacity shrink-0 flex items-center gap-1 shadow-sm"
-                      >
-                        <span>{isAr ? "تواصل معنا" : "Contact Us"}</span>
-                        <ArrowRight className="w-3 h-3 rtl:rotate-180" />
-                      </button>
                     </div>
                   </div>
                 )}
 
-                {/* Content: POS & Admin Only Mode */}
                 {modalPricingMode === "pos_only" && (
                   <div className="space-y-3 p-3.5 rounded-[12px] bg-[var(--color-surface)] border border-[var(--color-border)]">
                     <div className="flex items-center justify-between">
@@ -1423,25 +1178,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         </p>
                       </div>
 
-                      {/* Stepper */}
-                      <div className="inline-flex items-center gap-2 p-1 rounded-[10px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)]">
+                      <div className="inline-flex items-center gap-1 p-1 rounded-[10px]">
                         <button
                           type="button"
                           onClick={() => handleModalPosCountChange(-1)}
                           disabled={modalPosCount <= 1}
-                          className="w-7 h-7 rounded-[6px] flex items-center justify-center text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] disabled:opacity-30 border border-[var(--color-border-subtle)] transition-colors"
+                          className="w-5 h-5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] flex items-center justify-center text-[#0479E8] dark:text-[#0083FE] hover:bg-[var(--color-surface-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                           aria-label="Decrease POS count"
                         >
                           <Minus className="w-3.5 h-3.5" />
                         </button>
-                        <span className="font-mono font-bold text-sm w-7 text-center text-[var(--color-text-primary)]">
+                        <span className="font-bold text-sm w-7 text-center text-[var(--color-text-primary)]">
                           {modalPosCount}
                         </span>
                         <button
                           type="button"
                           onClick={() => handleModalPosCountChange(1)}
                           disabled={modalPosCount >= 20}
-                          className="w-7 h-7 rounded-[6px] flex items-center justify-center text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] disabled:opacity-30 border border-[var(--color-border-subtle)] transition-colors"
+                          className="w-5 h-5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-elevated)] flex items-center justify-center text-[#0479E8] dark:text-[#0083FE] hover:bg-[var(--color-surface-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                           aria-label="Increase POS count"
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -1449,8 +1203,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Calculated Price Box */}
-                    <div className="p-3 rounded-[10px] bg-[var(--color-surface-elevated)] border border-[var(--color-primary-light)]/20 flex items-center justify-between">
+                    <div className="p-3 rounded-[10px] border border-[var(--color-border)] flex items-center justify-between">
                       <div className="space-y-0.5">
                         <div className="text-xs font-semibold text-[var(--color-text-primary)]">
                           {isAr ? "تكلفة نظام الكاشير ولوحة الإدارة" : "Total POS & Admin System"}
@@ -1477,12 +1230,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                     <div className="space-y-1 text-[11px] text-[var(--color-text-secondary)]">
                       <div className="flex items-center gap-1.5">
-                        <Check className="w-3 h-3 text-emerald-500 shrink-0" />
-                        <span>{isAr ? "لوحة تحكم إدارية سحابية كاملة ومجانية" : "Full cloud admin management dashboard included"}</span>
+                        <Check className="w-3 h-3 text-blue-500 shrink-0" />
+                        <span>
+                          {isAr ? "لوحة تحكم إدارية سحابية كاملة ومجانية" : "Full cloud admin management dashboard included"}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Check className="w-3 h-3 text-emerald-500 shrink-0" />
-                        <span>{isAr ? "مزامنة سريعة مع طباعة فواتير حرارية" : "High-speed sync & thermal receipts printing"}</span>
+                        <Check className="w-3 h-3 text-blue-500 shrink-0" />
+                        <span>
+                          {isAr ? "مزامنة سريعة مع طباعة فواتير حرارية" : "High-speed sync & thermal receipts printing"}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1490,11 +1247,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             )}
 
-            {/* ─── STEP 2: Business details ─── */}
+            {/* STEP 2 */}
             {signupStep === 2 && (
               <div className="space-y-4">
                 <div>
-                  <span className="text-[11px] font-ui uppercase tracking-wider text-gradient-primary font-bold block mb-1">
+                  <span className="text-[11px] font-ui text-[var(--color-text-muted)] tracking-wider font-bold block mb-1">
                     {isAr ? "الخطوة 2: بيانات النشاط" : "Step 2: Business details"}
                   </span>
                   <h2 className="font-heading text-xl sm:text-2xl font-normal text-[var(--color-text-primary)]">
@@ -1515,11 +1272,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       placeholder={isAr ? "متجر الأناقة" : "Store name"}
                       className="input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-sm"
                     />
-                    {/* Dynamic Store Name URL Hint */}
-                    <div className="flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-[6px] bg-[var(--color-surface-elevated)] border border-[var(--color-border-subtle)] text-[11px] font-mono text-[var(--color-text-secondary)]">
-                      <span className="text-[var(--color-primary-light)] font-bold">🌐</span>
-                      <span className="text-[var(--color-text-muted)]">{isAr ? "رابط المتجر المقترح:" : "Suggested store URL:"}</span>
-                      <span className="font-semibold text-[var(--color-primary-light)]" dir="ltr">
+                    <div className="flex items-center gap-1.5 mt-1.5 px-2.5 py-1 text-[11px]">
+                      <span className="text-[var(--color-text-muted)] text-[11px]">
+                        {isAr ? "رابط المتجر المقترح:" : "Suggested store URL:"}
+                      </span>
+                      <span className="font-semibold text-[11px] text-[var(--color-primary-light)]" dir="ltr">
                         www.{formatStoreSlug(storeName)}.com
                       </span>
                     </div>
@@ -1542,11 +1299,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             )}
 
-            {/* ─── STEP 3: Category ─── */}
+            {/* STEP 3 */}
             {signupStep === 3 && (
               <div className="space-y-4">
                 <div>
-                  <span className="text-[11px] font-ui uppercase tracking-wider text-gradient-primary font-bold block mb-1">
+                  <span className="text-[11px] font-ui text-[var(--color-text-muted)] tracking-wider font-bold block mb-1">
                     {isAr ? "الخطوة 3: التصنيف" : "Step 3: Category"}
                   </span>
                   <h2 className="font-heading text-xl sm:text-2xl font-normal text-[var(--color-text-primary)]">
@@ -1555,7 +1312,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
 
                 <div className="max-h-[260px] overflow-y-auto pe-1">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1">
                     {STORE_CATEGORIES.map((cat) => (
                       <div
                         key={cat}
@@ -1575,25 +1332,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             )}
 
-            {/* ─── STEP 4: Location ─── */}
+            {/* STEP 4 */}
             {signupStep === 4 && (
               <div className="space-y-4">
                 <div>
-                  <span className="text-[11px] font-ui uppercase tracking-wider text-gradient-primary font-bold block mb-1">
+                  <span className="text-[11px] font-ui text-[var(--color-text-muted)] tracking-wider font-bold block mb-1">
                     {isAr ? "الخطوة 4: الموقع الجغرافي" : "Step 4: Location"}
                   </span>
                   <h2 className="font-heading text-xl sm:text-2xl font-normal text-[var(--color-text-primary)]">
                     {isAr ? "أين يقع متجرك الرئيسي؟" : "Where is your store located?"}
                   </h2>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-1">
-                    {isAr
-                      ? "اختر الدولة والمدينة بدقة من القائمة المعتمدة لضبط العملة والتوصيل، واستخدم خرائط جوجل لتحديد موقعك."
-                      : "Select your country and city from verified lists to configure currency and delivery, and link your Google Maps pin."}
-                  </p>
                 </div>
 
                 <div className="space-y-3.5">
-                  {/* Country Selection (Egypt active currently, others Coming Soon) */}
                   <div>
                     <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
                       {isAr ? "الدولة (مصر فقط حالياً)" : "Country (Egypt Only Currently)"}
@@ -1630,24 +1381,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         </svg>
                       </div>
                     </div>
-                    {/* Notice that other Arab countries are coming soon */}
-                    <div className="mt-1.5 p-2 rounded-[8px] bg-blue-500/10 border border-blue-500/20 text-[11px] text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
-                      <Info className="w-3.5 h-3.5 shrink-0" />
-                      <span>
-                        {isAr
-                          ? "الخدمة متاحة حالياً في جمهورية مصر العربية فقط، وباقي الدول العربية ستتاح قريباً."
-                          : "Service is currently available in Egypt only. Other Arab countries are coming soon."}
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-[var(--color-text-muted)] flex items-center justify-between pt-1 font-ui">
-                      <span>{isAr ? "العملة الافتراضية للنظام:" : "Default system currency:"}</span>
+                    <div className="text-[11px] text-[var(--color-text-muted)] flex items-center justify-end pt-1 font-ui">
                       <span className="font-bold text-[var(--color-primary-light)]">
-                        {activeCountryObj.currency} ({activeCountryObj.currencyAr}) • {isAr ? activeCountryObj.currencyNameAr : activeCountryObj.currencyNameEn}
+                        {activeCountryObj.currency} ({activeCountryObj.currencyAr}) •{" "}
+                        {isAr ? activeCountryObj.currencyNameAr : activeCountryObj.currencyNameEn}
                       </span>
                     </div>
                   </div>
 
-                  {/* Strict City Selection */}
                   <div>
                     <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
                       {isAr ? "المدينة (اختيار إلزامي من المدن المعتمدة)" : "City (Strict Selection)"}
@@ -1685,15 +1426,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         </svg>
                       </div>
                     </div>
-                    <div className="text-[11px] text-[var(--color-text-muted)] flex items-center justify-between pt-1 font-ui">
-                      <span>{isAr ? "المدن المتوفرة لهذه الدولة:" : "Available cities for this country:"}</span>
-                      <span className="font-mono text-[var(--color-text-secondary)]">
+                    <div className="text-[11px] text-[var(--color-text-muted)] flex items-center justify-end pt-1 font-ui">
+                      <span className="text-[var(--color-text-secondary)]">
                         {availableCities.length} {isAr ? "مدينة" : "cities"}
                       </span>
                     </div>
                   </div>
 
-                  {/* Address & Google Maps Geolocation */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="block text-xs font-medium text-[var(--color-text-secondary)]">
@@ -1735,7 +1474,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       />
                     </div>
 
-                    {/* Location Status / Google Maps Pin URL Display */}
                     {(locationUrl || locationStatus) && (
                       <div className="mt-2 p-2.5 rounded-[8px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-[11px] flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
@@ -1762,11 +1500,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             )}
 
-            {/* ─── STEP 5: Contact & Credentials ─── */}
+            {/* STEP 5 */}
             {signupStep === 5 && (
               <div className="space-y-4">
                 <div>
-                  <span className="text-[11px] font-ui uppercase tracking-wider text-gradient-primary font-bold block mb-1">
+                  <span className="text-[11px] font-ui text-[var(--color-text-muted)] tracking-wider font-bold block mb-1">
                     {isAr ? "الخطوة 5: بيانات الاتصال والحساب" : "Step 5: Contact & Credentials"}
                   </span>
                   <h2 className="font-heading text-xl sm:text-2xl font-normal text-[var(--color-text-primary)]">
@@ -1799,7 +1537,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         <select
                           value={phoneCountryCode}
                           onChange={(e) => setPhoneCountryCode(e.target.value)}
-                          className="input-theme-gradient w-full px-2 py-2.5 rounded-[10px] text-xs font-mono font-bold bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] cursor-pointer"
+                          className="input-theme-gradient w-full px-2 py-2.5 rounded-[10px] text-xs font-bold bg-[var(--color-surface)] text-[var(--color-text-primary)] border border-[var(--color-border)] cursor-pointer"
                         >
                           {ARAB_COUNTRIES.map((c) => {
                             const isEgypt = c.dialCode === "+20";
@@ -1835,32 +1573,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         />
                       </div>
                     </div>
-                    {/* Egyptian Phone 11-digit Validation */}
-                    <div className="flex items-center justify-between text-[11px] mt-1 font-ui">
-                      <span
-                        className={
-                          phone.replace(/\D/g, "").length === 11
-                            ? "text-emerald-500 font-medium"
-                            : "text-[var(--color-text-muted)]"
-                        }
-                      >
-                        {phone.replace(/\D/g, "").length === 11
-                          ? isAr
-                            ? "✓ رقم هاتف مصري صحيح (11 رقماً)"
-                            : "✓ Valid Egyptian phone (11 digits)"
-                          : isAr
-                            ? "يجب أن يتكون رقم الهاتف من 11 رقماً (مثال: 01012345678)"
-                            : "Must be exactly 11 digits starting with 01"}
-                      </span>
-                      <span
-                        className={`font-mono text-xs ${phone.replace(/\D/g, "").length === 11
-                          ? "text-emerald-500 font-bold"
-                          : "text-[var(--color-text-muted)]"
-                          }`}
-                      >
-                        {phone.replace(/\D/g, "").length}/11
-                      </span>
-                    </div>
                   </div>
 
                   <div>
@@ -1875,7 +1587,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         title={isAr ? "توليد كلمة مرور قوية تلقائياً" : "Generate strong password automatically"}
                       >
                         <Sparkles className="w-3 h-3" />
-                        <span>{isAr ? "✨ توليد كلمة مرور قوية" : "✨ Generate Password"}</span>
+                        <span>{isAr ? "توليد كلمة مرور قوية" : "Generate Password"}</span>
                       </button>
                     </div>
                     <div className="relative">
@@ -1897,34 +1609,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       </button>
                     </div>
 
-                    {/* Real-time Password validation: must exceed 10 chars */}
-                    <div className="flex items-center justify-between text-[11px] mt-1 font-ui">
-                      <span
-                        className={
-                          signupPassword.length > 10
-                            ? "text-emerald-500 font-medium"
-                            : "text-amber-500 font-medium"
-                        }
-                      >
-                        {signupPassword.length > 10
-                          ? isAr
-                            ? "✓ كلمة المرور مقبولة وتتجاوز 10 خانات"
-                            : "✓ Password exceeds 10 characters"
-                          : isAr
-                            ? "كلمة المرور يجب أن تزيد عن 10 خانات"
-                            : "Password must exceed 10 characters"}
-                      </span>
-                      <span
-                        className={`font-mono text-xs ${signupPassword.length > 10
-                          ? "text-emerald-500 font-bold"
-                          : "text-amber-500 font-semibold"
-                          }`}
-                      >
-                        {signupPassword.length} {isAr ? "حرف" : "chars"} {signupPassword.length <= 10 && "(>10)"}
-                      </span>
-                    </div>
-
-                    {/* Notice when generated */}
                     {passwordNotice && (
                       <div className="mt-1.5 p-2 rounded-[6px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-medium flex items-center gap-1.5">
                         <Check className="w-3.5 h-3.5 shrink-0" />
@@ -1932,61 +1616,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       </div>
                     )}
                   </div>
-
-                  {/* Verification Snippet */}
-                  <div className="pt-2">
-                    {!contactVerifySent ? (
-                      <button
-                        type="button"
-                        onClick={() => setContactVerifySent(true)}
-                        disabled={!email.includes("@") || phone.trim().length < 7}
-                        className="w-full py-2 rounded-[8px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] disabled:opacity-40 transition-colors"
-                      >
-                        {isAr ? "إرسال رمز التحقق للاتصال" : "Send contact verification"}
-                      </button>
-                    ) : (
-                      <div className="p-3 rounded-[10px] bg-[var(--color-surface-elevated)] border border-[var(--color-primary-light)]/40 space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-[var(--color-text-secondary)]">
-                            {isAr ? "أدخل رمز التحقق (اختباري: 123456)" : "Enter verification code (Demo: 123456)"}
-                          </span>
-                          <span className="text-[var(--color-primary-light)] font-ui font-bold">
-                            {isContactVerified ? "✓ Verified" : "Sent"}
-                          </span>
-                        </div>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={contactCode}
-                            onChange={(e) => {
-                              setContactCode(e.target.value);
-                              if (e.target.value.length >= 4) {
-                                setIsContactVerified(true);
-                              }
-                            }}
-                            placeholder="123456"
-                            className="input-theme-gradient flex-1 px-3 py-1.5 rounded-[6px] text-xs font-ui text-center"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setIsContactVerified(true)}
-                            className="px-3 py-1.5 rounded-[6px] bg-[var(--color-primary-light)] text-white text-xs font-semibold"
-                          >
-                            {isAr ? "تحقق" : "Verify"}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
             )}
 
-            {/* ─── STEP 6: Review & launch ─── */}
+            {/* STEP 6 */}
             {signupStep === 6 && (
               <div className="space-y-4">
                 <div>
-                  <span className="text-[11px] font-ui uppercase tracking-wider text-gradient-primary font-bold block mb-1">
+                  <span className="text-[11px] font-ui text-[var(--color-text-muted)] tracking-wider font-bold block mb-1">
                     {isAr ? "الخطوة 6: المراجعة والإطلاق" : "Step 6: Review & launch"}
                   </span>
                   <h2 className="font-heading text-xl sm:text-2xl font-normal text-[var(--color-text-primary)]">
@@ -1995,7 +1633,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
 
                 <div className="p-4 rounded-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] space-y-2.5 text-xs">
-                  <div className="flex justify-between py-1 border-b border-[var(--color-border-subtle)]">
+                  <div className="flex justify-between py-1">
                     <span className="text-[var(--color-text-secondary)]">{isAr ? "نوع الباقة" : "Plan Type"}</span>
                     <span className="font-medium text-[var(--color-text-primary)]">
                       {modalPricingMode === "pos_only"
@@ -2007,7 +1645,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           : "Unified Store (Catalog)"}
                     </span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-[var(--color-border-subtle)]">
+                  <div className="flex justify-between py-1">
                     <span className="text-[var(--color-text-secondary)]">
                       {modalPricingMode === "pos_only"
                         ? isAr
@@ -2017,32 +1655,43 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           ? "سعة المنتجات المتوقعة"
                           : "Expected Volume"}
                     </span>
-                    <span className="font-medium text-[var(--color-text-primary)]">
-                      {expectedVolume}
-                    </span>
+                    <span className="font-medium text-[var(--color-text-primary)]">{expectedVolume}</span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-[var(--color-border-subtle)]">
-                    <span className="text-[var(--color-text-secondary)]">{isAr ? "دورة الفوترة والسعر" : "Billing & Price"}</span>
+                  <div className="flex justify-between py-1">
+                    <span className="text-[var(--color-text-secondary)]">
+                      {isAr ? "دورة الفوترة والسعر" : "Billing & Price"}
+                    </span>
                     <span className="font-bold text-[var(--color-primary-light)] font-ui">
                       {tierPrice} {activeCurrencySymbol} {isAr ? "/ شهرياً" : "/ mo"}{" "}
                       <span className="text-[10px] font-normal text-[var(--color-text-muted)]">
-                        ({modalBilling === "yearly" ? (isAr ? "فاتورة سنوية" : "billed yearly") : (isAr ? "فاتورة شهرية" : "billed monthly")})
+                        (
+                        {modalBilling === "yearly"
+                          ? isAr
+                            ? "فاتورة سنوية"
+                            : "billed yearly"
+                          : isAr
+                            ? "فاتورة شهرية"
+                            : "billed monthly"}
+                        )
                       </span>
                     </span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-[var(--color-border-subtle)]">
+                  <div className="flex justify-between py-1">
                     <span className="text-[var(--color-text-secondary)]">{isAr ? "اسم المتجر" : "Store"}</span>
                     <span className="font-medium text-[var(--color-text-primary)]">{storeName || "My Store"}</span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-[var(--color-border-subtle)]">
+                  <div className="flex justify-between py-1">
                     <span className="text-[var(--color-text-secondary)]">{isAr ? "التصنيف" : "Category"}</span>
-                    <span className="font-medium text-[var(--color-text-primary)]">{CATEGORY_LABELS[category]?.[isAr ? "ar" : "en"] || category}</span>
+                    <span className="font-medium text-[var(--color-text-primary)]">
+                      {CATEGORY_LABELS[category]?.[isAr ? "ar" : "en"] || category}
+                    </span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-[var(--color-border-subtle)]">
+                  <div className="flex justify-between py-1">
                     <span className="text-[var(--color-text-secondary)]">{isAr ? "الموقع" : "Location"}</span>
                     <div className="text-end">
                       <span className="font-medium text-[var(--color-text-primary)] block">
-                        {city || (isAr ? "القاهرة" : "Cairo")}, {isAr ? activeCountryObj.nameAr : activeCountryObj.name}
+                        {city || (isAr ? "القاهرة" : "Cairo")},{" "}
+                        {isAr ? activeCountryObj.nameAr : activeCountryObj.name}
                       </span>
                       {locationUrl && (
                         <a
@@ -2059,30 +1708,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </div>
                   </div>
                 </div>
-
-                {/* Pay & Launch Instant Redirect Callout */}
-                <div className="p-3.5 rounded-[12px] bg-gradient-to-r from-emerald-500/10 via-[var(--color-primary-light)]/10 to-blue-500/10 border border-emerald-500/30 text-xs text-[var(--color-text-primary)] space-y-1.5 shadow-sm">
-                  <div className="flex items-center gap-2 font-bold text-emerald-600 dark:text-emerald-400">
-                    <Rocket className="w-4 h-4 shrink-0" />
-                    <span>{isAr ? "تنبيه الإطلاق والدخول المباشر:" : "Launch & Instant Redirect Notice:"}</span>
-                  </div>
-                  <p className="text-[11px] leading-relaxed text-[var(--color-text-secondary)]">
-                    {isAr
-                      ? "ملاحظة: بعد الدفع والضغط على زر 'ادفع وأطلق مساحة عملك'، سيتم تحويلك مباشرة وتلقائياً إلى لوحة التحكم الخاصة بك وتكون داخل مساحة عملك."
-                      : "Note: After you pay and click on 'Pay & Launch your workspace', it will redirect you to your dashboard and you are in."}
-                  </p>
-                </div>
               </div>
             )}
 
-            {/* Navigation Actions for Sign Up (Back / Next) */}
+            {/* Navigation */}
             <div className="flex items-center justify-between pt-3 border-t border-[var(--color-border)]">
               {signupStep > 1 ? (
-                <button
-                  type="button"
-                  onClick={handleSignupBack}
-                  className="msm-back"
-                >
+                <button type="button" onClick={handleSignupBack} className="msm-back">
                   <ArrowLeft className="w-3.5 h-3.5 rtl:rotate-180" />
                   <span>{isAr ? "السابق" : "Back"}</span>
                 </button>
@@ -2115,16 +1747,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </button>
             </div>
 
-            {/* Footer Flow Switcher (.msm-switch flips to Sign In) */}
             <div className="pt-3 text-center border-t border-[var(--color-border-subtle)]">
               <p className="text-xs text-[var(--color-text-secondary)]">
                 {isAr ? "هل لديك حساب بالفعل؟" : "Already have an account?"}{" "}
-                <button
-                  type="button"
-                  data-switch="signin"
-                  onClick={() => switchMode("signin")}
-                  className="msm-switch"
-                >
+                <button type="button" data-switch="signin" onClick={() => switchMode("signin")} className="msm-switch">
                   {isAr ? "تسجيل الدخول" : "Sign in"}
                 </button>
               </p>
@@ -2132,16 +1758,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════════
-            FLOW B: SIGN IN (Store Owner OR Staff/Cashier — 4 Dots)
-            ══════════════════════════════════════════════════════════════════ */}
+        {/* Merchant signin */}
         {screen === "auth" && selectedRole === "merchant" && mode === "signin" && (
           <div className="space-y-5">
-            {/* ─── S1. IDENTIFY & AUTH (Store Owner Clean Portal) ─── */}
             {signinStage === "identify" && (
               <div className="space-y-4">
                 <div>
-                  <span className="text-[11px] font-ui uppercase tracking-wider text-gradient-primary font-bold block mb-1">
+                  <span className="text-[11px] font-ui text-[var(--color-text-muted)] tracking-wider font-bold block mb-1">
                     STORE OWNER ACCESS
                   </span>
                   <h2 className="font-heading text-2xl font-normal text-[var(--color-text-primary)]">
@@ -2152,7 +1775,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </p>
                 </div>
 
-                {/* Field 1: Email or Phone (2-Color Gradient Input) */}
                 <div>
                   <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5">
                     {isAr ? "البريد الإلكتروني أو الهاتف" : "Email or Phone"}
@@ -2168,11 +1790,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       dir="ltr"
                       className="input-theme-gradient w-full px-3.5 pe-10 py-2.5 rounded-[10px] text-sm font-ui"
                     />
-                    <Mail className="w-4 h-4 text-[var(--color-text-muted)] absolute end-3.5 top-3 pointer-events-none" />
+
                   </div>
                 </div>
 
-                {/* Field 2: Password (2-Color Gradient Input) */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs font-medium text-[var(--color-text-secondary)]">
@@ -2206,7 +1827,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                 </div>
 
-                {/* Remember device checkbox & OTP alternative */}
                 <div className="flex items-center justify-between text-xs pt-1">
                   <label className="flex items-center gap-2 cursor-pointer text-[var(--color-text-secondary)]">
                     <input
@@ -2226,7 +1846,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </button>
                 </div>
 
-                {/* Primary Button: Sign In to Workspace (UNTOUCHED Primary Button Style) */}
                 <div className="pt-2">
                   <button
                     type="button"
@@ -2247,7 +1866,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             )}
 
-            {/* ─── S2. VERIFY (OTP) ─── */}
             {signinStage === "verify" && (
               <div className="space-y-4">
                 <div>
@@ -2261,7 +1879,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </p>
                 </div>
 
-                {/* 6 Digit Inputs (2-Color Gradient) */}
                 <div className="flex items-center justify-between gap-2 py-2" dir="ltr">
                   {otpValues.map((digit, idx) => (
                     <input
@@ -2281,7 +1898,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   ))}
                 </div>
 
-                {/* Resend & Password fallback */}
                 <div className="flex items-center justify-between text-xs pt-1">
                   <button
                     type="button"
@@ -2308,11 +1924,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
 
                 <div className="flex items-center gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setSigninStage("identify")}
-                    className="msm-back"
-                  >
+                  <button type="button" onClick={() => setSigninStage("identify")} className="msm-back">
                     <ArrowLeft className="w-3.5 h-3.5 rtl:rotate-180" />
                     <span>{isAr ? "السابق" : "Back"}</span>
                   </button>
@@ -2329,7 +1941,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             )}
 
-            {/* ─── S3. PASSWORD FALLBACK ─── */}
             {signinStage === "password" && (
               <div className="space-y-4">
                 <div>
@@ -2376,11 +1987,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
 
                 <div className="flex items-center gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setSigninStage("identify")}
-                    className="msm-back"
-                  >
+                  <button type="button" onClick={() => setSigninStage("identify")} className="msm-back">
                     <ArrowLeft className="w-3.5 h-3.5 rtl:rotate-180" />
                     <span>{isAr ? "السابق" : "Back"}</span>
                   </button>
@@ -2397,7 +2004,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             )}
 
-            {/* ─── S3b. RESET PASSWORD BRANCH ─── */}
             {signinStage === "reset" && (
               <div className="space-y-4">
                 <div>
@@ -2429,11 +2035,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </div>
 
                     <div className="flex items-center gap-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setSigninStage("identify")}
-                        className="msm-back"
-                      >
+                      <button type="button" onClick={() => setSigninStage("identify")} className="msm-back">
                         <ArrowLeft className="w-3.5 h-3.5 rtl:rotate-180" />
                         <span>{isAr ? "السابق" : "Back"}</span>
                       </button>
@@ -2470,7 +2072,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             )}
 
-            {/* ─── S4. CHOOSE STORE ─── */}
             {signinStage === "choose_store" && (
               <div className="space-y-4">
                 <div>
@@ -2498,15 +2099,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           <Store className="w-4 h-4" />
                         </div>
                         <div>
-                          <div className="text-sm font-semibold text-[var(--color-text-primary)]">
-                            {st.name}
-                          </div>
-                          <div className="msm-sub text-xs text-[var(--color-text-secondary)]">
-                            {st.role}
-                          </div>
+                          <div className="text-sm font-semibold text-[var(--color-text-primary)]">{st.name}</div>
+                          <div className="msm-sub text-xs text-[var(--color-text-secondary)]">{st.role}</div>
                         </div>
                       </div>
-                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${selectedStore === st.name ? "border-transparent bg-gradient-to-r from-[var(--color-primary-dark)] to-[var(--color-primary-light)] text-white shadow-sm shadow-[var(--color-primary-dark)]/40" : "border-[var(--color-border)]"}`}>
+                      <div
+                        className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${selectedStore === st.name
+                          ? "border-transparent bg-gradient-to-r from-[var(--color-primary-dark)] to-[var(--color-primary-light)] text-white shadow-sm shadow-[var(--color-primary-dark)]/40"
+                          : "border-[var(--color-border)]"
+                          }`}
+                      >
                         {selectedStore === st.name && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
                       </div>
                     </div>
@@ -2514,11 +2116,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
 
                 <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={handleChooseStoreContinue}
-                    className="msm-next w-full py-3"
-                  >
+                  <button type="button" onClick={handleChooseStoreContinue} className="msm-next w-full py-3">
                     <span>{isAr ? "المتابعة" : "Continue"}</span>
                     <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
                   </button>
@@ -2526,7 +2124,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             )}
 
-            {/* ─── S5. DONE ─── */}
             {signinStage === "done" && (
               <div className="py-8 text-center space-y-4">
                 <div className="w-16 h-16 rounded-full bg-[var(--color-primary-dark)]/20 border border-[var(--color-primary-light)]/40 flex items-center justify-center text-[var(--color-primary-light)] mx-auto shadow-lg shadow-[var(--color-primary-dark)]/20 animate-bounce">
@@ -2537,24 +2134,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     {isAr ? "تم تسجيل دخولك بنجاح" : "You're signed in"}
                   </h2>
                   <p className="msm-sub text-xs text-[var(--color-text-secondary)] mt-1">
-                    {isAr
-                      ? `جاري توجيهك إلى ${selectedStore}...`
-                      : `Taking you to ${selectedStore}.`}
+                    {isAr ? `جاري توجيهك إلى ${selectedStore}...` : `Taking you to ${selectedStore}.`}
                   </p>
                 </div>
 
                 <div className="pt-3">
-                  <a
-                    href={APP_ROUTES.dashboard}
-                    className="btn-primary-pill text-xs py-2.5 px-6 inline-flex"
-                  >
+                  <a href={APP_ROUTES.dashboard} className="btn-primary-pill text-xs py-2.5 px-6 inline-flex">
                     <span>{isAr ? "الانتقال إلى لوحة التحكم" : "Go to dashboard"}</span>
                   </a>
                 </div>
               </div>
             )}
 
-            {/* Footer Flow Switcher (.msm-switch flips to Sign Up) */}
             {signinStage !== "done" && (
               <div className="pt-3 text-center border-t border-[var(--color-border-subtle)]">
                 <p className="text-xs text-[var(--color-text-secondary)]">

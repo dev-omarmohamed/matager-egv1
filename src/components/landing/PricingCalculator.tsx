@@ -11,7 +11,7 @@ import {
   PlanDefinition,
   POS_ONLY_TERMINAL_PRICE,
 } from "@/lib/pricing-calculator";
-import { Check, Plus, Minus, ArrowRight, Monitor, Layers, Sparkles } from "lucide-react";
+import { Check, Plus, Minus, ArrowRight, Monitor, Layers, Sparkles, ChevronDown } from "lucide-react";
 import { gsap, isReducedMotion } from "@/lib/motion";
 
 export interface InitialPlanOptions {
@@ -45,6 +45,9 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
   const [billing, setBilling] = useState<BillingCycle>("monthly");
   const [posCount, setPosCount] = useState<number>(0);
   const [posOnlyCount, setPosOnlyCount] = useState<number>(1);
+
+  // Added state for the collapsible capabilities section
+  const [isCapabilitiesOpen, setIsCapabilitiesOpen] = useState<boolean>(false);
 
   const sliderRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef<boolean>(false);
@@ -129,7 +132,7 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
     isDraggingRef.current = false;
     try {
       (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch {}
+    } catch { }
   };
 
   const thumbPercent = (activeIndex / (PRICING_PLANS.length - 1)) * 100;
@@ -155,6 +158,10 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
       });
     }
   };
+
+  const activeCapabilities = pricingMode === "pos_only"
+    ? isAr ? POS_ONLY_PLAN.capabilitiesAr : POS_ONLY_PLAN.capabilities
+    : isAr ? currentPlan.capabilitiesAr : currentPlan.capabilities;
 
   return (
     <section
@@ -184,11 +191,10 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
             <button
               type="button"
               onClick={() => setPricingMode("catalog")}
-              className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 ${
-                pricingMode === "catalog"
-                  ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-sm font-semibold"
-                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-              }`}
+              className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 ${pricingMode === "catalog"
+                ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-sm font-semibold"
+                : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                }`}
             >
               <Layers className="w-3.5 h-3.5" />
               <span>{isAr ? "المتجر السحابي المتكامل" : "Unified Store (Catalog)"}</span>
@@ -197,11 +203,10 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
             <button
               type="button"
               onClick={() => setPricingMode("pos_only")}
-              className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 ${
-                pricingMode === "pos_only"
-                  ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-sm font-semibold"
-                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-              }`}
+              className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 ${pricingMode === "pos_only"
+                ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-sm font-semibold"
+                : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                }`}
             >
               <Monitor className="w-3.5 h-3.5" />
               <span>{isAr ? "نقاط البيع والإدارة فقط" : "POS & Admin Only"}</span>
@@ -213,11 +218,10 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
             <button
               type="button"
               onClick={() => setBilling("monthly")}
-              className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
-                billing === "monthly"
-                  ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-sm font-semibold"
-                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-              }`}
+              className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${billing === "monthly"
+                ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-sm font-semibold"
+                : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                }`}
             >
               {isAr ? "الدفع الشهري" : "Monthly billing"}
             </button>
@@ -225,11 +229,10 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
             <button
               type="button"
               onClick={() => setBilling("yearly")}
-              className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 ${
-                billing === "yearly"
-                  ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-sm font-semibold"
-                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-              }`}
+              className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 ${billing === "yearly"
+                ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-sm font-semibold"
+                : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                }`}
             >
               <span>{isAr ? "الدفع السنوي" : "Yearly billing"}</span>
               <span className="text-[11px] font-bold text-emerald-500">
@@ -274,11 +277,10 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
                 {PRICING_PLANS.map((plan, idx) => (
                   <div
                     key={plan.id}
-                    className={`w-3.5 h-3.5 rounded-full border transition-all ${
-                      idx <= activeIndex
-                        ? "bg-[var(--color-accent-blue)] border-white/60 shadow-sm"
-                        : "bg-[var(--color-surface)] border-[var(--color-border)]"
-                    }`}
+                    className={`w-3.5 h-3.5 rounded-full border transition-all ${idx <= activeIndex
+                      ? "bg-[var(--color-accent-blue)] border-white/60 shadow-sm"
+                      : "bg-[var(--color-surface)] border-[var(--color-border)]"
+                      }`}
                   />
                 ))}
               </div>
@@ -291,11 +293,10 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
                   key={plan.id}
                   type="button"
                   onClick={() => setActiveIndex(idx)}
-                  className={`transition-colors py-1 px-1 focus-visible:outline-none ${
-                    idx === activeIndex
-                      ? "text-[var(--color-accent-blue)] font-bold scale-105"
-                      : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-                  }`}
+                  className={`transition-colors py-1 px-1 focus-visible:outline-none ${idx === activeIndex
+                    ? "text-[var(--color-accent-blue)] font-bold scale-105"
+                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                    }`}
                 >
                   <span>{isAr ? plan.rangeAr : plan.range}</span>
                   <span className="hidden sm:inline text-[11px] opacity-75 ms-1">
@@ -321,8 +322,8 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
                     ? POS_ONLY_PLAN.nameAr
                     : POS_ONLY_PLAN.name
                   : isAr
-                  ? currentPlan.nameAr
-                  : currentPlan.name}
+                    ? currentPlan.nameAr
+                    : currentPlan.name}
               </h3>
               <p className="text-sm text-[var(--color-text-secondary)] mt-1">
                 {pricingMode === "pos_only"
@@ -330,8 +331,8 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
                     ? `منظومة كاشير مخصصة تشمل ${posOnlyCount} نقطة بيع مع لوحة الإدارة`
                     : `Dedicated POS setup configured for ${posOnlyCount} terminal station(s)`
                   : isAr
-                  ? `مصممة للمتاجر التي تعرض ${currentPlan.rangeAr} صنفاً`
-                  : `Architected for catalogs with ${currentPlan.range} active SKUs`}
+                    ? `مصممة للمتاجر التي تعرض ${currentPlan.rangeAr} صنفاً`
+                    : `Architected for catalogs with ${currentPlan.range} active SKUs`}
               </p>
             </div>
 
@@ -353,11 +354,11 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
                 <div className="text-xs text-emerald-500 font-medium mt-1">
                   {isAr
                     ? `إجمالي سنوي ${Math.round(totals.yearlyNetTotal)} ج.م (وفرت ${Math.round(
-                        totals.yearlySavings
-                      )} ج.م)`
+                      totals.yearlySavings
+                    )} ج.م)`
                     : `${Math.round(totals.yearlyNetTotal)} EGP billed yearly (You save ${Math.round(
-                        totals.yearlySavings
-                      )} EGP)`}
+                      totals.yearlySavings
+                    )} EGP)`}
                 </div>
               )}
             </div>
@@ -417,8 +418,8 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
                       ? `تشمل الباقة نقطتي بيع مجاناً (كل نقطة إضافية 150 ج.م/شهر)`
                       : `Includes 2 free POS registers (150 EGP/mo each beyond 2)`
                     : isAr
-                    ? `150 ج.م شهرياً لكل ماكينة كاشير متصلة`
-                    : `150 EGP per month per registered hardware station`}
+                      ? `150 ج.م شهرياً لكل ماكينة كاشير متصلة`
+                      : `150 EGP per month per registered hardware station`}
                 </div>
               </div>
 
@@ -450,32 +451,37 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
             </div>
           )}
 
-          {/* Capabilities Checklist */}
-          <div className="py-6">
-            <div className="text-xs uppercase tracking-wider text-[var(--color-text-muted)] mb-4">
-              {isAr ? "الميزات والقدرات المشمولة" : "Included Platform Capabilities"}
-            </div>
+          {/* ─── CAPABILITIES CHECKLIST (COLLAPSIBLE ACCORDION) ─── */}
+          <div className="py-4">
+            <button
+              type="button"
+              onClick={() => setIsCapabilitiesOpen(!isCapabilitiesOpen)}
+              className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-primary)] hover:text-[var(--color-text-primary)] opacity-90 hover:opacity-100 transition-all focus-visible:outline-none"
+            >
+              <ChevronDown
+                className={`w-4 h-4 transition-transform duration-200 ${isCapabilitiesOpen ? "rotate-180" : ""}`}
+              />
+              <span>{isAr ? "عرض إمكانيات الباقة" : "View plan capabilities"}</span>
+              <span className="text-[var(--color-text-muted)] font-normal">
+                ({activeCapabilities.length})
+              </span>
+            </button>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {(pricingMode === "pos_only"
-                ? isAr
-                  ? POS_ONLY_PLAN.capabilitiesAr
-                  : POS_ONLY_PLAN.capabilities
-                : isAr
-                ? currentPlan.capabilitiesAr
-                : currentPlan.capabilities
-              ).map((cap, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-2.5 text-sm text-[var(--color-text-secondary)]"
-                >
-                  <div className="w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-                    <Check className="w-3 h-3 stroke-[3]" />
+            {isCapabilitiesOpen && (
+              <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                {activeCapabilities.map((cap, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-2.5 text-sm text-[var(--color-text-secondary)]"
+                  >
+                    <div className="w-4 h-4 rounded-full text-blue-500 flex items-center justify-center shrink-0">
+                      <Check className="w-3 h-3 stroke-[3]" />
+                    </div>
+                    <span>{cap}</span>
                   </div>
-                  <span>{cap}</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Action CTA */}
@@ -499,10 +505,9 @@ export const PricingCalculator: React.FC<PricingCalculatorProps> = ({
 
         {/* ─── ENTERPRISE 550+ PRODUCTS CONTACT CALLOUT ─── */}
         {pricingMode === "catalog" && (
-          <div className="max-w-[820px] mx-auto mt-6 p-4 sm:p-5 rounded-2xl bg-[var(--color-surface-elevated)] border border-[var(--color-border)] flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="max-w-[820px] mx-auto mt-6 p-4 sm:p-5 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-center sm:text-start">
               <div className="flex items-center justify-center sm:justify-start gap-2">
-                <Sparkles className="w-4 h-4 text-[var(--color-primary-light)] shrink-0" />
                 <span className="text-sm font-semibold text-[var(--color-text-primary)]">
                   {isAr
                     ? "هل تحتاج إلى عرض أكثر من 550 منتج في متجرك؟"
