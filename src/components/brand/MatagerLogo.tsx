@@ -86,7 +86,7 @@ export const MatagerLogo: React.FC<MatagerLogoProps> = ({
 
   return (
     <RootTag
-      className={`inline-flex items-center gap-2.5 sm:gap-3 select-none ${className}`}
+      className={`inline-flex items-center gap-2 select-none ${className}`}
       aria-label={brandText}
     >
       {/* ─── APP ICON (Isometric Cube with Arrow Tip) ─── */}

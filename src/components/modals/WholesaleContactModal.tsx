@@ -101,8 +101,8 @@ export const WholesaleContactModal: React.FC<WholesaleContactModalProps> = ({
     if (!name.trim() || name.trim().length < 2 || name.trim().length > 80) {
       setNameError(
         isAr
-          ? "يرجى كتابة الاسم بالكامل (بين 2 و 80 حرفاً)."
-          : "Full name is required (between 2 and 80 characters)."
+          ? ".يرجى كتابة الاسم بالكامل"
+          : "Full name is required."
       );
       valid = false;
     } else {
@@ -117,8 +117,8 @@ export const WholesaleContactModal: React.FC<WholesaleContactModalProps> = ({
     if (!cleanPhone || (!egyptianRegex.test(cleanPhone) && !intlRegex.test(cleanPhone))) {
       setPhoneError(
         isAr
-          ? "يرجى كتابة رقم هاتف صالح (مثال: 01012345678 أو مع كود الدولة)."
-          : "Please enter a valid phone number (e.g. 01012345678 or with country code)."
+          ? ".يرجى كتابة رقم هاتف صالح"
+          : "Please enter a valid phone number."
       );
       valid = false;
     } else {
@@ -142,21 +142,21 @@ export const WholesaleContactModal: React.FC<WholesaleContactModalProps> = ({
 
       const payload = isStoreOwner
         ? {
-            name: name.trim(),
-            storeName: storeName.trim(),
-            phone: phone.trim(),
-            expectedProducts,
-            locale,
-            source: "pricing_enterprise_request",
-            honeypot,
-          }
+          name: name.trim(),
+          storeName: storeName.trim(),
+          phone: phone.trim(),
+          expectedProducts,
+          locale,
+          source: "pricing_enterprise_request",
+          honeypot,
+        }
         : {
-            name: name.trim(),
-            phone: phone.trim(),
-            locale,
-            source: "landing",
-            honeypot,
-          };
+          name: name.trim(),
+          phone: phone.trim(),
+          locale,
+          source: "landing",
+          honeypot,
+        };
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -257,8 +257,8 @@ export const WholesaleContactModal: React.FC<WholesaleContactModalProps> = ({
                     ? "تم استلام طلبك بنجاح"
                     : "Enterprise Request Received"
                   : isAr
-                  ? "شكراً لتواصلك معنا"
-                  : "Thank you for reaching out"}
+                    ? "شكراً لتواصلك معنا"
+                    : "Thank you for reaching out"}
               </h3>
               <p className="text-sm text-[var(--color-text-secondary)] max-w-sm mx-auto leading-relaxed">
                 {isStoreOwner
@@ -266,8 +266,8 @@ export const WholesaleContactModal: React.FC<WholesaleContactModalProps> = ({
                     ? "تم استلام تفاصيل متجرك بنجاح، وسيتواصل معك مهندس الحسابات لتجهيز الباقة المخصصة لأكثر من 550 منتج."
                     : "We have received your enterprise request. An account engineer will contact you shortly to configure your high-volume setup."
                   : isAr
-                  ? "تم استلام بياناتك بنجاح، وسيتواصل معك أحد مسؤولي شبكة التوريد لتنسيق ربط منتجاتك مع شبكة المتاجر."
-                  : "We have received your wholesale details. Our supplier partnerships team will contact you shortly to coordinate integration."}
+                    ? "تم استلام بياناتك بنجاح، وسيتواصل معك أحد مسؤولي شبكة التوريد لتنسيق ربط منتجاتك مع شبكة المتاجر."
+                    : "We have received your wholesale details. Our supplier partnerships team will contact you shortly to coordinate integration."}
               </p>
             </div>
 
@@ -292,8 +292,8 @@ export const WholesaleContactModal: React.FC<WholesaleContactModalProps> = ({
                     ? "طلب باقة كبرى (أكثر من 550 منتج)"
                     : "Enterprise Request (550+ Products)"
                   : isAr
-                  ? "تواصل مع شبكة موردي الجملة"
-                  : "Contact Wholesale Partnerships"}
+                    ? "تواصل مع شبكة موردي الجملة"
+                    : "Contact Wholesale Partnerships"}
               </h2>
               <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
                 {isStoreOwner
@@ -301,8 +301,8 @@ export const WholesaleContactModal: React.FC<WholesaleContactModalProps> = ({
                     ? "للمتاجر ذات الكتالوجات الضخمة والفروع المتعددة، أدخل بياناتك وسيتواصل معك مهندس حلول مخصص."
                     : "For catalogs with more than 550 products, submit your details to configure dedicated enterprise capacity."
                   : isAr
-                  ? "سجّل بياناتك لربط مصنعك أو مستودعك مباشرة مع مئات تجار التجزئة المعتمدين."
-                  : "Submit your contact info to supply certified retail merchants directly across the network."}
+                    ? "سجّل بياناتك لربط مصنعك أو مستودعك مباشرة مع مئات تجار التجزئة المعتمدين."
+                    : "Submit your contact info to supply certified retail merchants directly across the network."}
               </p>
             </div>
 
@@ -339,9 +339,8 @@ export const WholesaleContactModal: React.FC<WholesaleContactModalProps> = ({
                     if (nameError) setNameError("");
                   }}
                   placeholder={isAr ? "مثال: محمود الشريف" : "e.g. Mahmoud El-Sherif"}
-                  className={`w-full px-4 py-2.5 rounded-xl border bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors ${
-                    nameError ? "border-red-500" : "border-[var(--color-border)]"
-                  }`}
+                  className={`input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-sm ${nameError ? "border-red-500" : "border-[var(--color-border)]"
+                    }`}
                 />
                 {nameError && (
                   <p className="text-xs text-red-400 flex items-center gap-1 pt-0.5">
@@ -366,7 +365,7 @@ export const WholesaleContactModal: React.FC<WholesaleContactModalProps> = ({
                     value={storeName}
                     onChange={(e) => setStoreName(e.target.value)}
                     placeholder={isAr ? "مثال: متجر الأناقة" : "e.g. Apex Luxury"}
-                    className="w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
+                    className="input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-sm"
                   />
                 </div>
               )}
@@ -391,9 +390,8 @@ export const WholesaleContactModal: React.FC<WholesaleContactModalProps> = ({
                     if (phoneError) setPhoneError("");
                   }}
                   placeholder={isAr ? "01XXXXXXXXX" : "+20 100 123 4567"}
-                  className={`w-full px-4 py-2.5 rounded-xl border bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors ${
-                    phoneError ? "border-red-500" : "border-[var(--color-border)]"
-                  }`}
+                  className={`input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-sm ${phoneError ? "border-red-500" : "border-[var(--color-border)]"
+                    }`}
                 />
                 {phoneError && (
                   <p className="text-xs text-red-400 flex items-center gap-1 pt-0.5">
@@ -416,7 +414,7 @@ export const WholesaleContactModal: React.FC<WholesaleContactModalProps> = ({
                     id="ws-products-count"
                     value={expectedProducts}
                     onChange={(e) => setExpectedProducts(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors cursor-pointer"
+                    className="input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-smbg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors cursor-pointer"
                   >
                     <option value="550 - 1,000 products">{isAr ? "550 - 1,000 منتج" : "550 - 1,000 products"}</option>
                     <option value="1,000 - 3,000 products">{isAr ? "1,000 - 3,000 منتج" : "1,000 - 3,000 products"}</option>

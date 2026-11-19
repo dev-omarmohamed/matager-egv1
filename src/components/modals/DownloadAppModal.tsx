@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from "react";
 import { useLanguage } from "@/i18n";
 import { APP_LINKS } from "@/config/app-links.config";
 import { X, QrCode, ArrowUpRight } from "lucide-react";
+import { MatagerLogo } from "@/components/brand/MatagerLogo";
 
 interface DownloadAppModalProps {
   isOpen: boolean;
@@ -79,22 +80,36 @@ export const DownloadAppModal: React.FC<DownloadAppModalProps> = ({ isOpen, onCl
         dir={dir}
         className="relative w-full max-w-[500px] rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] p-6 sm:p-8 shadow-2xl transition-all"
       >
-        {/* Close Button */}
-        <button
-          ref={closeButtonRef}
-          type="button"
-          onClick={onClose}
-          aria-label={isAr ? "إغلاق" : "Close"}
-          className="absolute top-5 end-5 p-2 rounded-full text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-white/[0.06] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3 pb-3 border-b border-[var(--color-border-subtle)]">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0" aria-label="Matager">
+            <span
+              className="inline-flex items-center justify-center shrink-0"
+              style={{ width: "28px", height: "28px" }}
+            >
+              <MatagerLogo size="sm" showWordmark={false} animated={false} />
+            </span>
+            <span className="font-heading font-medium text-[var(--color-text-primary)] text-[17px] tracking-tight leading-none truncate">
+              Matager
+            </span>
+          </div>
+
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={onClose}
+            aria-label={isAr ? "إغلاق" : "Close"}
+            className="p-1.5 rounded-full shrink-0 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] border border-[var(--color-border-subtle)] transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
 
         {/* Modal Header */}
-        <div className="text-start space-y-2 mb-6">
+        <div className="text-start space-y-2 mt-6 mb-6">
           <h2
             id="download-modal-title"
-            className="text-2xl sm:text-3xl font-heading font-semibold text-[var(--color-text-primary)]"
+            className="font-heading text-lg sm:text-xl font-normal text-[var(--color-text-primary)]"
           >
             {isAr ? "تحميل تطبيق متاجر" : "Download Matager"}
           </h2>
@@ -128,7 +143,7 @@ export const DownloadAppModal: React.FC<DownloadAppModalProps> = ({ isOpen, onCl
             </a>
           ) : (
             <div
-              className="w-full flex items-center justify-between p-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] opacity-60 cursor-not-allowed select-none"
+              className="w-full flex items-center justify-between p-3.5 rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface-elevated)] opacity-60 cursor-not-allowed select-none"
               aria-disabled="true"
             >
               <div className="flex items-center gap-3">
@@ -150,7 +165,7 @@ export const DownloadAppModal: React.FC<DownloadAppModalProps> = ({ isOpen, onCl
               href={APP_LINKS.android}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full flex items-center justify-between p-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] hover:border-blue-500/50 hover:bg-white/[0.04] transition-all text-[var(--color-text-primary)]"
+              className="w-full flex items-center justify-between p-3.5 rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface-elevated)] hover:border-blue-500/50 hover:bg-white/[0.04] transition-all text-[var(--color-text-primary)]"
             >
               <div className="flex items-center gap-3">
                 <i className="bi bi-google-play text-2xl text-[var(--color-accent-blue)]" />
@@ -165,7 +180,7 @@ export const DownloadAppModal: React.FC<DownloadAppModalProps> = ({ isOpen, onCl
             </a>
           ) : (
             <div
-              className="w-full flex items-center justify-between p-3.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] opacity-60 cursor-not-allowed select-none"
+              className="w-full flex items-center justify-between p-3.5 rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface-elevated)] opacity-60 cursor-not-allowed select-none"
               aria-disabled="true"
             >
               <div className="flex items-center gap-3">
