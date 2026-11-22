@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLanguage } from "@/i18n";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { SystemShowcaseSection } from "@/components/landing/SystemShowcaseSection";
@@ -72,6 +72,18 @@ export default function LandingPage() {
     setContactModalMode("wholesaler");
     setContactModalOpen(true);
   };
+
+  // Detect query param ?auth=signin or ?auth=signup on landing page
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const searchParams = new URLSearchParams(window.location.search);
+    const authQuery = searchParams.get("auth");
+    if (authQuery === "signin") {
+      handleOpenAuth("signin", "owner");
+    } else if (authQuery === "signup") {
+      handleOpenAuth("signup", "owner");
+    }
+  }, []);
 
   return (
     <GsapScrollManager>

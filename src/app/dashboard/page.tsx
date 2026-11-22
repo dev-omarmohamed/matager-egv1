@@ -29,11 +29,23 @@ function DashboardContent() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const storedRole = localStorage.getItem("matager_user_role");
+      const activeUid = localStorage.getItem("matager_active_user_id");
+      const currentStoreId =
+        localStorage.getItem("matager_current_store_id") ||
+        localStorage.getItem("matager_active_store_id");
+
       if (storedRole === "wholesaler") {
         const wid = localStorage.getItem("matager_wholesaler_id") || "wholesaler_clothing_01";
         router.push(`/wholesaler?wholesalerId=${wid}`);
+        return;
       } else if (storedRole === "cashier") {
         router.push("/cashier");
+        return;
+      }
+
+      // Only authenticated users can access the dashboard from landing or other entry points
+      if (!activeUid && !storedRole && !currentStoreId) {
+        router.push("/?auth=signin");
       }
     }
   }, [router]);

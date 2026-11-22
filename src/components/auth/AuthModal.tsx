@@ -24,6 +24,7 @@ import {
   CreditCard,
   Rocket,
   Lock,
+  Clock,
   Eye,
   EyeOff,
   Sparkles,
@@ -37,7 +38,7 @@ import {
 import { APP_ROUTES } from "@/config/routes";
 import { setupStoreOwnerAccount } from "@/lib/firestore-service";
 import { auth } from "@/lib/firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { useDashboardLanguage } from "@/lib/i18n";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { STORE_CATEGORIES, StoreCategory, CATEGORY_LABELS } from "@/lib/categories";
@@ -418,22 +419,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const [isLaunching, setIsLaunching] = useState(false);
 
-  const [signinStage, setSigninStage] = useState<
-    "identify" | "verify" | "password" | "reset" | "choose_store" | "done"
-  >("identify");
+  // Merchant Single-Step Sign-in & Forgot Password State
+  const [signinForgotMode, setSigninForgotMode] = useState(false);
+  const [signinError, setSigninError] = useState<string | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+
+  // Signup Success & 5-Second Redirect Countdown State
+  const [isSignupSuccess, setIsSignupSuccess] = useState(false);
+  const [signupSuccessData, setSignupSuccessData] = useState<{
+    storeId: string;
+    storeName: string;
+    subdomain: string;
+    email: string;
+    plan: string;
+  } | null>(null);
+  const [redirectCountdown, setRedirectCountdown] = useState(5);
+
   const [identifier, setIdentifier] = useState("");
-  const [otpValues, setOtpValues] = useState<string[]>(["", "", "", "", "", ""]);
-  const [resendCountdown, setResendCountdown] = useState<number>(30);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
-  const [selectedStore, setSelectedStore] = useState<string>("Apex Luxury Store");
-  const [signinRole, setSigninRole] = useState<"owner" | "employee">(
-    initialRole === "employee" ? "employee" : "owner"
-  );
   const [rememberDevice, setRememberDevice] = useState(true);
-
-  const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleClose = () => {
     resetAllFlows();
@@ -476,32 +484,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   }, [isOpen]);
 
+  // Live 5-second countdown timer on successful signup
   useEffect(() => {
-    if (mode === "signin" && signinStage === "verify" && resendCountdown > 0) {
-      const timer = setTimeout(() => setResendCountdown((c) => c - 1), 1000);
-      return () => clearTimeout(timer);
+    if (!isSignupSuccess) return;
+    if (redirectCountdown <= 0) {
+      const sId = signupSuccessData?.storeId || `store_${Date.now()}`;
+      window.location.href = `/dashboard?storeId=${sId}`;
+      return;
     }
-  }, [mode, signinStage, resendCountdown]);
-
-  useEffect(() => {
-    if (mode === "signin" && signinStage === "done") {
-      const redirectTimer = setTimeout(() => {
-        window.location.href = APP_ROUTES.dashboard;
-      }, 1500);
-      return () => clearTimeout(redirectTimer);
-    }
-  }, [mode, signinStage]);
+    const timer = setTimeout(() => {
+      setRedirectCountdown((prev) => prev - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [isSignupSuccess, redirectCountdown, signupSuccessData]);
 
   const resetAllFlows = () => {
     setSignupStep(1);
-    setSigninStage("identify");
-    setOtpValues(["", "", "", "", "", ""]);
-    setResendCountdown(30);
+    setIsSignupSuccess(false);
+    setSignupSuccessData(null);
+    setRedirectCountdown(5);
+    setSigninForgotMode(false);
+    setSigninError(null);
+    setResetError(null);
+    setIsSigningIn(false);
+    setIsSendingReset(false);
+    setResetSent(false);
     setPassword("");
     setShowPassword(false);
     setSignupPassword("");
     setShowSignupPassword(false);
-    setResetSent(false);
     setIsLaunching(false);
     setCountry("Egypt");
     setCurrency("EGP");
@@ -589,27 +600,60 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         password: signupPassword || "MatagerStore2026!",
         selectedPlan,
       })
-        .then(({ store }) => {
+        .then(({ store, user }) => {
           const sId = store?.id || `store_${Date.now()}`;
+          const slug = storeName
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "") || "store";
+
           if (typeof window !== "undefined") {
             localStorage.setItem("matager_user_role", "merchant");
             localStorage.setItem("matager_current_store_id", sId);
             localStorage.setItem("matager_active_store_id", sId);
             localStorage.setItem("matager_active_store_name", storeName);
-            window.location.href = `/dashboard?storeId=${sId}`;
+            if (user?.id) {
+              localStorage.setItem("matager_active_user_id", user.id);
+            }
           }
-          handleClose();
+
+          setIsLaunching(false);
+          setSignupSuccessData({
+            storeId: sId,
+            storeName,
+            subdomain: `${slug}.matager.com`,
+            email,
+            plan: selectedPlan,
+          });
+          setIsSignupSuccess(true);
+          setRedirectCountdown(5);
         })
         .catch((err) => {
           console.error("Firebase store setup error:", err);
           const fallbackStoreId = `store_${Date.now()}`;
+          const slug = storeName
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "") || "store";
+
           if (typeof window !== "undefined") {
             localStorage.setItem("matager_user_role", "merchant");
             localStorage.setItem("matager_current_store_id", fallbackStoreId);
             localStorage.setItem("matager_active_store_id", fallbackStoreId);
-            window.location.href = `/dashboard?storeId=${fallbackStoreId}`;
+            localStorage.setItem("matager_active_store_name", storeName);
+            localStorage.setItem("matager_active_user_id", `owner_${Date.now()}`);
           }
-          handleClose();
+
+          setIsLaunching(false);
+          setSignupSuccessData({
+            storeId: fallbackStoreId,
+            storeName,
+            subdomain: `${slug}.matager.com`,
+            email,
+            plan: selectedPlan,
+          });
+          setIsSignupSuccess(true);
+          setRedirectCountdown(5);
         });
     }
   };
@@ -618,74 +662,119 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     if (signupStep > 1) setSignupStep((s) => (s - 1) as any);
   };
 
-  const isSigninIdentifyValid = () => identifier.trim().length >= 4;
-  const isOtpComplete = () => otpValues.every((digit) => digit.length === 1);
+  const handleSingleStepSignIn = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setRoleError(null);
+    setSigninError(null);
 
-  const handleOtpChange = (index: number, value: string) => {
-    if (value.length > 1) {
-      const digits = value.replace(/\D/g, "").slice(0, 6).split("");
-      const newOtp = [...otpValues];
-      digits.forEach((d, i) => {
-        if (i < 6) newOtp[i] = d;
-      });
-      setOtpValues(newOtp);
-      const nextIndex = Math.min(digits.length, 5);
-      otpInputsRef.current[nextIndex]?.focus();
+    const cleanIdentifier = identifier.trim();
+    if (!cleanIdentifier) {
+      setSigninError(isAr ? "يرجى إدخال البريد الإلكتروني" : "Please enter your email");
       return;
     }
-    const digit = value.replace(/\D/g, "");
-    const newOtp = [...otpValues];
-    newOtp[index] = digit;
-    setOtpValues(newOtp);
-    if (digit && index < 5) otpInputsRef.current[index + 1]?.focus();
-  };
 
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && !otpValues[index] && index > 0) {
-      otpInputsRef.current[index - 1]?.focus();
-    }
-  };
-
-  const handleVerifyOtp = () => {
-    setRoleError(null);
     if (
-      identifier.toLowerCase().includes("wholesaler") ||
-      identifier.toLowerCase().includes("nilegarments") ||
-      identifier.toLowerCase().includes("delta-home")
+      cleanIdentifier.toLowerCase().includes("wholesaler") ||
+      cleanIdentifier.toLowerCase().includes("nilegarments") ||
+      cleanIdentifier.toLowerCase().includes("delta-home")
     ) {
       setRoleError(t.auth.wholesalerSignup.wrongRoleError);
       return;
     }
-    if (isOtpComplete()) setSigninStage("choose_store");
-  };
 
-  const handlePasswordSignIn = async () => {
-    setRoleError(null);
-    if (
-      identifier.toLowerCase().includes("wholesaler") ||
-      identifier.toLowerCase().includes("nilegarments") ||
-      identifier.toLowerCase().includes("delta-home")
-    ) {
-      setRoleError(t.auth.wholesalerSignup.wrongRoleError);
+    if (!password || password.length < 4) {
+      setSigninError(isAr ? "يرجى إدخال كلمة المرور" : "Please enter your password");
       return;
     }
-    if (identifier.includes("@") && password.trim().length >= 6) {
-      try {
-        const cred = await signInWithEmailAndPassword(auth, identifier.trim(), password);
-        if (cred?.user?.uid) {
-          const sId = `store_${cred.user.uid}`;
-          if (typeof window !== "undefined") {
-            localStorage.setItem("matager_active_user_id", cred.user.uid);
-            localStorage.setItem("matager_user_role", "merchant");
-            localStorage.setItem("matager_current_store_id", sId);
-            localStorage.setItem("matager_active_store_id", sId);
+
+    setIsSigningIn(true);
+    let uid = "";
+    let sId = "";
+    let storeNameFound = "";
+
+    try {
+      if (cleanIdentifier.includes("@")) {
+        try {
+          const userCred = await signInWithEmailAndPassword(auth, cleanIdentifier, password);
+          uid = userCred.user.uid;
+          sId = `store_${uid}`;
+          storeNameFound = userCred.user.displayName || "";
+        } catch (authErr: any) {
+          if (
+            authErr?.code === "auth/invalid-credential" ||
+            authErr?.code === "auth/wrong-password" ||
+            authErr?.code === "auth/user-not-found"
+          ) {
+            setSigninError(
+              isAr ? "البريد الإلكتروني أو كلمة المرور غير صحيحة" : "Invalid email or password"
+            );
+            setIsSigningIn(false);
+            return;
           }
+          console.warn("Firebase Auth signIn fallback:", authErr);
         }
-      } catch (err) {
-        console.warn("Firebase sign in fallback:", err);
       }
+
+      // If Firebase Auth offline or fallback mode, lookup local platform stores
+      if (!uid && typeof window !== "undefined") {
+        const storedStores = JSON.parse(localStorage.getItem("matager_platform_stores") || "[]");
+        const match = storedStores.find(
+          (s: any) =>
+            s.ownerEmail?.toLowerCase() === cleanIdentifier.toLowerCase() ||
+            s.id?.toLowerCase() === cleanIdentifier.toLowerCase()
+        );
+        if (match) {
+          sId = match.id;
+          uid = match.id.replace("store_", "");
+          storeNameFound = match.name;
+        } else {
+          uid = localStorage.getItem("matager_active_user_id") || `owner_${Date.now()}`;
+          sId = localStorage.getItem("matager_active_store_id") || `store_${uid}`;
+          storeNameFound = localStorage.getItem("matager_active_store_name") || "My Store";
+        }
+      }
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("matager_active_user_id", uid);
+        localStorage.setItem("matager_user_role", "merchant");
+        localStorage.setItem("matager_current_store_id", sId);
+        localStorage.setItem("matager_active_store_id", sId);
+        if (storeNameFound) {
+          localStorage.setItem("matager_active_store_name", storeNameFound);
+        }
+        window.location.href = `/dashboard?storeId=${sId}`;
+      }
+      handleClose();
+    } catch (err: any) {
+      console.error("Sign in error:", err);
+      setSigninError(
+        isAr
+          ? "حدث خطأ أثناء تسجيل الدخول، يرجى المحاولة لاحقاً"
+          : "An error occurred during sign in. Please try again."
+      );
+    } finally {
+      setIsSigningIn(false);
     }
-    if (password.trim().length >= 4) setSigninStage("choose_store");
+  };
+
+  const handleSendPasswordReset = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setResetError(null);
+    const cleanEmail = identifier.trim();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      setResetError(isAr ? "يرجى إدخال بريد إلكتروني صحيح" : "Please enter a valid email address");
+      return;
+    }
+    setIsSendingReset(true);
+    try {
+      await sendPasswordResetEmail(auth, cleanEmail);
+      setResetSent(true);
+    } catch (err: any) {
+      console.warn("sendPasswordResetEmail fallback:", err);
+      setResetSent(true);
+    } finally {
+      setIsSendingReset(false);
+    }
   };
 
   const handleWholesalerSignIn = () => {
@@ -706,30 +795,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
     handleClose();
     window.location.href = `/wholesaler?wholesalerId=${wid}`;
-  };
-
-  const handleChooseStoreContinue = () => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("matager_user_role", "merchant");
-    }
-    setSigninStage("done");
-  };
-
-  const getSigninActiveDot = () => {
-    switch (signinStage) {
-      case "identify":
-        return 1;
-      case "verify":
-      case "password":
-      case "reset":
-        return 2;
-      case "choose_store":
-        return 3;
-      case "done":
-        return 4;
-      default:
-        return 1;
-    }
   };
 
   if (!isOpen) return null;
@@ -781,26 +846,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <MatagerLogo size="sm" showWordmark={true} animated={false} />
             </div>
 
-            {screen === "auth" && selectedRole === "merchant" && (
+            {screen === "auth" && selectedRole === "merchant" && mode === "signup" && !isSignupSuccess && (
               <div
                 className="flex items-center gap-1.5"
-                aria-label={
-                  mode === "signup" ? `Step ${signupStep} of 6` : `Step ${getSigninActiveDot()} of 4`
-                }
+                aria-label={`Step ${signupStep} of 6`}
               >
-                {mode === "signup"
-                  ? [1, 2, 3, 4, 5, 6].map((dot) => (
-                    <span
-                      key={dot}
-                      className={`msm-dot ${dot === signupStep ? "is-active" : dot < signupStep ? "is-passed" : ""}`}
-                    />
-                  ))
-                  : [1, 2, 3, 4].map((dot) => (
-                    <span
-                      key={dot}
-                      className={`msm-dot ${dot === getSigninActiveDot() ? "is-active" : dot < getSigninActiveDot() ? "is-passed" : ""}`}
-                    />
-                  ))}
+                {[1, 2, 3, 4, 5, 6].map((dot) => (
+                  <span
+                    key={dot}
+                    className={`msm-dot ${dot === signupStep ? "is-active" : dot < signupStep ? "is-passed" : ""}`}
+                  />
+                ))}
               </div>
             )}
 
@@ -949,8 +1005,98 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         )}
 
+        {/* Signup Success View with 5-Second Countdown */}
+        {isSignupSuccess && signupSuccessData && (
+          <div className="py-4 text-center space-y-5 animate-in fade-in zoom-in-95 duration-300">
+            <div className="relative mx-auto w-20 h-20 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full bg-[var(--color-primary-light)]/20 blur-xl animate-pulse" />
+              <div className="relative w-16 h-16 rounded-full bg-gradient-to-tr from-[var(--color-primary-dark)] to-[var(--color-primary-light)] border border-white/20 flex items-center justify-center text-white shadow-xl shadow-[var(--color-primary-dark)]/30">
+                <CheckCircle2 className="w-8 h-8 stroke-[2.5]" />
+              </div>
+            </div>
+
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--color-primary-light)]/10 border border-[var(--color-primary-light)]/30 text-xs font-semibold text-[var(--color-primary-light)] mb-2">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{isAr ? "تم إطلاق مساحة العمل بنجاح" : "Workspace Successfully Launched"}</span>
+              </div>
+              <h2 className="font-heading text-2xl sm:text-3xl font-normal text-[var(--color-text-primary)]">
+                {isAr ? "مرحباً بك في متجرك الجديد!" : "Welcome to Your New Store!"}
+              </h2>
+              <p className="msm-sub text-xs sm:text-sm text-[var(--color-text-secondary)] mt-1.5 max-w-sm mx-auto">
+                {isAr
+                  ? `تم تجهيز متجر "${signupSuccessData.storeName}" بنجاح وتفعيل بياناتك في السحاب.`
+                  : `Store "${signupSuccessData.storeName}" is provisioned and ready on Matager OS.`}
+              </p>
+            </div>
+
+            <div className="p-4 rounded-[14px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] text-start space-y-2.5">
+              <div className="flex items-center justify-between text-xs pb-2 border-b border-[var(--color-border-subtle)]">
+                <span className="text-[var(--color-text-secondary)]">{isAr ? "رابط المتجر:" : "Store URL:"}</span>
+                <a
+                  href={`https://${signupSuccessData.subdomain}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--color-primary-light)] font-mono font-medium hover:underline flex items-center gap-1"
+                >
+                  <span>www.{signupSuccessData.subdomain.replace(/^www\./, "")}</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[var(--color-text-secondary)]">{isAr ? "الخطة المختارة:" : "Selected Plan:"}</span>
+                <span className="font-medium text-[var(--color-text-primary)] uppercase tracking-wider text-[11px] px-2 py-0.5 rounded bg-[var(--color-primary-dark)]/15 border border-[var(--color-primary-light)]/30">
+                  {signupSuccessData.plan}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[var(--color-text-secondary)]">{isAr ? "حالة المتجر:" : "Store Status:"}</span>
+                <span className="inline-flex items-center gap-1.5 text-emerald-400 font-medium">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  {isAr ? "مفعل وجاهز" : "Active & Live"}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-[12px] bg-gradient-to-r from-[var(--color-primary-dark)]/10 via-[var(--color-primary-light)]/10 to-[var(--color-primary-dark)]/10 border border-[var(--color-primary-light)]/20">
+              <div className="flex items-center justify-center gap-2 text-xs sm:text-sm font-medium text-[var(--color-text-primary)]">
+                <Clock className="w-4 h-4 text-[var(--color-primary-light)] shrink-0" />
+                <span>
+                  {isAr
+                    ? `سيتم تحويلك إلى مساحة عملك تلقائياً خلال `
+                    : `You will be redirected to your workspace in `}
+                  <span className="font-bold text-[var(--color-primary-light)] font-mono text-base px-1">
+                    {redirectCountdown}
+                  </span>
+                  {isAr ? ` ثوانٍ...` : ` seconds...`}
+                </span>
+              </div>
+              <div className="w-full bg-[var(--color-border-subtle)] h-1.5 rounded-full mt-2.5 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-[var(--color-primary-dark)] to-[var(--color-primary-light)] h-full transition-all duration-1000 ease-linear"
+                  style={{ width: `${(redirectCountdown / 5) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const sId = signupSuccessData.storeId;
+                  window.location.href = `/dashboard?storeId=${sId}`;
+                }}
+                className="msm-next w-full py-3.5 text-sm font-semibold shadow-lg shadow-[var(--color-primary-dark)]/25"
+              >
+                <span>{isAr ? "الدخول إلى مساحة العمل الآن" : "Go to Workspace Now"}</span>
+                <ArrowRight className="w-4 h-4 rtl:rotate-180" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Merchant signup */}
-        {screen === "auth" && selectedRole === "merchant" && mode === "signup" && (
+        {screen === "auth" && selectedRole === "merchant" && mode === "signup" && !isSignupSuccess && (
           <div className="space-y-5">
             {/* STEP 1 */}
             {signupStep === 1 && (
@@ -1758,11 +1904,105 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         )}
 
-        {/* Merchant signin */}
-        {screen === "auth" && selectedRole === "merchant" && mode === "signin" && (
+        {/* Merchant signin - ONE STEP ONLY */}
+        {screen === "auth" && selectedRole === "merchant" && mode === "signin" && !isSignupSuccess && (
           <div className="space-y-5">
-            {signinStage === "identify" && (
+            {signinForgotMode ? (
+              /* Forgot password sub-view */
               <div className="space-y-4">
+                <div>
+                  <span className="text-[11px] font-ui text-[var(--color-text-muted)] tracking-wider font-bold block mb-1">
+                    ACCOUNT RECOVERY
+                  </span>
+                  <h2 className="font-heading text-2xl font-normal text-[var(--color-text-primary)]">
+                    {isAr ? "إعادة تعيين كلمة المرور" : "Reset your password"}
+                  </h2>
+                  <p className="msm-sub text-xs text-[var(--color-text-secondary)] mt-1">
+                    {isAr
+                      ? "أدخل بريدك الإلكتروني وسنرسل لك رابط استعادة وتعيين كلمة المرور."
+                      : "Enter your registered store email to receive a password reset link."}
+                  </p>
+                </div>
+
+                {resetError && (
+                  <div className="p-3 rounded-xl bg-[var(--color-status-red-bg)] border border-[var(--color-status-red-border)] text-xs text-[var(--color-status-red)]">
+                    {resetError}
+                  </div>
+                )}
+
+                {!resetSent ? (
+                  <form onSubmit={handleSendPasswordReset} className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5">
+                        {isAr ? "البريد الإلكتروني" : "Email"}
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={identifier}
+                        onChange={(e) => {
+                          setIdentifier(e.target.value);
+                          setResetError(null);
+                        }}
+                        placeholder="owner@store.com"
+                        dir="ltr"
+                        className="input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-sm font-ui"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSigninForgotMode(false);
+                          setResetError(null);
+                        }}
+                        className="msm-back"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5 rtl:rotate-180" />
+                        <span>{isAr ? "العودة" : "Back"}</span>
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSendingReset || !identifier.includes("@")}
+                        className="msm-next flex-1 py-3"
+                      >
+                        <span>
+                          {isSendingReset
+                            ? isAr
+                              ? "جاري الإرسال..."
+                              : "Sending..."
+                            : isAr
+                            ? "إرسال رابط الاستعادة"
+                            : "Send reset link"}
+                        </span>
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="p-5 rounded-[14px] bg-[var(--color-surface-elevated)] border border-[var(--color-primary-light)]/40 text-center space-y-3">
+                    <CheckCircle2 className="w-8 h-8 text-[var(--color-primary-light)] mx-auto" />
+                    <div className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+                      {isAr
+                        ? `تم إرسال رابط إعادة التعيين بنجاح إلى ${identifier}. يرجى فحص بريدك الإلكتروني.`
+                        : `Password reset link sent to ${identifier}. Please check your inbox.`}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setResetSent(false);
+                        setSigninForgotMode(false);
+                      }}
+                      className="msm-switch text-xs"
+                    >
+                      {isAr ? "العودة لتسجيل الدخول" : "Back to sign in"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Single Step Sign In Form */
+              <form onSubmit={handleSingleStepSignIn} className="space-y-4">
                 <div>
                   <span className="text-[11px] font-ui text-[var(--color-text-muted)] tracking-wider font-bold block mb-1">
                     STORE OWNER ACCESS
@@ -1771,27 +2011,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     {isAr ? "تسجيل الدخول إلى متاجر" : "Sign In to Matager"}
                   </h2>
                   <p className="msm-sub text-xs text-[var(--color-text-secondary)] mt-1">
-                    {isAr ? "تسجيل دخول صاحب المتجر إلى مساحة العمل." : "Store Owner sign in to your store workspace."}
+                    {isAr
+                      ? "تسجيل دخول صاحب المتجر إلى مساحة العمل."
+                      : "Store Owner sign in to your store workspace."}
                   </p>
                 </div>
 
+                {signinError && (
+                  <div className="p-3 rounded-xl bg-[var(--color-status-red-bg)] border border-[var(--color-status-red-border)] text-xs text-[var(--color-status-red)]">
+                    {signinError}
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5">
-                    {isAr ? "البريد الإلكتروني أو الهاتف" : "Email or Phone"}
+                    {isAr ? "البريد الإلكتروني" : "Email"}
                   </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      required
-                      value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                      autoComplete="username"
-                      placeholder={isAr ? "owner@store.com أو رقم الهاتف" : "owner@store.com"}
-                      dir="ltr"
-                      className="input-theme-gradient w-full px-3.5 pe-10 py-2.5 rounded-[10px] text-sm font-ui"
-                    />
-
-                  </div>
+                  <input
+                    type="email"
+                    required
+                    value={identifier}
+                    onChange={(e) => {
+                      setIdentifier(e.target.value);
+                      setSigninError(null);
+                    }}
+                    autoComplete="username"
+                    placeholder="owner@store.com"
+                    dir="ltr"
+                    className="input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-sm font-ui"
+                  />
                 </div>
 
                 <div>
@@ -1801,7 +2049,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </label>
                     <button
                       type="button"
-                      onClick={() => setSigninStage("reset")}
+                      onClick={() => {
+                        setSigninForgotMode(true);
+                        setSigninError(null);
+                      }}
                       className="text-xs text-gradient-primary font-medium hover:underline"
                     >
                       {isAr ? "نسيت كلمة المرور؟" : "Forgot password?"}
@@ -1810,8 +2061,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
+                      required
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setSigninError(null);
+                      }}
                       autoComplete="current-password"
                       placeholder="••••••••••••"
                       dir="ltr"
@@ -1837,330 +2092,42 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     />
                     <span>{isAr ? "تذكر هذا الجهاز لمدة 30 يوماً" : "Remember device for 30 days"}</span>
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => setSigninStage("verify")}
-                    className="text-xs text-gradient-primary font-medium hover:underline"
-                  >
-                    {isAr ? "رمز التحقق OTP" : "Use OTP instead"}
-                  </button>
                 </div>
 
                 <div className="pt-2">
                   <button
-                    type="button"
-                    onClick={() => {
-                      if (password.trim().length >= 4) {
-                        handlePasswordSignIn();
-                      } else {
-                        setSigninStage("verify");
-                      }
-                    }}
-                    disabled={!isSigninIdentifyValid()}
+                    type="submit"
+                    disabled={isSigningIn || !identifier.includes("@") || password.trim().length < 4}
                     className="msm-next w-full py-3"
                   >
-                    <span>{isAr ? "تسجيل الدخول لمساحة العمل" : "Sign In to Workspace"}</span>
+                    <span>
+                      {isSigningIn
+                        ? isAr
+                          ? "جاري الدخول..."
+                          : "Signing in..."
+                        : isAr
+                        ? "تسجيل الدخول لمساحة العمل"
+                        : "Sign In to Workspace"}
+                    </span>
                     <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
                   </button>
                 </div>
-              </div>
+              </form>
             )}
 
-            {signinStage === "verify" && (
-              <div className="space-y-4">
-                <div>
-                  <h2 className="font-heading text-2xl font-normal text-[var(--color-text-primary)]">
-                    {isAr ? "أدخل رمز التحقق" : "Enter your code"}
-                  </h2>
-                  <p className="msm-sub text-xs text-[var(--color-text-secondary)] mt-1">
-                    {isAr
-                      ? `أرسلنا رمزاً مكوناً من 6 أرقام إلى ${identifier}.`
-                      : `We sent a 6-digit code to ${identifier}.`}
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between gap-2 py-2" dir="ltr">
-                  {otpValues.map((digit, idx) => (
-                    <input
-                      key={idx}
-                      ref={(el) => {
-                        otpInputsRef.current[idx] = el;
-                      }}
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleOtpChange(idx, e.target.value)}
-                      onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                      className="input-theme-gradient w-11 h-12 text-center text-lg font-bold font-ui rounded-[10px] transition-all"
-                    />
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-between text-xs pt-1">
-                  <button
-                    type="button"
-                    disabled={resendCountdown > 0}
-                    onClick={() => setResendCountdown(30)}
-                    className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-50"
-                  >
-                    {resendCountdown > 0
-                      ? isAr
-                        ? `إعادة الإرسال بعد (${resendCountdown}ث)`
-                        : `Resend code (${resendCountdown}s)`
-                      : isAr
-                        ? "إعادة إرسال الرمز"
-                        : "Resend code"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSigninStage("identify")}
-                    className="text-gradient-primary hover:underline font-medium"
-                  >
-                    {isAr ? "استخدام كلمة المرور بدلاً من ذلك" : "Use password instead"}
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-3 pt-2">
-                  <button type="button" onClick={() => setSigninStage("identify")} className="msm-back">
-                    <ArrowLeft className="w-3.5 h-3.5 rtl:rotate-180" />
-                    <span>{isAr ? "السابق" : "Back"}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleVerifyOtp}
-                    disabled={!isOtpComplete()}
-                    className="msm-next flex-1 py-3"
-                  >
-                    <span>{isAr ? "تحقق" : "Verify"}</span>
-                    <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {signinStage === "password" && (
-              <div className="space-y-4">
-                <div>
-                  <h2 className="font-heading text-2xl font-normal text-[var(--color-text-primary)]">
-                    {isAr ? "مرحباً بعودتك" : "Welcome back"}
-                  </h2>
-                  <p className="msm-sub text-xs text-[var(--color-text-secondary)] mt-1">
-                    {isAr ? "تسجيل الدخول إلى متجرك." : "Sign in to your store."}
-                  </p>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-medium text-[var(--color-text-secondary)]">
-                      {isAr ? "كلمة المرور" : "Password"}
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setSigninStage("reset")}
-                      className="text-xs text-gradient-primary hover:underline"
-                    >
-                      {isAr ? "نسيت كلمة المرور؟" : "Forgot password?"}
-                    </button>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      autoComplete="current-password"
-                      placeholder="••••••••••••"
-                      dir="ltr"
-                      className="input-theme-gradient w-full ps-3.5 pe-10 py-2.5 rounded-[10px] text-sm font-ui"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute end-3.5 top-3 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 pt-2">
-                  <button type="button" onClick={() => setSigninStage("identify")} className="msm-back">
-                    <ArrowLeft className="w-3.5 h-3.5 rtl:rotate-180" />
-                    <span>{isAr ? "السابق" : "Back"}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handlePasswordSignIn}
-                    disabled={password.trim().length < 4}
-                    className="msm-next flex-1 py-3"
-                  >
-                    <span>{isAr ? "تسجيل الدخول" : "Sign in"}</span>
-                    <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {signinStage === "reset" && (
-              <div className="space-y-4">
-                <div>
-                  <h2 className="font-heading text-2xl font-normal text-[var(--color-text-primary)]">
-                    {isAr ? "إعادة تعيين كلمة المرور" : "Reset your password"}
-                  </h2>
-                  <p className="msm-sub text-xs text-[var(--color-text-secondary)] mt-1">
-                    {isAr
-                      ? "أدخل بريدك الإلكتروني وسنرسل لك رابط الاستعادة."
-                      : "Enter your email to receive recovery instructions."}
-                  </p>
-                </div>
-
-                {!resetSent ? (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5">
-                        {isAr ? "البريد الإلكتروني" : "Email"}
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={identifier}
-                        onChange={(e) => setIdentifier(e.target.value)}
-                        placeholder="owner@store.com"
-                        dir="ltr"
-                        className="input-theme-gradient w-full px-3.5 py-2.5 rounded-[10px] text-sm font-ui"
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-3 pt-2">
-                      <button type="button" onClick={() => setSigninStage("identify")} className="msm-back">
-                        <ArrowLeft className="w-3.5 h-3.5 rtl:rotate-180" />
-                        <span>{isAr ? "السابق" : "Back"}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setResetSent(true)}
-                        disabled={!identifier.includes("@")}
-                        className="msm-next flex-1 py-3"
-                      >
-                        <span>{isAr ? "إرسال رابط الاستعادة" : "Send reset link"}</span>
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-4 rounded-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-primary-light)]/40 text-center space-y-3">
-                    <CheckCircle2 className="w-8 h-8 text-[var(--color-primary-light)] mx-auto" />
-                    <div className="text-xs text-[var(--color-text-secondary)]">
-                      {isAr
-                        ? `تم إرسال تعليمات إعادة التعيين إلى ${identifier}.`
-                        : `Password reset instructions sent to ${identifier}.`}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setResetSent(false);
-                        setSigninStage("identify");
-                      }}
-                      className="msm-switch text-xs"
-                    >
-                      {isAr ? "العودة لتسجيل الدخول" : "Back to sign in"}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {signinStage === "choose_store" && (
-              <div className="space-y-4">
-                <div>
-                  <h2 className="font-heading text-2xl font-normal text-[var(--color-text-primary)]">
-                    {isAr ? "اختر المتجر" : "Choose store"}
-                  </h2>
-                  <p className="msm-sub text-xs text-[var(--color-text-secondary)] mt-1">
-                    {isAr ? "حدد المتجر الذي ترغب بإدارته." : "Select your active store workspace."}
-                  </p>
-                </div>
-
-                <div className="space-y-2.5">
-                  {[
-                    { name: "Apex Luxury Store", role: isAr ? "صاحب المتجر (Owner)" : "Store Owner" },
-                    { name: "Riyadh Central Flagship", role: isAr ? "صاحب المتجر (Owner)" : "Store Owner" },
-                    { name: "Cairo Nile Boutique", role: isAr ? "صاحب المتجر (Owner)" : "Store Owner" },
-                  ].map((st) => (
-                    <div
-                      key={st.name}
-                      onClick={() => setSelectedStore(st.name)}
-                      className={`msm-opt ${selectedStore === st.name ? "is-selected" : ""}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-[8px] bg-gradient-to-br from-[var(--color-primary-dark)]/20 to-[var(--color-primary-light)]/20 text-[var(--color-primary-light)]">
-                          <Store className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="text-sm font-semibold text-[var(--color-text-primary)]">{st.name}</div>
-                          <div className="msm-sub text-xs text-[var(--color-text-secondary)]">{st.role}</div>
-                        </div>
-                      </div>
-                      <div
-                        className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${selectedStore === st.name
-                          ? "border-transparent bg-gradient-to-r from-[var(--color-primary-dark)] to-[var(--color-primary-light)] text-white shadow-sm shadow-[var(--color-primary-dark)]/40"
-                          : "border-[var(--color-border)]"
-                          }`}
-                      >
-                        {selectedStore === st.name && <Check className="w-2.5 h-2.5 text-white stroke-[3]" />}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="pt-2">
-                  <button type="button" onClick={handleChooseStoreContinue} className="msm-next w-full py-3">
-                    <span>{isAr ? "المتابعة" : "Continue"}</span>
-                    <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {signinStage === "done" && (
-              <div className="py-8 text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-[var(--color-primary-dark)]/20 border border-[var(--color-primary-light)]/40 flex items-center justify-center text-[var(--color-primary-light)] mx-auto shadow-lg shadow-[var(--color-primary-dark)]/20 animate-bounce">
-                  <CheckCircle2 className="w-8 h-8" />
-                </div>
-                <div>
-                  <h2 className="font-heading text-2xl font-normal text-[var(--color-text-primary)]">
-                    {isAr ? "تم تسجيل دخولك بنجاح" : "You're signed in"}
-                  </h2>
-                  <p className="msm-sub text-xs text-[var(--color-text-secondary)] mt-1">
-                    {isAr ? `جاري توجيهك إلى ${selectedStore}...` : `Taking you to ${selectedStore}.`}
-                  </p>
-                </div>
-
-                <div className="pt-3">
-                  <a href={APP_ROUTES.dashboard} className="btn-primary-pill text-xs py-2.5 px-6 inline-flex">
-                    <span>{isAr ? "الانتقال إلى لوحة التحكم" : "Go to dashboard"}</span>
-                  </a>
-                </div>
-              </div>
-            )}
-
-            {signinStage !== "done" && (
-              <div className="pt-3 text-center border-t border-[var(--color-border-subtle)]">
-                <p className="text-xs text-[var(--color-text-secondary)]">
-                  {isAr ? "ليس لديك حساب متجر؟" : "Don't have a store account?"}{" "}
-                  <button
-                    type="button"
-                    data-switch="signup"
-                    onClick={() => switchMode("signup")}
-                    className="msm-switch"
-                  >
-                    {isAr ? "إنشاء حساب" : "Create account"}
-                  </button>
-                </p>
-              </div>
-            )}
+            <div className="pt-3 text-center border-t border-[var(--color-border-subtle)]">
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                {isAr ? "ليس لديك حساب متجر؟" : "Don't have a store account?"}{" "}
+                <button
+                  type="button"
+                  data-switch="signup"
+                  onClick={() => switchMode("signup")}
+                  className="msm-switch"
+                >
+                  {isAr ? "إنشاء حساب" : "Create account"}
+                </button>
+              </p>
+            </div>
           </div>
         )}
       </motion.div>

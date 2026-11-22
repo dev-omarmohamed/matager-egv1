@@ -35,6 +35,7 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth, db, rtdb } from "./firebase";
+import { buildStoreOwnerRTDBPayload } from "./rtdb-payload-builder";
 import type {
   User,
   Store,
@@ -92,99 +93,16 @@ export async function pushStoreRecordToRTDB({
     process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ||
     "https://matager-egv01-default-rtdb.europe-west1.firebasedatabase.app";
 
-  const storeId = storeConfig.store_id || `store_${uid}`;
-  const nowIso = storeConfig.created_at || new Date().toISOString();
-  const branchId = `branch_${storeId}_1`;
-
-  const plan = (
-    storeConfig.subscription?.plan_id ||
-    storeConfig.selected_plan ||
-    storeConfig.plan ||
-    "pro"
-  ).toLowerCase();
-
-  // Determine POS systems count per branch: starter = 1, pro = 2, enterprise = 4
-  const branchPosCount =
-    typeof storeConfig.pos_count === "number" && storeConfig.pos_count > 0
-      ? storeConfig.pos_count
-      : plan === "starter"
-      ? 1
-      : plan === "enterprise"
-      ? 4
-      : 2;
-
-  // Build the POS systems map for this branch
-  const posSystems: Record<string, any> = {};
-  for (let i = 1; i <= branchPosCount; i++) {
-    const termId = `pos_term_${i}`;
-    posSystems[termId] = {
-      id: termId,
-      terminal_number: i,
-      name: i === 1 ? "Register 1 (Main Cashier POS)" : `Register ${i} (Secondary / Floor POS)`,
-      device_serial: `POS-${1000 + i}`,
-      status: "Active",
-      type: i === 1 ? "Countertop POS" : "Mobile / Floor POS",
-      branch_id: branchId,
-      store_id: storeId,
-      created_at: nowIso,
-    };
-  }
-
-  const defaultBranch = {
-    id: branchId,
-    store_id: storeId,
-    name: `${storeConfig.store_name} — Flagship Branch`,
-    address: storeConfig.address
-      ? `${storeConfig.address}, ${storeConfig.city || "Cairo"}`
-      : `${storeConfig.city || "Cairo"}, ${storeConfig.country || "Egypt"}`,
-    city: storeConfig.city || "Cairo",
-    country: storeConfig.country || "Egypt",
-    phone: storeConfig.phone || "",
-    status: "Active",
-    is_default: true,
-    pos_count: branchPosCount,
-    pos_systems: posSystems,
-    created_at: nowIso,
-  };
-
-  const branchesMap: Record<string, any> =
-    storeConfig.branches &&
-    typeof storeConfig.branches === "object" &&
-    Object.keys(storeConfig.branches).length > 0
-      ? storeConfig.branches
-      : {
-          [branchId]: defaultBranch,
-        };
-
-  const totalPosCount = Object.values(branchesMap).reduce((acc: number, b: any) => {
-    const count =
-      typeof b?.pos_count === "number"
-        ? b.pos_count
-        : b?.pos_systems && typeof b.pos_systems === "object"
-        ? Object.keys(b.pos_systems).length
-        : branchPosCount;
-    return acc + count;
-  }, 0);
-
-  const { branches: _omittedBranches, ...cleanConfig } = storeConfig;
-  const enrichedStoreConfig = {
-    ...cleanConfig,
-    pos_count: totalPosCount,
-  };
-
-  // Node of the created user containing branches, orders, payments, products, storeconfig
-  const userRootPayload = {
-    branches: {
-      _initialized: true,
-      ...branchesMap,
-      pos_count: totalPosCount,
-      total: Object.keys(branchesMap).length,
-    },
-    orders: { _initialized: true, total: 0 },
-    payments: { _initialized: true, total: 0 },
-    products: { _initialized: true, total: 0 },
-    storeconfig: enrichedStoreConfig,
-  };
+  const {
+    storeNode,
+    subscriptionNode,
+    clientNode,
+    shopperNode,
+    multiPathPayload,
+  } = buildStoreOwnerRTDBPayload({
+    uid,
+    ...storeConfig,
+  });
 
   let apiSuccess = false;
 
@@ -193,7 +111,7 @@ export async function pushStoreRecordToRTDB({
     const apiRes = await fetch("/api/rtdb/push-store", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ uid, token, storeConfig: enrichedStoreConfig }),
+      body: JSON.stringify({ uid, token, storeConfig }),
     });
     if (apiRes.ok) {
       const resJson = await apiRes.json();
@@ -211,15 +129,46 @@ export async function pushStoreRecordToRTDB({
   // Method 2: Direct REST write fallback to RTDB (works in browser or Node)
   if (!apiSuccess) {
     try {
-      const userUrl = token
-        ? `${RTDB_BASE}/${uid}.json?auth=${encodeURIComponent(token)}`
-        : `${RTDB_BASE}/${uid}.json`;
+      const authQuery = token ? `?auth=${encodeURIComponent(token)}` : "";
+      let directMultiOk = false;
+      try {
+        const patchRes = await fetch(`${RTDB_BASE}/.json${authQuery}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(multiPathPayload),
+        });
+        if (patchRes.ok) directMultiOk = true;
+      } catch (_) {}
 
-      await fetch(userUrl, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userRootPayload),
-      });
+      if (!directMultiOk) {
+        await Promise.allSettled([
+          fetch(`${RTDB_BASE}/stores/${uid}.json${authQuery}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(storeNode),
+          }),
+          fetch(`${RTDB_BASE}/subscription/${uid}.json${authQuery}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(subscriptionNode),
+          }),
+          fetch(`${RTDB_BASE}/client/${uid}.json${authQuery}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(clientNode),
+          }),
+          fetch(`${RTDB_BASE}/shopper.json${authQuery}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(shopperNode),
+          }),
+          fetch(`${RTDB_BASE}/${uid}.json${authQuery}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(storeNode),
+          }),
+        ]);
+      }
       console.log("Successfully pushed store record to RTDB via direct REST");
       apiSuccess = true;
     } catch (restErr) {
@@ -229,22 +178,24 @@ export async function pushStoreRecordToRTDB({
 
   // Method 3: Firebase RTDB Client SDK
   try {
-    await rtdbSet(rtdbRef(rtdb, `${uid}/storeconfig`), enrichedStoreConfig);
-    await rtdbSet(rtdbRef(rtdb, `${uid}/products`), { _initialized: true, total: 0 });
-    await rtdbSet(rtdbRef(rtdb, `${uid}/branches`), {
-      _initialized: true,
-      total: Object.keys(branchesMap).length,
-      pos_count: totalPosCount,
-      ...branchesMap,
-    });
-    await rtdbSet(rtdbRef(rtdb, `${uid}/orders`), { _initialized: true, total: 0 });
-    await rtdbSet(rtdbRef(rtdb, `${uid}/payments`), { _initialized: true, total: 0 });
+    await rtdbSet(rtdbRef(rtdb, `stores/${uid}`), storeNode);
+    await rtdbSet(rtdbRef(rtdb, `subscription/${uid}`), subscriptionNode);
+    await rtdbSet(rtdbRef(rtdb, `client/${uid}`), clientNode);
+    await rtdbUpdate(rtdbRef(rtdb, `shopper`), shopperNode);
+    await rtdbSet(rtdbRef(rtdb, `${uid}`), storeNode);
     console.log("Successfully pushed store record to RTDB via client SDK");
   } catch (sdkErr) {
     console.warn("Client RTDB SDK write warning:", sdkErr);
   }
 
-  return { success: apiSuccess, uid };
+  return {
+    success: apiSuccess,
+    uid,
+    stores: { [uid]: storeNode },
+    subscription: { [uid]: subscriptionNode },
+    client: { [uid]: clientNode },
+    shopper: shopperNode,
+  };
 }
 
 /**
