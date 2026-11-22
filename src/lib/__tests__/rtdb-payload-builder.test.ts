@@ -78,13 +78,16 @@ test("buildStoreOwnerRTDBPayload creates exact top-level nodes and fields matchi
   assert.equal(storeNode.subscription.currency, "EGP");
   assert.equal(storeNode.subscription.volume_tier, "300 - 550 products");
 
-  // 5. Verify isolated subscription/<uid> node
-  assert.equal(subscriptionNode.uid, uid);
-  assert.equal(subscriptionNode.store_id, `store_${uid}`);
-  assert.equal(subscriptionNode.status, "Active");
-  assert.equal(subscriptionNode.plan_id, "enterprise");
-  assert.equal(subscriptionNode.price, 1500);
-  assert.equal(subscriptionNode.volume_tier, "300 - 550 products");
+  // 5. Verify isolated subscription/<uid> node containing nested monthly payment records
+  assert.ok(subscriptionNode["sub_1"], "Initial subscription cycle sub_1 must exist");
+  assert.equal(subscriptionNode["sub_1"].uid, uid);
+  assert.equal(subscriptionNode["sub_1"].store_id, `store_${uid}`);
+  assert.equal(subscriptionNode["sub_1"].status, "Active");
+  assert.equal(subscriptionNode["sub_1"].plan_id, "enterprise");
+  assert.equal(subscriptionNode["sub_1"].price, 1500);
+  assert.equal(subscriptionNode["sub_1"].volume_tier, "300 - 550 products");
+  assert.equal(subscriptionNode["sub_1"].cycle_number, 1);
+  assert.equal(subscriptionNode["sub_1"].payment_status, "Paid");
 
   // 6. Verify isolated client/<uid> node
   assert.equal(clientNode.uid, uid);
@@ -101,9 +104,10 @@ test("buildStoreOwnerRTDBPayload creates exact top-level nodes and fields matchi
   assert.equal(shopperNode._initialized, true);
 
   // 8. Verify multiPathPayload dictionary
-  assert.ok(multiPathPayload[`stores/${uid}`]);
-  assert.ok(multiPathPayload[`subscription/${uid}`]);
-  assert.ok(multiPathPayload[`client/${uid}`]);
+  assert.ok(multiPathPayload[`stores/${uid}`], "Must write to stores/<uid>");
+  assert.ok(multiPathPayload[`subscription/${uid}/sub_1`], "Must write to subscription/<uid>/sub_1");
+  assert.ok(multiPathPayload[`client/${uid}`], "Must write to client/<uid>");
   assert.equal(multiPathPayload["shopper/_initialized"], true);
-  assert.ok(multiPathPayload[uid]);
+  // Root /<uid> must NOT exist in multiPathPayload
+  assert.equal(multiPathPayload[uid], undefined, "Root /<uid> must not be in multiPathPayload");
 });

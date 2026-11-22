@@ -28,6 +28,7 @@ export interface BuildRTDBPayloadInput {
   pos_count?: number;
   created_at?: string;
   branches?: Record<string, any>;
+  subscription_record_id?: string;
   subscription?: {
     plan_id?: string;
     volume_tier?: string;
@@ -43,7 +44,9 @@ export interface BuildRTDBPayloadInput {
 
 export interface RTDBStoreOwnerOutput {
   storeNode: any;
-  subscriptionNode: any;
+  subscriptionNode: Record<string, any>;
+  singleSubscriptionRecord: any;
+  subRecordId: string;
   clientNode: any;
   shopperNode: { _initialized: boolean };
   multiPathPayload: Record<string, any>;
@@ -164,10 +167,16 @@ export function buildStoreOwnerRTDBPayload(
     return acc + count;
   }, 0);
 
-  // 1. Subscription Node
-  const subscriptionNode = {
+  // 1. Subscription Record for this billing cycle (stored as individual record under subscription/<uid>/<subRecordId>)
+  const subRecordId = rawInput.subscription_record_id || "sub_1";
+
+  const singleSubscriptionRecord = {
+    created_at: nowIso,
     currency: currency,
+    cycle_number: 1,
     end_date: rawInput.subscription?.end_date || thirtyDaysLater,
+    id: subRecordId,
+    payment_status: "Paid",
     plan_id: plan,
     price: tierPrice,
     start_date: rawInput.subscription?.start_date || nowIso,
@@ -175,6 +184,11 @@ export function buildStoreOwnerRTDBPayload(
     store_id: storeId,
     uid: uid,
     volume_tier: expectedVolume,
+  };
+
+  // Node map under subscription/<uid> containing each monthly record
+  const subscriptionNode: Record<string, any> = {
+    [subRecordId]: singleSubscriptionRecord,
   };
 
   // 2. Store Config Node
@@ -224,13 +238,13 @@ export function buildStoreOwnerRTDBPayload(
       total: 0,
     },
     subscription: {
-      currency: subscriptionNode.currency,
-      end_date: subscriptionNode.end_date,
-      plan_id: subscriptionNode.plan_id,
-      price: subscriptionNode.price,
-      start_date: subscriptionNode.start_date,
-      status: subscriptionNode.status,
-      volume_tier: subscriptionNode.volume_tier,
+      currency: singleSubscriptionRecord.currency,
+      end_date: singleSubscriptionRecord.end_date,
+      plan_id: singleSubscriptionRecord.plan_id,
+      price: singleSubscriptionRecord.price,
+      start_date: singleSubscriptionRecord.start_date,
+      status: singleSubscriptionRecord.status,
+      volume_tier: singleSubscriptionRecord.volume_tier,
     },
     storeconfig: storeConfigNode,
   };
@@ -254,18 +268,20 @@ export function buildStoreOwnerRTDBPayload(
     _initialized: true,
   };
 
-  // Multi-path dictionary for atomic RTDB PATCH update
+  // Multi-path dictionary for atomic RTDB PATCH update (stores/<uid>, subscription/<uid>/<subRecordId>, client/<uid>, shopper)
+  // Root /<uid> is explicitly excluded so store data only lives in stores/<uid>
   const multiPathPayload: Record<string, any> = {
     [`stores/${uid}`]: storeNode,
-    [`subscription/${uid}`]: subscriptionNode,
+    [`subscription/${uid}/${subRecordId}`]: singleSubscriptionRecord,
     [`client/${uid}`]: clientNode,
     [`shopper/_initialized`]: true,
-    [`${uid}`]: storeNode, // Legacy root node fallback
   };
 
   return {
     storeNode,
     subscriptionNode,
+    singleSubscriptionRecord,
+    subRecordId,
     clientNode,
     shopperNode,
     multiPathPayload,

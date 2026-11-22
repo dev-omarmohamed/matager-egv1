@@ -21,6 +21,8 @@ export async function POST(req: Request) {
     const {
       storeNode,
       subscriptionNode,
+      singleSubscriptionRecord,
+      subRecordId,
       clientNode,
       shopperNode,
       multiPathPayload,
@@ -47,7 +49,7 @@ export async function POST(req: Request) {
       console.warn("RTDB multi-path PATCH warning:", err);
     }
 
-    // Method B: Dedicated endpoint writes for stores, subscription, client, shopper, and root fallback
+    // Method B: Dedicated endpoint writes for stores, subscription/<uid>/<subRecordId>, client, shopper
     if (!multiPathSuccess) {
       await Promise.allSettled([
         // 1. stores/<uid>
@@ -56,11 +58,11 @@ export async function POST(req: Request) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(storeNode),
         }),
-        // 2. subscription/<uid>
-        fetch(`${RTDB_BASE}/subscription/${uid}.json${authQuery}`, {
+        // 2. subscription/<uid>/<subRecordId> (monthly records)
+        fetch(`${RTDB_BASE}/subscription/${uid}/${subRecordId}.json${authQuery}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(subscriptionNode),
+          body: JSON.stringify(singleSubscriptionRecord),
         }),
         // 3. client/<uid>
         fetch(`${RTDB_BASE}/client/${uid}.json${authQuery}`, {
@@ -74,24 +76,25 @@ export async function POST(req: Request) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(shopperNode),
         }),
-        // 5. /<uid> (backward compatibility)
-        fetch(`${RTDB_BASE}/${uid}.json${authQuery}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(storeNode),
-        }),
       ]);
     }
+
+    // Clean up any obsolete root /<uid> node if it existed previously
+    try {
+      await fetch(`${RTDB_BASE}/${uid}.json${authQuery}`, {
+        method: "DELETE",
+      });
+    } catch (_) {}
 
     return NextResponse.json({
       success: true,
       uid,
       storeId,
       databaseUrl: `${RTDB_BASE}/stores/${uid}`,
-      stores: { [uid]: storeNode },
-      subscription: { [uid]: subscriptionNode },
       client: { [uid]: clientNode },
       shopper: shopperNode,
+      stores: { [uid]: storeNode },
+      subscription: { [uid]: subscriptionNode },
     });
   } catch (err: any) {
     console.error("API /api/rtdb/push-store error:", err);

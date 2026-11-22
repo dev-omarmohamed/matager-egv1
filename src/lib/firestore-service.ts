@@ -96,6 +96,8 @@ export async function pushStoreRecordToRTDB({
   const {
     storeNode,
     subscriptionNode,
+    singleSubscriptionRecord,
+    subRecordId,
     clientNode,
     shopperNode,
     multiPathPayload,
@@ -147,10 +149,10 @@ export async function pushStoreRecordToRTDB({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(storeNode),
           }),
-          fetch(`${RTDB_BASE}/subscription/${uid}.json${authQuery}`, {
+          fetch(`${RTDB_BASE}/subscription/${uid}/${subRecordId}.json${authQuery}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(subscriptionNode),
+            body: JSON.stringify(singleSubscriptionRecord),
           }),
           fetch(`${RTDB_BASE}/client/${uid}.json${authQuery}`, {
             method: "PUT",
@@ -162,13 +164,14 @@ export async function pushStoreRecordToRTDB({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(shopperNode),
           }),
-          fetch(`${RTDB_BASE}/${uid}.json${authQuery}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(storeNode),
-          }),
         ]);
       }
+
+      // Cleanup root /<uid> if present
+      try {
+        await fetch(`${RTDB_BASE}/${uid}.json${authQuery}`, { method: "DELETE" });
+      } catch (_) {}
+
       console.log("Successfully pushed store record to RTDB via direct REST");
       apiSuccess = true;
     } catch (restErr) {
@@ -179,10 +182,10 @@ export async function pushStoreRecordToRTDB({
   // Method 3: Firebase RTDB Client SDK
   try {
     await rtdbSet(rtdbRef(rtdb, `stores/${uid}`), storeNode);
-    await rtdbSet(rtdbRef(rtdb, `subscription/${uid}`), subscriptionNode);
+    await rtdbSet(rtdbRef(rtdb, `subscription/${uid}/${subRecordId}`), singleSubscriptionRecord);
     await rtdbSet(rtdbRef(rtdb, `client/${uid}`), clientNode);
     await rtdbUpdate(rtdbRef(rtdb, `shopper`), shopperNode);
-    await rtdbSet(rtdbRef(rtdb, `${uid}`), storeNode);
+    await rtdbRemove(rtdbRef(rtdb, `${uid}`)).catch(() => null);
     console.log("Successfully pushed store record to RTDB via client SDK");
   } catch (sdkErr) {
     console.warn("Client RTDB SDK write warning:", sdkErr);
@@ -191,10 +194,10 @@ export async function pushStoreRecordToRTDB({
   return {
     success: apiSuccess,
     uid,
-    stores: { [uid]: storeNode },
-    subscription: { [uid]: subscriptionNode },
     client: { [uid]: clientNode },
     shopper: shopperNode,
+    stores: { [uid]: storeNode },
+    subscription: { [uid]: subscriptionNode },
   };
 }
 
