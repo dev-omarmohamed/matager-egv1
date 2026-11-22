@@ -4,6 +4,17 @@ import React, { useState, useEffect } from "react";
 import { useDashboardLanguage } from "@/lib/i18n";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { subscribeToOrders, getActiveStoreId } from "@/lib/firestore-service";
+import {
+  Search,
+  ChevronDown,
+  ChevronUp,
+  Trash2,
+  Edit,
+  XCircle,
+  Phone,
+  MessageCircle,
+  FileText
+} from "lucide-react";
 
 interface RecentOrdersProps {
   externalFilter?: string;
@@ -12,6 +23,8 @@ interface RecentOrdersProps {
 export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" }) => {
   const { t } = useDashboardLanguage();
   const [stuckSearch, setStuckSearch] = useState("");
+  const [orderSearchQuery, setOrderSearchQuery] = useState("");
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
   const sendCartReminder = (name: string, phone: string, total: string) => {
     const cartLink = "https://yourstore.com/cart";
@@ -29,23 +42,43 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
     {
       id: "#ORD-8822",
       customer: "John Doe",
+      email: "john@example.com",
+      phone: "+20 101 234 5678",
+      address: "123 Nile St, Cairo",
       status: "Pending",
       variant: "pending" as const,
       total: "EGP 5,200",
+      items: [
+        { name: "Wireless Headphones", qty: 2, price: "EGP 2,500" },
+        { name: "Phone Case", qty: 1, price: "EGP 200" }
+      ]
     },
     {
       id: "#ORD-8823",
       customer: "Jane Smith",
+      email: "jane@example.com",
+      phone: "+20 102 345 6789",
+      address: "45 Pyramids Rd, Giza",
       status: "Shipped",
       variant: "info" as const,
       total: "EGP 1,290",
+      items: [
+        { name: "Smart Watch", qty: 1, price: "EGP 1,290" }
+      ]
     },
     {
       id: "#ORD-8824",
       customer: "Ahmed Kamal",
+      email: "ahmed@example.com",
+      phone: "+20 103 456 7890",
+      address: "78 Corniche, Alexandria",
       status: "Delivered",
       variant: "success" as const,
       total: "EGP 3,450",
+      items: [
+        { name: "Bluetooth Speaker", qty: 1, price: "EGP 1,450" },
+        { name: "Power Bank", qty: 2, price: "EGP 1,000" }
+      ]
     },
   ];
 
@@ -58,9 +91,13 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
         const mapped = liveOrders.map((t) => ({
           id: t.id.startsWith("#") ? t.id : `#${t.id.slice(-6).toUpperCase()}`,
           customer: t.customer_name || "Guest Customer",
+          email: "guest@example.com",
+          phone: "+20 100 000 0000",
+          address: "Unknown Address",
           status: t.status,
           variant: (t.status === "Completed" ? "success" : t.status === "Pending" ? "pending" : "info") as any,
           total: `EGP ${Number(t.amount).toLocaleString()}`,
+          items: [{ name: "Live Item", qty: 1, price: `EGP ${Number(t.amount).toLocaleString()}` }]
         }));
         setOrders([...mapped, ...initialOrders]);
       }
@@ -73,9 +110,13 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
           {
             id: `#${t.id.slice(-6).toUpperCase()}`,
             customer: t.customer_name || "Guest Customer",
+            email: "guest@example.com",
+            phone: "+20 100 000 0000",
+            address: "Unknown Address",
             status: t.status,
             variant: "success" as const,
             total: `EGP ${Number(t.amount).toLocaleString()}`,
+            items: [{ name: "New Order Item", qty: 1, price: `EGP ${Number(t.amount).toLocaleString()}` }]
           },
           ...prev,
         ]);
@@ -89,6 +130,26 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
       window.removeEventListener("matager:new_order", handleLocalNewOrder);
     };
   }, []);
+
+  // Mock actions for order management
+  const handleDeleteOrder = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this order?")) {
+      setOrders((prev) => prev.filter((o) => o.id !== id));
+      setExpandedOrderId(null);
+    }
+  };
+
+  const handleCancelOrder = (id: string) => {
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === id ? { ...o, status: "Cancelled", variant: "danger" as any } : o
+      )
+    );
+  };
+
+  const handleEditOrder = (id: string) => {
+    alert(`Initiate edit flow for Order ${id}`);
+  };
 
   const stuckCarts = [
     {
@@ -111,12 +172,20 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
     },
   ];
 
-  const filteredOrders = orders.filter(
-    (ord) =>
+  // Combined Filter (External + Local Search)
+  const filteredOrders = orders.filter((ord) => {
+    const matchExternal =
       ord.customer.toLowerCase().includes(externalFilter.toLowerCase()) ||
       ord.id.toLowerCase().includes(externalFilter.toLowerCase()) ||
-      ord.status.toLowerCase().includes(externalFilter.toLowerCase())
-  );
+      ord.status.toLowerCase().includes(externalFilter.toLowerCase());
+
+    const matchLocal =
+      ord.customer.toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
+      ord.id.toLowerCase().includes(orderSearchQuery.toLowerCase()) ||
+      ord.status.toLowerCase().includes(orderSearchQuery.toLowerCase());
+
+    return matchExternal && matchLocal;
+  });
 
   const filteredStuck = stuckCarts.filter(
     (cart) =>
@@ -124,8 +193,12 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
       cart.email.toLowerCase().includes(stuckSearch.toLowerCase())
   );
 
+  const toggleRow = (id: string) => {
+    setExpandedOrderId((prev) => (prev === id ? null : id));
+  };
+
   return (
-    <div className="glass-panel rounded-[20px] bg-[var(--color-glass-card-bg)] border border-[var(--color-glass-card-border)] shadow-[var(--shadow-glass-card)] overflow-hidden transition-all duration-200 hover:-translate-y-[1px]">
+    <div className="glass-panel rounded-[20px] bg-[var(--color-glass-card-bg)] border border-[var(--color-glass-card-border)] shadow-[var(--shadow-glass-card)] overflow-hidden transition-all duration-200">
       {/* Pure-CSS Checkboxes for 3 Stacked Sections */}
       <input type="checkbox" id="toggle-order-summary" className="peer/summary hidden" aria-hidden="true" />
       <input type="checkbox" id="toggle-latest-order" className="peer/latest hidden" aria-hidden="true" />
@@ -144,7 +217,7 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
             className="text-[11px] font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] flex items-center gap-1.5 transition-colors group cursor-pointer select-none peer-checked/summary:[&_.summary-chevron]:rotate-180"
           >
             <span>{t.recentOrders.showDetails}</span>
-            <i className="bi bi-chevron-down transition-transform duration-300 group-hover:text-[var(--color-text-primary)] summary-chevron text-[10px]" />
+            <ChevronDown className="w-3.5 h-3.5 transition-transform duration-300 group-hover:text-[var(--color-text-primary)] summary-chevron" />
           </label>
 
           {/* Toggle 2: Latest Order */}
@@ -153,7 +226,7 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
             className="text-[11px] font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] flex items-center gap-1.5 transition-colors group cursor-pointer select-none peer-checked/latest:[&_.latest-chevron]:rotate-180"
           >
             <span>{t.recentOrders.showLatestOrder}</span>
-            <i className="bi bi-chevron-down transition-transform duration-300 group-hover:text-[var(--color-text-primary)] latest-chevron text-[10px]" />
+            <ChevronDown className="w-3.5 h-3.5 transition-transform duration-300 group-hover:text-[var(--color-text-primary)] latest-chevron" />
           </label>
 
           {/* Toggle 3: Stuck Carts */}
@@ -162,7 +235,7 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
             className="text-[11px] font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] flex items-center gap-1.5 transition-colors group cursor-pointer select-none peer-checked/stuckcart:[&_.cart-chevron]:rotate-180"
           >
             <span>{t.recentOrders.showStuckCarts}</span>
-            <i className="bi bi-chevron-down transition-transform duration-300 group-hover:text-[var(--color-text-primary)] cart-chevron text-[10px]" />
+            <ChevronDown className="w-3.5 h-3.5 transition-transform duration-300 group-hover:text-[var(--color-text-primary)] cart-chevron" />
           </label>
 
           <button
@@ -175,7 +248,7 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
       </div>
 
       {/* 1. RECENT ORDERS SUMMARY DRAWER */}
-      <div className="max-h-0 overflow-hidden transition-all duration-500 ease-in-out peer-checked/summary:max-h-[220px] bg-white/[0.01] border-b border-[var(--color-border-subtle)]/30">
+      <div className="max-h-0 overflow-hidden transition-all duration-500 ease-in-out peer-checked/summary:max-h-[220px] bg-slate-50 dark:bg-white/[0.02] border-b border-[var(--color-border-subtle)]/30">
         <div className="p-4 sm:p-5 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] pb-3">
             <div className="flex items-center gap-3">
@@ -209,91 +282,34 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
 
           {/* 5-Column Pipeline */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-            {/* Pending */}
-            <div className="flex flex-col p-2.5 bg-[var(--color-status-amber-bg)] rounded-xl border border-[var(--color-status-amber-border)]">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[8px] font-black uppercase tracking-wider text-[var(--color-status-amber)]">
-                  {t.recentOrders.summary.pending}
+            {[
+              { label: t.recentOrders.summary.pending, count: "04", pct: "3%", color: "amber" },
+              { label: t.recentOrders.summary.accepted, count: "25", pct: "17%", color: "blue" },
+              { label: t.recentOrders.summary.shipped, count: "65", pct: "43%", color: "purple" },
+              { label: t.recentOrders.summary.delivered, count: "56", pct: "37%", color: "green" },
+              { label: t.recentOrders.summary.returned, count: "12", pct: "8%", color: "red" }
+            ].map((stat, i) => (
+              <div key={i} className={`flex flex-col p-2.5 bg-[var(--color-status-${stat.color}-bg)] rounded-xl border border-[var(--color-status-${stat.color}-border)]`}>
+                <div className="flex justify-between items-center mb-1">
+                  <span className={`text-[8px] font-black uppercase tracking-wider text-[var(--color-status-${stat.color})]`}>
+                    {stat.label}
+                  </span>
+                  <div className={`w-1.5 h-1.5 rounded-full bg-[var(--color-status-${stat.color})]`} />
+                </div>
+                <span className="text-sm font-bold font-heading text-[var(--color-text-primary)] mb-1">
+                  {stat.count}
                 </span>
-                <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-status-amber)]" />
+                <div className="w-full bg-slate-200 dark:bg-white/10 h-1 rounded-full overflow-hidden">
+                  <div className={`bg-[var(--color-status-${stat.color})] h-full`} style={{ width: stat.pct }} />
+                </div>
               </div>
-              <span className="text-sm font-bold font-heading text-[var(--color-text-primary)] mb-1">
-                04
-              </span>
-              <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
-                <div className="bg-[var(--color-status-amber)] h-full w-[3%]" />
-              </div>
-            </div>
-
-            {/* Accepted */}
-            <div className="flex flex-col p-2.5 bg-[var(--color-status-blue-bg)] rounded-xl border border-[var(--color-status-blue-border)]">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[8px] font-black uppercase tracking-wider text-[var(--color-status-blue)]">
-                  {t.recentOrders.summary.accepted}
-                </span>
-                <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-status-blue)]" />
-              </div>
-              <span className="text-sm font-bold font-heading text-[var(--color-text-primary)] mb-1">
-                25
-              </span>
-              <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
-                <div className="bg-[var(--color-status-blue)] h-full w-[17%]" />
-              </div>
-            </div>
-
-            {/* Shipped */}
-            <div className="flex flex-col p-2.5 bg-[var(--color-status-purple-bg)] rounded-xl border border-[var(--color-status-purple-border)]">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[8px] font-black uppercase tracking-wider text-[var(--color-status-purple)]">
-                  {t.recentOrders.summary.shipped}
-                </span>
-                <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-status-purple)]" />
-              </div>
-              <span className="text-sm font-bold font-heading text-[var(--color-text-primary)] mb-1">
-                65
-              </span>
-              <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
-                <div className="bg-[var(--color-status-purple)] h-full w-[43%]" />
-              </div>
-            </div>
-
-            {/* Delivered */}
-            <div className="flex flex-col p-2.5 bg-[var(--color-status-green-bg)] rounded-xl border border-[var(--color-status-green-border)]">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[8px] font-black uppercase tracking-wider text-[var(--color-status-green)]">
-                  {t.recentOrders.summary.delivered}
-                </span>
-                <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-status-green)]" />
-              </div>
-              <span className="text-sm font-bold font-heading text-[var(--color-text-primary)] mb-1">
-                56
-              </span>
-              <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
-                <div className="bg-[var(--color-status-green)] h-full w-[37%]" />
-              </div>
-            </div>
-
-            {/* Returned */}
-            <div className="flex flex-col p-2.5 bg-[var(--color-status-red-bg)] rounded-xl border border-[var(--color-status-red-border)] col-span-2 sm:col-span-1">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[8px] font-black uppercase tracking-wider text-[var(--color-status-red)]">
-                  {t.recentOrders.summary.returned}
-                </span>
-                <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-status-red)]" />
-              </div>
-              <span className="text-sm font-bold font-heading text-[var(--color-text-primary)] mb-1">
-                12
-              </span>
-              <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
-                <div className="bg-[var(--color-status-red)] h-full w-[8%]" />
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* 2. LATEST ORDER DETAILS DRAWER */}
-      <div className="max-h-0 overflow-hidden transition-all duration-500 ease-in-out peer-checked/latest:max-h-[320px] bg-white/[0.01] border-b border-[var(--color-border-subtle)]/30">
+      <div className="max-h-0 overflow-hidden transition-all duration-500 ease-in-out peer-checked/latest:max-h-[320px] bg-slate-50 dark:bg-white/[0.02] border-b border-[var(--color-border-subtle)]/30">
         <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Col 1: Customer */}
           <div className="flex flex-col justify-between">
@@ -323,13 +339,7 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
               </a>
               <button
                 type="button"
-                onClick={() =>
-                  sendCartReminder(
-                    t.recentOrders.latestOrder.customerName,
-                    "201234567890",
-                    "147.50"
-                  )
-                }
+                onClick={() => sendCartReminder(t.recentOrders.latestOrder.customerName, "201234567890", "147.50")}
                 className="flex-1 py-1.5 border border-[var(--color-border-subtle)] hover:border-[var(--color-status-green)] text-[var(--color-status-green)] rounded text-[10px] font-bold transition-colors"
               >
                 {t.recentOrders.latestOrder.whatsapp}
@@ -354,16 +364,10 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
               </p>
             </div>
             <div className="flex gap-2 mt-4">
-              <button
-                type="button"
-                className="flex-1 py-1.5 border border-[var(--color-border-subtle)] hover:border-[var(--color-text-muted)] rounded text-[10px] font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-              >
+              <button type="button" className="flex-1 py-1.5 border border-[var(--color-border-subtle)] hover:border-[var(--color-text-muted)] rounded text-[10px] font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors">
                 {t.recentOrders.latestOrder.invoice}
               </button>
-              <button
-                type="button"
-                className="flex-1 py-1.5 bg-gradient-to-r from-[var(--color-primary-dark)] to-[var(--color-primary-light)] text-white rounded text-[10px] font-bold transition-all shadow-sm"
-              >
+              <button type="button" className="flex-1 py-1.5 bg-gradient-to-r from-[var(--color-primary-dark)] to-[var(--color-primary-light)] text-white rounded text-[10px] font-bold transition-all shadow-sm">
                 {t.recentOrders.latestOrder.process}
               </button>
             </div>
@@ -375,11 +379,8 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
               {t.recentOrders.latestOrder.manifestTitle}
             </p>
             <div className="space-y-2 overflow-y-auto pr-1 max-h-[140px] custom-scrollbar">
-              {t.recentOrders.latestOrder.items.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="flex justify-between items-center text-[11px] border-b border-[var(--color-border-subtle)] pb-1.5 last:border-b-0"
-                >
+              {t.recentOrders.latestOrder.items.map((item: any, idx: number) => (
+                <div key={idx} className="flex justify-between items-center text-[11px] border-b border-[var(--color-border-subtle)] pb-1.5 last:border-b-0">
                   <div>
                     <p className="text-[var(--color-text-primary)] font-medium">{item.name}</p>
                     <p className="text-[9px] text-[var(--color-text-muted)]">{item.meta}</p>
@@ -396,16 +397,16 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
       </div>
 
       {/* 3. STUCK CARTS TABLE DRAWER */}
-      <div className="max-h-0 overflow-hidden transition-all duration-500 ease-in-out peer-checked/stuckcart:max-h-[350px] bg-white/[0.01] border-b border-[var(--color-border-subtle)]/30">
+      <div className="max-h-0 overflow-hidden transition-all duration-500 ease-in-out peer-checked/stuckcart:max-h-[350px] bg-slate-50 dark:bg-white/[0.02] border-b border-[var(--color-border-subtle)]/30">
         <div className="p-4 sm:p-5 space-y-3">
           <div className="relative w-full max-w-xs">
-            <i className="bi bi-search absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--color-text-muted)]" />
+            <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-muted)]" />
             <input
               type="text"
               value={stuckSearch}
               onChange={(e) => setStuckSearch(e.target.value)}
               placeholder={t.recentOrders.stuckCarts.searchPlaceholder}
-              className="w-full bg-[var(--input-bg-gradient)] border border-[var(--input-border-color)] rounded-lg py-1.5 pl-8 pr-3 rtl:pl-3 rtl:pr-8 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary-light)] font-ui"
+              className="w-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-[var(--color-border-subtle)] rounded-lg py-1.5 pl-8 pr-3 rtl:pl-3 rtl:pr-8 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary-light)] font-ui transition-colors"
             />
           </div>
 
@@ -416,14 +417,12 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
                   <th className="pb-2 font-medium">{t.recentOrders.stuckCarts.thCustomer}</th>
                   <th className="pb-2 font-medium">{t.recentOrders.stuckCarts.thValue}</th>
                   <th className="pb-2 font-medium">{t.recentOrders.stuckCarts.thStatus}</th>
-                  <th className="pb-2 font-medium text-right rtl:text-left">
-                    {t.recentOrders.stuckCarts.thActions}
-                  </th>
+                  <th className="pb-2 font-medium text-right rtl:text-left">{t.recentOrders.stuckCarts.thActions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border-subtle)]">
                 {filteredStuck.map((cart) => (
-                  <tr key={cart.id} className="hover:bg-white/[0.02]">
+                  <tr key={cart.id} className="hover:bg-slate-100 dark:hover:bg-white/[0.02]">
                     <td className="py-2.5">
                       <p className="font-bold text-[var(--color-text-primary)]">{cart.name}</p>
                       <p className="text-[9px] text-[var(--color-text-muted)]">{cart.email}</p>
@@ -439,13 +438,13 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
                       <button
                         type="button"
                         onClick={() => sendCartReminder(cart.name, cart.phone, cart.totalNum)}
-                        className="px-2.5 py-1 bg-white/5 border border-[var(--color-border-subtle)] hover:border-[var(--color-status-green)] hover:text-[var(--color-status-green)] rounded text-[9px] font-bold text-[var(--color-text-secondary)] transition-colors"
+                        className="px-2.5 py-1 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-[var(--color-border-subtle)] hover:border-[var(--color-status-green)] hover:text-[var(--color-status-green)] rounded text-[9px] font-bold text-[var(--color-text-secondary)] transition-colors"
                       >
                         {t.recentOrders.stuckCarts.remindBtn}
                       </button>
                       <a
                         href={`tel:${cart.phone}`}
-                        className="px-2.5 py-1 bg-white/5 border border-[var(--color-border-subtle)] hover:border-[var(--color-text-muted)] rounded text-[9px] font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors inline-block"
+                        className="px-2.5 py-1 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-[var(--color-border-subtle)] hover:border-[var(--color-text-muted)] rounded text-[9px] font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors inline-block"
                       >
                         {t.recentOrders.stuckCarts.callBtn}
                       </a>
@@ -458,37 +457,153 @@ export const RecentOrders: React.FC<RecentOrdersProps> = ({ externalFilter = "" 
         </div>
       </div>
 
-      {/* ORIGINAL 3-ROW ORDERS TABLE */}
+      {/* ─── MAIN ORDERS TABLE WITH INLINE EXPANSION & SEARCH ─── */}
+      <div className="p-4 sm:p-5 border-b border-[var(--color-border-subtle)] bg-slate-50/50 dark:bg-transparent">
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
+          <input
+            type="text"
+            value={orderSearchQuery}
+            onChange={(e) => setOrderSearchQuery(e.target.value)}
+            placeholder="Search by Order ID, Customer, or Status..."
+            className="w-full bg-white dark:bg-[var(--color-bg)] border border-slate-200 dark:border-[var(--color-border-subtle)] rounded-xl py-2 pl-9 pr-4 rtl:pl-4 rtl:pr-9 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-light)]/50 transition-all font-ui"
+          />
+        </div>
+      </div>
+
       <div className="overflow-x-auto">
-        <table className="w-full text-left rtl:text-right border-collapse">
+        <table className="w-full text-left rtl:text-right border-collapse min-w-[700px]">
           <thead>
-            <tr className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border-subtle)]">
+            <tr className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border-subtle)] bg-slate-50/50 dark:bg-white/[0.01]">
+              <th className="p-4 font-medium w-12"></th>
               <th className="p-4 font-medium">{t.recentOrders.originalTable.thOrderId}</th>
               <th className="p-4 font-medium">{t.recentOrders.originalTable.thCustomer}</th>
               <th className="p-4 font-medium">{t.recentOrders.originalTable.thStatus}</th>
-              <th className="p-4 font-medium">{t.recentOrders.originalTable.thTotal}</th>
+              <th className="p-4 font-medium text-right rtl:text-left">{t.recentOrders.originalTable.thTotal}</th>
             </tr>
           </thead>
           <tbody className="text-xs font-ui divide-y divide-[var(--color-border-subtle)]">
-            {filteredOrders.map((ord) => (
-              <tr
-                key={ord.id}
-                className="hover:bg-white/[0.02] transition-colors order-row"
-              >
-                <td className="p-4 text-[var(--color-text-secondary)] order-id">
-                  {ord.id}
-                </td>
-                <td className="p-4 text-[var(--color-text-primary)] font-bold customer-name">
-                  {ord.customer}
-                </td>
-                <td className="p-4">
-                  <StatusPill variant={ord.variant}>{ord.status}</StatusPill>
-                </td>
-                <td className="p-4 text-[var(--color-text-primary)] font-bold">
-                  {ord.total}
+            {filteredOrders.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="p-8 text-center text-[var(--color-text-muted)]">
+                  No orders found matching your search.
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredOrders.map((ord) => {
+                const isExpanded = expandedOrderId === ord.id;
+                return (
+                  <React.Fragment key={ord.id}>
+                    {/* Main Row */}
+                    <tr
+                      onClick={() => toggleRow(ord.id)}
+                      className={`hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors cursor-pointer group ${isExpanded ? "bg-slate-50 dark:bg-white/[0.02]" : ""
+                        }`}
+                    >
+                      <td className="p-4 text-[var(--color-text-muted)] group-hover:text-[var(--color-text-primary)] transition-colors">
+                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </td>
+                      <td className="p-4 text-[var(--color-text-secondary)] font-medium">
+                        {ord.id}
+                      </td>
+                      <td className="p-4 text-[var(--color-text-primary)] font-bold customer-name">
+                        {ord.customer}
+                      </td>
+                      <td className="p-4">
+                        <StatusPill variant={ord.variant}>{ord.status}</StatusPill>
+                      </td>
+                      <td className="p-4 text-[var(--color-text-primary)] font-bold text-right rtl:text-left">
+                        {ord.total}
+                      </td>
+                    </tr>
+
+                    {/* Expanded Details Row */}
+                    {isExpanded && (
+                      <tr className="bg-slate-50 dark:bg-[#0a0a0a]/50">
+                        <td colSpan={5} className="p-0 border-b border-[var(--color-border-subtle)]">
+                          <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in slide-in-from-top-2 fade-in duration-200">
+
+                            {/* Customer Info */}
+                            <div className="space-y-3">
+                              <div>
+                                <h5 className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
+                                  Customer Details
+                                </h5>
+                                <p className="text-sm font-bold text-[var(--color-text-primary)]">{ord.customer}</p>
+                                <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{ord.email}</p>
+                                <p className="text-xs text-[var(--color-text-secondary)]">{ord.phone}</p>
+                                <p className="text-xs text-[var(--color-text-secondary)] mt-1">{ord.address}</p>
+                              </div>
+                              <div className="flex gap-2 pt-2">
+                                <a href={`tel:${ord.phone}`} className="flex-1 py-1.5 flex items-center justify-center gap-1.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-[10px] font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-slate-300 dark:hover:border-white/20 transition-all">
+                                  <Phone className="w-3 h-3" /> Call
+                                </a>
+                                <button className="flex-1 py-1.5 flex items-center justify-center gap-1.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-[10px] font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-status-green)] hover:border-[var(--color-status-green)]/50 transition-all">
+                                  <MessageCircle className="w-3 h-3" /> WhatsApp
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Order Items */}
+                            <div className="lg:border-l lg:border-slate-200 dark:lg:border-white/10 lg:pl-6">
+                              <h5 className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
+                                Order Manifest
+                              </h5>
+                              <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1 custom-scrollbar">
+                                {ord.items?.map((item, idx) => (
+                                  <div key={idx} className="flex justify-between items-center text-xs border-b border-slate-200 dark:border-white/5 pb-2 last:border-0 last:pb-0">
+                                    <div>
+                                      <p className="font-medium text-[var(--color-text-primary)]">{item.name}</p>
+                                      <p className="text-[10px] text-[var(--color-text-muted)]">Qty: {item.qty}</p>
+                                    </div>
+                                    <p className="font-bold text-[var(--color-text-primary)]">{item.price}</p>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="mt-3 pt-3 border-t border-slate-200 dark:border-white/10 flex justify-between items-center">
+                                <span className="text-xs font-bold text-[var(--color-text-muted)]">Total</span>
+                                <span className="text-sm font-black text-[var(--color-status-green)]">{ord.total}</span>
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="lg:border-l lg:border-slate-200 dark:lg:border-white/10 lg:pl-6 flex flex-col justify-between">
+                              <div>
+                                <h5 className="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">
+                                  Order Actions
+                                </h5>
+                                <div className="flex flex-col gap-2">
+                                  <button
+                                    onClick={() => handleEditOrder(ord.id)}
+                                    className="w-full py-2 flex items-center justify-center gap-2 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all"
+                                  >
+                                    <Edit className="w-3.5 h-3.5" /> Edit Items
+                                  </button>
+                                  <button
+                                    onClick={() => handleCancelOrder(ord.id)}
+                                    disabled={ord.status === "Cancelled" || ord.status === "Delivered"}
+                                    className="w-full py-2 flex items-center justify-center gap-2 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg text-xs font-bold hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    <XCircle className="w-3.5 h-3.5" /> Cancel Order
+                                  </button>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleDeleteOrder(ord.id)}
+                                className="w-full mt-4 sm:mt-0 py-2 flex items-center justify-center gap-2 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 rounded-lg text-xs font-bold hover:bg-red-100 dark:hover:bg-red-500/20 transition-all"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" /> Delete Order
+                              </button>
+                            </div>
+
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
