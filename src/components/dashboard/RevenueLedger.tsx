@@ -1,61 +1,43 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useDashboardLanguage } from "@/lib/i18n";
 import { StatusPill } from "@/components/ui/StatusPill";
+import { useStoreOwnerData } from "@/lib/useStoreOwnerData";
 
 export const RevenueLedger: React.FC = () => {
-  const { t } = useDashboardLanguage();
-  const [selectedYear, setSelectedYear] = useState<"2025" | "2026">("2026");
+  const { t, locale, dir } = useDashboardLanguage();
+  const isRtl = dir === "rtl" || locale === "ar";
+  const { orders } = useStoreOwnerData();
 
-  const rows2026 = [
-    {
-      month: "March 2026",
-      revenue: "$14,250.00",
-      products: 142,
-      growth: "+8.4% ↑",
-      growthPositive: true,
-      status: t.revenueLedger.finalized,
-    },
-    {
-      month: "February 2026",
-      revenue: "$12,100.50",
-      products: 128,
-      growth: "+5.2% ↑",
-      growthPositive: true,
-      status: t.revenueLedger.finalized,
-    },
-    {
-      month: "January 2026",
-      revenue: "$11,400.00",
-      products: 110,
-      growth: "--",
-      growthPositive: null,
-      status: t.revenueLedger.finalized,
-    },
-  ];
+  const [selectedYear, setSelectedYear] = useState<string>("2026");
 
-  const rows2025 = [
-    {
-      month: "December 2025",
-      revenue: "$10,800.00",
-      products: 95,
-      growth: "+11.2% ↑",
-      growthPositive: true,
-      status: t.revenueLedger.finalized,
-    },
-    {
-      month: "November 2025",
-      revenue: "$9,750.00",
-      products: 88,
-      growth: "+4.1% ↑",
-      growthPositive: true,
-      status: t.revenueLedger.finalized,
-    },
-  ];
+  // Group real orders by Month Year
+  const monthlyData = useMemo(() => {
+    const map: Record<string, { month: string; revenue: number; products: number }> = {};
 
-  const currentRows = selectedYear === "2026" ? rows2026 : rows2025;
-  const currentTotal = selectedYear === "2026" ? "$37,750.50" : "$20,550.00";
+    orders.forEach((ord) => {
+      const date = ord.created_at ? new Date(ord.created_at) : new Date();
+      const yr = date.getFullYear().toString();
+      if (yr !== selectedYear) return;
+
+      const monthName = date.toLocaleString("en-US", { month: "long" });
+      const key = `${monthName} ${yr}`;
+
+      if (!map[key]) {
+        map[key] = { month: key, revenue: 0, products: 0 };
+      }
+      map[key].revenue += ord.amount || 0;
+      map[key].products += ord.items ? ord.items.reduce((s, it) => s + (it.qty || 1), 0) : 1;
+    });
+
+    return Object.values(map);
+  }, [orders, selectedYear]);
+
+  const currentTotal = useMemo(() => {
+    const sum = monthlyData.reduce((acc, r) => acc + r.revenue, 0);
+    return `EGP ${sum.toLocaleString()}`;
+  }, [monthlyData]);
 
   return (
     <div className="glass-panel rounded-[20px] bg-[var(--color-glass-card-bg)] border border-[var(--color-glass-card-border)] shadow-[var(--shadow-glass-card)] overflow-hidden transition-all duration-200 hover:-translate-y-[1px]">
@@ -85,7 +67,7 @@ export const RevenueLedger: React.FC = () => {
         </label>
       </div>
 
-      <div className="max-h-0 overflow-hidden transition-all duration-500 ease-in-out peer-checked/revenue:max-h-[380px] bg-white/[0.01]">
+      <div className="max-h-0 overflow-hidden transition-all duration-500 ease-in-out peer-checked/revenue:max-h-[380px] bg-[var(--color-surface-elevated)]/20">
         <div className="p-4 sm:p-5 space-y-4">
           {/* Year Switcher Buttons */}
           <div className="flex justify-end gap-2">
@@ -94,22 +76,22 @@ export const RevenueLedger: React.FC = () => {
               onClick={() => setSelectedYear("2025")}
               className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${
                 selectedYear === "2025"
-                  ? "bg-white/10 text-white border border-white/20"
+                  ? "bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] border border-[var(--color-border)]"
                   : "border border-[var(--color-border-subtle)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
               }`}
             >
-              {t.revenueLedger.btn2025}
+              2025
             </button>
             <button
               type="button"
               onClick={() => setSelectedYear("2026")}
               className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${
                 selectedYear === "2026"
-                  ? "bg-white/10 text-white border border-white/20"
+                  ? "bg-[var(--color-surface-elevated)] text-[var(--color-text-primary)] border border-[var(--color-border)]"
                   : "border border-[var(--color-border-subtle)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
               }`}
             >
-              {t.revenueLedger.btn2026}
+              2026
             </button>
           </div>
 
@@ -126,29 +108,31 @@ export const RevenueLedger: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border-subtle)]">
-                {currentRows.map((r, i) => (
-                  <tr key={i} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="py-2.5 text-[var(--color-text-secondary)] font-ui">{r.month}</td>
-                    <td className="py-2.5 text-center font-bold text-[var(--color-status-blue)]">
-                      {r.revenue}
-                    </td>
-                    <td className="py-2.5 text-center text-[var(--color-text-secondary)]">
-                      {r.products}
-                    </td>
-                    <td
-                      className={`py-2.5 text-center font-bold ${
-                        r.growthPositive
-                          ? "text-[var(--color-status-green)]"
-                          : "text-[var(--color-text-muted)]"
-                      }`}
-                    >
-                      {r.growth}
-                    </td>
-                    <td className="py-2.5 text-right rtl:text-left">
-                      <StatusPill variant="info">{r.status}</StatusPill>
+                {monthlyData.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-6 text-center text-xs text-[var(--color-text-muted)] font-subtitle">
+                      {isRtl ? "لا توجد إيرادات مسجلة بعد" : "No revenue recorded yet"}
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  monthlyData.map((r, i) => (
+                    <tr key={i} className="hover:bg-[var(--color-surface-elevated)]/40 transition-colors">
+                      <td className="py-2.5 text-[var(--color-text-secondary)] font-ui">{r.month}</td>
+                      <td className="py-2.5 text-center font-bold text-[var(--color-status-blue)]">
+                        EGP {r.revenue.toLocaleString()}
+                      </td>
+                      <td className="py-2.5 text-center text-[var(--color-text-secondary)]">
+                        {r.products}
+                      </td>
+                      <td className="py-2.5 text-center font-bold text-[var(--color-text-muted)]">
+                        --
+                      </td>
+                      <td className="py-2.5 text-right rtl:text-left">
+                        <StatusPill variant="info">{t.revenueLedger.finalized}</StatusPill>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -156,8 +140,8 @@ export const RevenueLedger: React.FC = () => {
           {/* Footer Total */}
           <div className="flex justify-between items-center pt-3 border-t border-[var(--color-border-subtle)]">
             <span className="text-[10px] uppercase font-bold text-[var(--color-text-muted)] font-subtitle">
-              <span className="text-[var(--color-status-green)] font-bold">{selectedYear}</span>
-              -Total Earnings
+              <span className="text-[var(--color-status-green)] font-bold">{selectedYear} </span>
+              {isRtl ? "إجمالي الأرباح" : "Total Earnings"}
             </span>
             <span className="text-base font-bold font-heading text-[var(--color-status-green)]">
               {currentTotal}

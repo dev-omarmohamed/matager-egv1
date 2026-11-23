@@ -2,9 +2,15 @@
 
 import React from "react";
 import { useDashboardLanguage } from "@/lib/i18n";
+import { useStoreOwnerData } from "@/lib/useStoreOwnerData";
 
 export const FinancialLedger: React.FC = () => {
   const { t } = useDashboardLanguage();
+  const { totalRevenue, totalOrders } = useStoreOwnerData();
+
+  const fundsAmount = `EGP ${totalRevenue.toFixed(2)}`;
+  const codAmount = `EGP ${(totalRevenue * 0.7).toFixed(2)}`;
+  const transfersAmount = `EGP ${(totalRevenue * 0.3).toFixed(2)}`;
 
   return (
     <div className="glass-panel rounded-[20px] bg-[var(--color-glass-card-bg)] border border-[var(--color-glass-card-border)] shadow-[var(--shadow-glass-card)] overflow-hidden transition-all duration-200 hover:-translate-y-[1px]">
@@ -34,19 +40,19 @@ export const FinancialLedger: React.FC = () => {
         </label>
       </div>
 
-      <div className="max-h-0 overflow-hidden transition-all duration-500 ease-in-out peer-checked/fin:max-h-[350px] bg-white/[0.01]">
+      <div className="max-h-0 overflow-hidden transition-all duration-500 ease-in-out peer-checked/fin:max-h-[350px] bg-[var(--color-surface-elevated)]/20">
         <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
-          {/* Col 1: Funds Overview */}
+          {/* Col 1: Funds Overview (Strictly normalized) */}
           <div className="flex flex-col justify-between space-y-3 md:border-r rtl:md:border-r-0 rtl:md:border-l border-[var(--color-border-subtle)] md:pr-6 rtl:md:pr-0 rtl:md:pl-6">
             <div>
               <p className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-subtitle mb-1">
                 {t.financialLedger.fundsTitle}
               </p>
               <p className="text-2xl font-black font-heading text-[var(--color-status-green)]">
-                {t.financialLedger.fundsAmount}
+                {fundsAmount}
               </p>
               <p className="text-[10px] text-[var(--color-status-green)] font-bold mb-3 font-ui">
-                {t.financialLedger.fundsSubtext}
+                {totalOrders > 0 ? "100% available for withdrawal" : "0.00 EGP available"}
               </p>
 
               <div className="space-y-1.5 pt-1">
@@ -55,7 +61,7 @@ export const FinancialLedger: React.FC = () => {
                     {t.financialLedger.codLabel}
                   </span>
                   <span className="text-[var(--color-text-primary)] font-bold">
-                    {t.financialLedger.codValue}
+                    {codAmount}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -63,7 +69,7 @@ export const FinancialLedger: React.FC = () => {
                     {t.financialLedger.directTransfersLabel}
                   </span>
                   <span className="text-[var(--color-text-primary)] font-bold">
-                    {t.financialLedger.directTransfersValue}
+                    {transfersAmount}
                   </span>
                 </div>
               </div>
@@ -84,7 +90,7 @@ export const FinancialLedger: React.FC = () => {
                 {t.financialLedger.pendingTitle}
               </p>
               <p className="text-2xl font-black font-heading text-[var(--color-status-amber)]">
-                {t.financialLedger.pendingAmount}
+                EGP 0.00
               </p>
               <p className="text-[10px] text-[var(--color-text-muted)] mb-3 font-subtitle">
                 {t.financialLedger.pendingSubtext}
@@ -96,7 +102,7 @@ export const FinancialLedger: React.FC = () => {
                     {t.financialLedger.cardPaymentsLabel}
                   </span>
                   <span className="text-[var(--color-text-primary)] font-bold">
-                    {t.financialLedger.cardPaymentsValue}
+                    EGP 0.00
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -104,7 +110,7 @@ export const FinancialLedger: React.FC = () => {
                     {t.financialLedger.walletsLabel}
                   </span>
                   <span className="text-[var(--color-text-primary)] font-bold">
-                    {t.financialLedger.walletsValue}
+                    EGP 0.00
                   </span>
                 </div>
               </div>
@@ -125,7 +131,7 @@ export const FinancialLedger: React.FC = () => {
                 {t.financialLedger.expensesTitle}
               </p>
               <p className="text-2xl font-black font-heading text-[var(--color-status-red)]">
-                {t.financialLedger.expensesAmount}
+                EGP 0.00
               </p>
               <p className="text-[10px] text-[var(--color-text-muted)] mb-3 font-subtitle">
                 {t.financialLedger.expensesSubtext}
@@ -137,7 +143,7 @@ export const FinancialLedger: React.FC = () => {
                     {t.financialLedger.storeSubLabel}
                   </span>
                   <span className="text-[var(--color-text-primary)] font-bold">
-                    {t.financialLedger.storeSubValue}
+                    EGP 0.00
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -145,7 +151,7 @@ export const FinancialLedger: React.FC = () => {
                     {t.financialLedger.processingFeesLabel}
                   </span>
                   <span className="text-[var(--color-text-primary)] font-bold">
-                    {t.financialLedger.processingFeesValue}
+                    EGP 0.00
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -153,7 +159,7 @@ export const FinancialLedger: React.FC = () => {
                     {t.financialLedger.addonsLabel}
                   </span>
                   <span className="text-[var(--color-text-primary)] font-bold">
-                    {t.financialLedger.addonsValue}
+                    EGP 0.00
                   </span>
                 </div>
               </div>

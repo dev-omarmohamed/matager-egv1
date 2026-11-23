@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardLanguageProvider } from "@/lib/i18n";
+import { DashboardModalProvider } from "@/components/dashboard/DashboardModalContext";
 import { TopNav } from "@/components/dashboard/TopNav";
 import { KpiStrip } from "@/components/dashboard/KpiStrip";
 import { ActionHub } from "@/components/dashboard/ActionHub";
@@ -129,7 +130,9 @@ export default function MerchantDashboardPage() {
       }
     >
       <DashboardLanguageProvider>
-        <DashboardContent />
+        <DashboardModalProvider>
+          <DashboardContent />
+        </DashboardModalProvider>
       </DashboardLanguageProvider>
     </Suspense>
   );

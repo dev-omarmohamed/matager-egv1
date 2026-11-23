@@ -1054,10 +1054,10 @@ function StorefrontContent() {
             )}
           </div>
 
-          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[10px] font-bold">
+          {/* <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[10px] font-bold">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
             <span>POS Online</span>
-          </div>
+          </div> */}
         </div>
 
         <div className="flex items-center gap-2">
@@ -1079,8 +1079,8 @@ function StorefrontContent() {
             type="button"
             onClick={handleTogglePresentation}
             className={`px-3 py-1.5 rounded-[8px] border text-xs font-bold transition-all flex items-center gap-2 ${isGalleryActive
-                ? "bg-gradient-to-r from-blue-600 to-sky-500 text-white border-transparent shadow-md shadow-blue-500/25"
-                : "bg-white/5 hover:bg-white/10 border-white/10 text-[var(--color-text-primary)]"
+              ? "bg-gradient-to-r from-blue-600 to-sky-500 text-white border-transparent shadow-md shadow-blue-500/25"
+              : "bg-white/5 hover:bg-white/10 border-white/10 text-[var(--color-text-primary)]"
               }`}
           >
             <Layers className="w-3.5 h-3.5" />
@@ -1244,8 +1244,8 @@ function StorefrontContent() {
                   toggleFollowStore(currentStore.id);
                 }}
                 className={`flex-1 md:flex-none px-4 py-2 rounded-[8px] text-xs font-bold flex items-center justify-center gap-2 shadow-lg ${viewerFollowedStores.includes(currentStore.id)
-                    ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-500"
-                    : "bg-gradient-to-r from-[#0479E8] to-[#0083FE] text-white"
+                  ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-500"
+                  : "bg-gradient-to-r from-[#0479E8] to-[#0083FE] text-white"
                   }`}
               >
                 <span>
@@ -1270,21 +1270,21 @@ function StorefrontContent() {
                   key={cat}
                   onClick={() => setCategoryFilter(cat)}
                   className={`px-3 py-1.5 rounded-[8px] text-xs font-bold transition-all duration-200 ${categoryFilter === cat
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-500/25"
-                      : "bg-slate-200/70 hover:bg-slate-300/70 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-[var(--color-text-secondary)]"
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/25"
+                    : "bg-slate-200/70 hover:bg-slate-300/70 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-[var(--color-text-secondary)]"
                     }`}
                 >
                   {cat}
                 </button>
               ))}
             </div>
-            <div className="text-xs text-slate-500 dark:text-[var(--color-text-muted)] flex items-center gap-2">
+            {/* <div className="text-xs text-slate-500 dark:text-[var(--color-text-muted)] flex items-center gap-2">
               <span>
                 {filteredProducts.length} {isAr ? "منتجات معروضة" : "Products Live"}
               </span>
               <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
               <span className="text-blue-500 dark:text-blue-400 font-bold">{currentStore.currency}</span>
-            </div>
+            </div> */}
           </div>
 
           {/* Dual infinite-scroll rows — edge-to-edge, no gap */}
@@ -1389,8 +1389,8 @@ function StorefrontContent() {
       {/* EXPANDED UNIVERSAL DOCK */}
       <aside
         className={`fixed left-1/2 z-[9990] w-[min(430px,calc(100vw-28px))] max-h-[86vh] rounded-[30px] border border-[var(--glass-border,rgba(255,255,255,0.12))] overflow-hidden flex flex-col transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-[0_40px_90px_-20px_rgba(0,0,0,0.85)] ${theme === "dark"
-            ? "bg-[#141416]/90 backdrop-blur-2xl text-white"
-            : "bg-white/95 backdrop-blur-2xl text-slate-900 border-black/10 shadow-2xl"
+          ? "bg-[#141416]/90 backdrop-blur-2xl text-white"
+          : "bg-white/95 backdrop-blur-2xl text-slate-900 border-black/10 shadow-2xl"
           }`}
         style={{
           bottom: "calc(20px + env(safe-area-inset-bottom, 0px))",
@@ -1472,8 +1472,8 @@ function StorefrontContent() {
                       playSound("pop");
                     }}
                     className={`relative px-2.5 py-1.5 rounded-[8px] text-[10px] font-bold whitespace-nowrap transition-all flex items-center gap-1 ${activeDockTab === tab.id
-                        ? "bg-blue-600 text-white shadow-md shadow-blue-500/25"
-                        : "text-white/60 hover:text-white hover:bg-white/5"
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-500/25"
+                      : "text-white/60 hover:text-white hover:bg-white/5"
                       }`}
                   >
                     <tab.icon className="w-3 h-3" />
@@ -1589,8 +1589,8 @@ function StorefrontContent() {
                           key={sz}
                           onClick={() => setSelectedSize(sz)}
                           className={`min-w-[36px] h-8 px-2 rounded-[8px] text-[10px] font-bold transition-all ${selectedSize === sz
-                              ? "bg-blue-600 text-white shadow-md shadow-blue-500/25"
-                              : "bg-white/5 text-white/70 hover:bg-white/10 border border-white/10"
+                            ? "bg-blue-600 text-white shadow-md shadow-blue-500/25"
+                            : "bg-white/5 text-white/70 hover:bg-white/10 border border-white/10"
                             }`}
                         >
                           {sz}
@@ -1622,8 +1622,8 @@ function StorefrontContent() {
                             key={clr}
                             onClick={() => setSelectedColor(clr)}
                             className={`h-8 pl-1 pr-2 rounded-[8px] text-[10px] font-bold flex items-center gap-1.5 transition-all ${isActive
-                                ? "bg-blue-600 text-white shadow-md shadow-blue-500/25"
-                                : "bg-white/5 text-white/70 hover:bg-white/10 border border-white/10"
+                              ? "bg-blue-600 text-white shadow-md shadow-blue-500/25"
+                              : "bg-white/5 text-white/70 hover:bg-white/10 border border-white/10"
                               }`}
                           >
                             <span
@@ -2116,20 +2116,20 @@ function StorefrontContent() {
                                         <div key={stop.key} className="flex flex-col items-center gap-1">
                                           <div
                                             className={`w-5 h-5 rounded-full border-2 flex items-center justify-center z-10 transition-all ${current
-                                                ? "bg-blue-500 border-blue-500 text-white shadow-md shadow-blue-500/40 scale-110"
-                                                : done
-                                                  ? "bg-emerald-500 border-emerald-500 text-white"
-                                                  : "bg-[#141416] border-white/20 text-white/30"
+                                              ? "bg-blue-500 border-blue-500 text-white shadow-md shadow-blue-500/40 scale-110"
+                                              : done
+                                                ? "bg-emerald-500 border-emerald-500 text-white"
+                                                : "bg-[#141416] border-white/20 text-white/30"
                                               }`}
                                           >
                                             {done ? <Check className="w-2.5 h-2.5" /> : <StopIcon className="w-2.5 h-2.5" />}
                                           </div>
                                           <span
                                             className={`text-[8px] font-bold text-center leading-tight ${current
-                                                ? "text-blue-400"
-                                                : done
-                                                  ? "text-emerald-400"
-                                                  : "text-white/40"
+                                              ? "text-blue-400"
+                                              : done
+                                                ? "text-emerald-400"
+                                                : "text-white/40"
                                               }`}
                                           >
                                             {isAr ? stop.labelAr : stop.labelEn}
@@ -2512,8 +2512,8 @@ function StorefrontContent() {
                           <button
                             onClick={() => toggleFollowStore(s.id)}
                             className={`text-[9px] px-2 py-1 rounded font-bold ${viewerFollowedStores.includes(s.id)
-                                ? "bg-emerald-500/15 text-emerald-400"
-                                : "bg-white/5 text-white/60"
+                              ? "bg-emerald-500/15 text-emerald-400"
+                              : "bg-white/5 text-white/60"
                               }`}
                           >
                             {viewerFollowedStores.includes(s.id) ? (isAr ? "متابَع" : "Following") : "+"}
