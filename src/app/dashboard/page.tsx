@@ -1,120 +1,174 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardLanguageProvider } from "@/lib/i18n";
+import { useDash } from "@/lib/useDash";
+import { useStoreOwnerData } from "@/lib/useStoreOwnerData";
 import { DashboardModalProvider } from "@/components/dashboard/DashboardModalContext";
 import { TopNav } from "@/components/dashboard/TopNav";
 import { KpiStrip } from "@/components/dashboard/KpiStrip";
-import { ActionHub } from "@/components/dashboard/ActionHub";
-import { PlanCard } from "@/components/dashboard/PlanCard";
-import { LiveVisitors } from "@/components/dashboard/LiveVisitors";
-import { TeamRoster } from "@/components/dashboard/TeamRoster";
-import { PosNodeManager } from "@/components/dashboard/PosNodeManager";
+import { OverviewPanel } from "@/components/dashboard/OverviewPanel";
 import { RecentOrders } from "@/components/dashboard/RecentOrders";
-import { RevenueLedger } from "@/components/dashboard/RevenueLedger";
-import { PaymentAnalytics } from "@/components/dashboard/PaymentAnalytics";
 import { InventoryPanel } from "@/components/dashboard/InventoryPanel";
 import { WholesalerPanel } from "@/components/dashboard/WholesalerPanel";
-import { CustomerBase } from "@/components/dashboard/CustomerBase";
 import { Discounts } from "@/components/dashboard/Discounts";
-import { FinancialLedger } from "@/components/dashboard/FinancialLedger";
-import { AdTracking } from "@/components/dashboard/AdTracking";
-import { ProductReviews } from "@/components/dashboard/ProductReviews";
+import { FinancePanel } from "@/components/dashboard/FinancePanel";
+import { CustomersPanel } from "@/components/dashboard/CustomersPanel";
 import { StorefrontConfig } from "@/components/dashboard/StorefrontConfig";
+import { PosNodeManager } from "@/components/dashboard/PosNodeManager";
+import { AdTracking } from "@/components/dashboard/AdTracking";
+import { TeamRoster } from "@/components/dashboard/TeamRoster";
+import { focusRing, scrollNone } from "@/components/dashboard/ui/styles";
+
+type SectionId = "overview" | "orders" | "catalog" | "finance" | "customers" | "store";
+const SECTION_IDS: SectionId[] = ["overview", "orders", "catalog", "finance", "customers", "store"];
+
+const readHash = (): SectionId => {
+  const h = (typeof window !== "undefined" ? window.location.hash : "").replace("#", "") as SectionId;
+  return SECTION_IDS.includes(h) ? h : "overview";
+};
+
+function SectionBar({
+  active,
+  onChange,
+  pendingOrders,
+}: {
+  active: SectionId;
+  onChange: (id: SectionId) => void;
+  pendingOrders: number;
+}) {
+  const { tr } = useDash();
+
+  const items: { id: SectionId; label: string; icon: string; badge?: number }[] = [
+    { id: "overview", label: tr("Overview", "نظرة عامة"), icon: "bi-speedometer2" },
+    { id: "orders", label: tr("Orders", "الطلبات"), icon: "bi-bag-check", badge: pendingOrders },
+    { id: "catalog", label: tr("Catalog", "الكتالوج"), icon: "bi-box-seam" },
+    { id: "finance", label: tr("Finance", "المالية"), icon: "bi-cash-stack" },
+    { id: "customers", label: tr("Customers", "العملاء"), icon: "bi-people" },
+    { id: "store", label: tr("Store", "المتجر"), icon: "bi-shop" },
+  ];
+
+  return (
+    <nav
+      aria-label={tr("Dashboard sections", "أقسام لوحة التحكم")}
+      className="sticky top-14 sm:top-16 z-40 bg-[var(--color-canvas)]/90 backdrop-blur-xl border-b border-[var(--color-border-subtle)]"
+    >
+      <div className={`max-w-[1400px] mx-auto px-3 sm:px-6 lg:px-8 flex gap-1 overflow-x-auto ${scrollNone}`}>
+        {items.map((it) => {
+          const on = it.id === active;
+          return (
+            <button
+              key={it.id}
+              type="button"
+              onClick={() => onChange(it.id)}
+              aria-current={on ? "page" : undefined}
+              className={`relative shrink-0 flex items-center gap-1.5 px-3 py-3 text-xs font-bold font-ui transition-colors rounded-t-lg ${focusRing} ${
+                on ? "text-[var(--color-primary-light)]" : "text-[var(--color-text-muted)]"
+              }`}
+            >
+              <i className={`bi ${it.icon} text-[13px]`} aria-hidden="true" />
+              <span>{it.label}</span>
+              {!!it.badge && (
+                <span className="min-w-4 h-4 px-1 rounded-full text-[9px] leading-4 text-center text-white bg-[var(--color-status-amber)]">
+                  {it.badge}
+                </span>
+              )}
+              <span
+                className={`absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-[var(--color-primary-light)] transition-transform duration-200 ${
+                  on ? "scale-x-100" : "scale-x-0"
+                }`}
+              />
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
 
 function DashboardContent() {
   const router = useRouter();
+  const { orders } = useStoreOwnerData();
   const [globalSearch, setGlobalSearch] = useState("");
+  const [section, setSection] = useState<SectionId>("overview");
 
+  /* Auth / role routing (unchanged behaviour) */
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedRole = localStorage.getItem("matager_user_role");
-      const activeUid = localStorage.getItem("matager_active_user_id");
-      const currentStoreId =
-        localStorage.getItem("matager_current_store_id") ||
-        localStorage.getItem("matager_active_store_id");
+    if (typeof window === "undefined") return;
+    const storedRole = localStorage.getItem("matager_user_role");
+    const activeUid = localStorage.getItem("matager_active_user_id");
+    const currentStoreId = localStorage.getItem("matager_current_store_id") || localStorage.getItem("matager_active_store_id");
 
-      if (storedRole === "wholesaler") {
-        const wid = localStorage.getItem("matager_wholesaler_id") || "wholesaler_clothing_01";
-        router.push(`/wholesaler?wholesalerId=${wid}`);
-        return;
-      } else if (storedRole === "cashier") {
-        router.push("/cashier");
-        return;
-      }
-
-      // Only authenticated users can access the dashboard from landing or other entry points
-      if (!activeUid && !storedRole && !currentStoreId) {
-        router.push("/?auth=signin");
-      }
+    if (storedRole === "wholesaler") {
+      const wid = localStorage.getItem("matager_wholesaler_id") || "wholesaler_clothing_01";
+      router.push(`/wholesaler?wholesalerId=${wid}`);
+      return;
     }
+    if (storedRole === "cashier") {
+      router.push("/cashier");
+      return;
+    }
+    if (!activeUid && !storedRole && !currentStoreId) router.push("/?auth=signin");
   }, [router]);
 
+  /* Section <-> URL hash, so links like /dashboard#orders (and the nav's quick links) work. */
+  useEffect(() => {
+    setSection(readHash());
+    const onHash = () => {
+      setSection(readHash());
+      window.scrollTo({ top: 0 });
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  const changeSection = useCallback((id: SectionId) => {
+    setSection(id);
+    window.history.replaceState(null, "", `#${id}`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const pending = orders.filter((o) => o.status === "Pending").length;
+
   return (
-    <div className="min-h-screen bg-[var(--color-canvas)] text-[var(--color-text-primary)] font-ui selection:bg-[var(--color-primary-light)]/30 selection:text-white pb-16 transition-colors duration-200">
-      {/* Sticky Top Navbar */}
-      <TopNav
-        searchValue={globalSearch}
-        onSearchChange={setGlobalSearch}
-      />
+    <div className="min-h-screen bg-[var(--color-canvas)] text-[var(--color-text-primary)] font-ui selection:bg-[var(--color-primary-light)]/30 pb-[max(4rem,env(safe-area-inset-bottom))] transition-colors duration-200">
+      <TopNav searchValue={globalSearch} onSearchChange={setGlobalSearch} />
+      <SectionBar active={section} onChange={changeSection} pendingOrders={pending} />
 
-      {/* Main Dashboard Canvas */}
-      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* 1. Welcome Strip & 4 KPIs */}
-        <KpiStrip />
+      <main className="max-w-[1400px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+        {/* key => the whole section fades in when the tab changes */}
+        <div key={section} className="space-y-3 sm:space-y-5 animate-in fade-in duration-200">
+          {section === "overview" && (
+            <>
+              <KpiStrip />
+              <OverviewPanel />
+            </>
+          )}
 
-        {/* 2 & 3. Immediate Action Hub + Current Plan Card */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <ActionHub />
-          </div>
-          <div className="lg:col-span-1">
-            <PlanCard />
-          </div>
+          {section === "orders" && <RecentOrders externalFilter={globalSearch} />}
+
+          {section === "catalog" && (
+            <>
+              <InventoryPanel externalFilter={globalSearch} />
+              <Discounts />
+              <WholesalerPanel />
+            </>
+          )}
+
+          {section === "finance" && <FinancePanel />}
+
+          {section === "customers" && <CustomersPanel />}
+
+          {section === "store" && (
+            <>
+              <StorefrontConfig />
+              <PosNodeManager />
+              <TeamRoster />
+              <AdTracking />
+            </>
+          )}
         </div>
-
-        {/* 4. Live Visitors Real-Time Telemetry */}
-        <LiveVisitors />
-
-        {/* 5. Team Overview & Roster */}
-        <TeamRoster />
-
-        {/* 5.5 POS Cashier Terminal Nodes & In-Store Revenue Split */}
-        <PosNodeManager />
-
-        {/* 6. Recent Orders (Summary, Latest Order, Stuck Carts + Orders Table) */}
-        <RecentOrders externalFilter={globalSearch} />
-
-        {/* 7. Annual Revenue Ledger */}
-        <RevenueLedger />
-
-        {/* 8. Payment Analytics & Transactions */}
-        <PaymentAnalytics />
-
-        {/* 9. Inventory Management (Capacity, Live Products, Settings) */}
-        <InventoryPanel />
-
-        {/* 9.5 Wholesaler Directory & Category-Gated Catalog */}
-        <WholesalerPanel />
-
-        {/* 10. Customer Base & Performance */}
-        <CustomerBase />
-
-        {/* 11. Store Discounts & Promo Codes */}
-        <Discounts />
-
-        {/* 12. Financial Ledger (Funds, Escrow, Expenses) */}
-        <FinancialLedger />
-
-        {/* 13. Ad Tracking & Pixel Health */}
-        <AdTracking />
-
-        {/* 14. Product Reviews & Customer Feedback */}
-        <ProductReviews />
-
-        {/* 15. Storefront Configuration (Domain, Themes, Logistics) */}
-        <StorefrontConfig />
       </main>
     </div>
   );

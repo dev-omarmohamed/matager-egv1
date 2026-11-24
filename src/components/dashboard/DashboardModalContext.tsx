@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
 import {
   DashboardCrudModal,
   CrudMode,
@@ -28,46 +28,39 @@ export interface DashboardModalContextValue {
 
 const DashboardModalContext = createContext<DashboardModalContextValue | undefined>(undefined);
 
-export const DashboardModalProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const DashboardModalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [modalConfig, setModalConfig] = useState<OpenModalOptions>({
-    mode: "create",
-    entity: "product",
-  });
+  // The last config is intentionally kept after closing, so the exit animation still has content to show.
+  const [config, setConfig] = useState<OpenModalOptions>({ mode: "create", entity: "product" });
 
   const openCrudModal = useCallback((options: OpenModalOptions) => {
-    setModalConfig(options);
+    setConfig(options);
     setIsOpen(true);
   }, []);
 
-  const closeCrudModal = useCallback(() => {
-    setIsOpen(false);
-  }, []);
+  const closeCrudModal = useCallback(() => setIsOpen(false), []);
+
+  const value = useMemo(
+    () => ({ openCrudModal, closeCrudModal, isModalOpen: isOpen }),
+    [openCrudModal, closeCrudModal, isOpen]
+  );
 
   return (
-    <DashboardModalContext.Provider
-      value={{
-        openCrudModal,
-        closeCrudModal,
-        isModalOpen: isOpen,
-      }}
-    >
+    <DashboardModalContext.Provider value={value}>
       {children}
       <DashboardCrudModal
         isOpen={isOpen}
         onClose={closeCrudModal}
-        mode={modalConfig.mode}
-        entity={modalConfig.entity}
-        title={modalConfig.title}
-        description={modalConfig.description}
-        initialData={modalConfig.initialData}
-        fields={modalConfig.fields}
-        onSubmit={modalConfig.onSubmit}
-        onDelete={modalConfig.onDelete}
+        mode={config.mode}
+        entity={config.entity}
+        title={config.title}
+        description={config.description}
+        initialData={config.initialData}
+        fields={config.fields}
+        onSubmit={config.onSubmit}
+        onDelete={config.onDelete}
       >
-        {modalConfig.children}
+        {config.children}
       </DashboardCrudModal>
     </DashboardModalContext.Provider>
   );

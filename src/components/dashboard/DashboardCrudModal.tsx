@@ -1,24 +1,8 @@
 "use client";
 
-import React, { useEffect, useState, useId } from "react";
-import { useDashboardLanguage } from "@/lib/i18n";
-import { useTheme } from "@/theme/useTheme";
-import {
-  X,
-  AlertTriangle,
-  Check,
-  Trash2,
-  Edit,
-  Eye,
-  PlusCircle,
-  Loader2,
-  Package,
-  ShoppingCart,
-  Percent,
-  Monitor,
-  Users,
-  Info,
-} from "lucide-react";
+import React, { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useDash } from "@/lib/useDash";
+import { inputCls, btnPrimary, btnGhost, focusRing } from "./ui/styles";
 
 export type CrudMode = "create" | "edit" | "delete" | "view";
 
@@ -59,15 +43,29 @@ export interface DashboardCrudModalProps {
   error?: string | null;
 }
 
-const ENTITY_ICONS: Record<string, React.ElementType> = {
-  product: Package,
-  order: ShoppingCart,
-  discount: Percent,
-  pos_node: Monitor,
-  team_member: Users,
-  customer: Users,
-  custom: Info,
+const ENTITY_ICONS: Record<string, string> = {
+  product: "bi-box-seam",
+  order: "bi-bag-check",
+  discount: "bi-percent",
+  pos_node: "bi-pc-display",
+  team_member: "bi-people",
+  customer: "bi-person",
+  custom: "bi-info-circle",
 };
+
+const ENTITY_LABELS: Record<string, { en: string; ar: string }> = {
+  product: { en: "Product", ar: "منتج" },
+  order: { en: "Order", ar: "طلب" },
+  discount: { en: "Discount Code", ar: "كوبون خصم" },
+  pos_node: { en: "POS Terminal", ar: "نقطة بيع POS" },
+  team_member: { en: "Team Member", ar: "عضو فريق" },
+  customer: { en: "Customer", ar: "عميل" },
+  custom: { en: "Record", ar: "سجل" },
+};
+
+const EXIT_MS = 280;
+const FOCUSABLE =
+  'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
 export const DashboardCrudModal: React.FC<DashboardCrudModalProps> = ({
   isOpen,
@@ -84,167 +82,142 @@ export const DashboardCrudModal: React.FC<DashboardCrudModalProps> = ({
   loading: externalLoading = false,
   error: externalError = null,
 }) => {
-  const { locale, dir } = useDashboardLanguage();
-  const { theme } = useTheme();
-  const isRtl = dir === "rtl" || locale === "ar";
+  const { dir, isRtl, tr } = useDash();
   const titleId = useId();
   const descId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
   const [formData, setFormData] = useState<Record<string, any>>({});
-  const [internalLoading, setInternalLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [internalError, setInternalError] = useState<string | null>(null);
 
-  // Sync formData whenever modal opens or initialData changes
+  /* Two-phase mount: `mounted` keeps the DOM alive while `shown` drives the CSS transition,
+     so the sheet slides OUT as smoothly as it slides in. */
+  const [mounted, setMounted] = useState(isOpen);
+  const [shown, setShown] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
-      const defaultState: Record<string, any> = { ...initialData };
-      fields.forEach((f) => {
-        if (defaultState[f.name] === undefined && f.defaultValue !== undefined) {
-          defaultState[f.name] = f.defaultValue;
-        }
-      });
-      setFormData(defaultState);
-      setInternalError(null);
+      returnFocusRef.current = document.activeElement as HTMLElement | null;
+      setMounted(true);
+      const raf = requestAnimationFrame(() => requestAnimationFrame(() => setShown(true)));
+      return () => cancelAnimationFrame(raf);
     }
-  }, [isOpen, initialData, fields]);
-
-  // Handle ESC key to dismiss modal
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
-
-  // Prevent background scrolling when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      const originalOverflow = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = originalOverflow;
-      };
-    }
+    setShown(false);
+    const timer = setTimeout(() => {
+      setMounted(false);
+      returnFocusRef.current?.focus?.();
+    }, EXIT_MS);
+    return () => clearTimeout(timer);
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  /* Seed the form once per opening (not on every parent re-render, which would wipe typing). */
+  useEffect(() => {
+    if (!isOpen) return;
+    const seed: Record<string, any> = { ...initialData };
+    fields.forEach((f) => {
+      if (seed[f.name] === undefined && f.defaultValue !== undefined) seed[f.name] = f.defaultValue;
+    });
+    setFormData(seed);
+    setInternalError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
-  const isBusy = externalLoading || internalLoading;
-  const currentError = externalError || internalError;
+  /* Move focus into the sheet when it opens. */
+  useEffect(() => {
+    if (!shown) return;
+    const first = panelRef.current?.querySelector<HTMLElement>("input,select,textarea");
+    (first ?? panelRef.current)?.focus({ preventScroll: true });
+  }, [shown]);
 
-  const EntityIcon = ENTITY_ICONS[entity] || Info;
-
-  // Localized default titles
-  const getDefaultTitle = () => {
-    if (title) return title;
-    const entityLabels: Record<string, { en: string; ar: string }> = {
-      product: { en: "Product", ar: "منتج" },
-      order: { en: "Order", ar: "طلب" },
-      discount: { en: "Discount Code", ar: "كوبون خصم" },
-      pos_node: { en: "POS Terminal", ar: "نقطة بيع POS" },
-      team_member: { en: "Team Member", ar: "عضو فريق" },
-      customer: { en: "Customer", ar: "عميل" },
-      custom: { en: "Record", ar: "سجل" },
+  /* Escape closes, Tab stays inside the sheet. */
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab" || !panelRef.current) return;
+      const nodes = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
+      if (!nodes.length) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
-    const e = entityLabels[entity] || { en: entity, ar: entity };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isOpen, onClose]);
 
-    if (isRtl) {
-      switch (mode) {
-        case "create":
-          return `إضافة ${e.ar} جديد`;
-        case "edit":
-          return `تعديل ${e.ar}`;
-        case "delete":
-          return `تأكيد حذف ${e.ar}`;
-        case "view":
-          return `تفاصيل ${e.ar}`;
-      }
-    } else {
-      switch (mode) {
-        case "create":
-          return `Add New ${e.en}`;
-        case "edit":
-          return `Edit ${e.en}`;
-        case "delete":
-          return `Delete ${e.en}`;
-        case "view":
-          return `${e.en} Details`;
-      }
-    }
-  };
+  /* Lock page scroll while any part of the modal is on screen. */
+  useEffect(() => {
+    if (!mounted) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mounted]);
 
-  const getDefaultDescription = () => {
-    if (description) return description;
-    if (isRtl) {
-      switch (mode) {
-        case "create":
-          return "أدخل البيانات المطلوبة لإنشاء السجل في قاعدة البيانات الحية.";
-        case "edit":
-          return "قم بتحديث الحقول واضغط على حفظ لتطبيق التغييرات فوراً.";
-        case "delete":
-          return "هل أنت متأكد من رغبتك في حذف هذا العنصر؟ لا يمكن التراجع عن هذا الإجراء.";
-        case "view":
-          return "عرض كامل لبيانات السجل الحالي من نظام متجر.";
-      }
-    } else {
-      switch (mode) {
-        case "create":
-          return "Fill in the required fields to create this entry in live database.";
-        case "edit":
-          return "Update the fields and save to apply changes immediately.";
-        case "delete":
-          return "Are you sure you want to delete this item? This action cannot be undone.";
-        case "view":
-          return "Full view of this record from Matager Realtime Database.";
-      }
-    }
-  };
+  const setField = useCallback((name: string, value: any) => {
+    setFormData((p) => ({ ...p, [name]: value }));
+  }, []);
 
-  const handleInputChange = (name: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  if (!mounted) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (mode === "view") {
+  const isBusy = externalLoading || busy;
+  const currentError = externalError || internalError;
+  const isDelete = mode === "delete";
+
+  const label = ENTITY_LABELS[entity] || { en: String(entity), ar: String(entity) };
+  const defaultTitle = {
+    create: tr(`Add New ${label.en}`, `إضافة ${label.ar} جديد`),
+    edit: tr(`Edit ${label.en}`, `تعديل ${label.ar}`),
+    delete: tr(`Delete ${label.en}`, `تأكيد حذف ${label.ar}`),
+    view: tr(`${label.en} Details`, `تفاصيل ${label.ar}`),
+  }[mode];
+  const defaultDesc = {
+    create: tr("Fill in the required fields to create this entry.", "أدخل البيانات المطلوبة لإنشاء السجل."),
+    edit: tr("Update the fields and save to apply changes immediately.", "حدّث الحقول واضغط حفظ لتطبيق التغييرات فوراً."),
+    delete: tr(
+      "Are you sure you want to delete this item? This action cannot be undone.",
+      "هل أنت متأكد من رغبتك في الحذف؟ لا يمكن التراجع عن هذا الإجراء."
+    ),
+    view: tr("Full view of this record.", "عرض كامل لبيانات السجل."),
+  }[mode];
+
+  const run = async (fn?: () => Promise<void> | void, fallback = "Something went wrong.") => {
+    if (!fn) return onClose();
+    try {
+      setBusy(true);
+      setInternalError(null);
+      await fn();
       onClose();
-      return;
-    }
-    if (mode === "delete") {
-      if (onDelete) {
-        try {
-          setInternalLoading(true);
-          setInternalError(null);
-          await onDelete();
-          onClose();
-        } catch (err: any) {
-          setInternalError(err?.message || "Failed to delete record.");
-        } finally {
-          setInternalLoading(false);
-        }
-      } else {
-        onClose();
-      }
-      return;
-    }
-
-    if (onSubmit) {
-      try {
-        setInternalLoading(true);
-        setInternalError(null);
-        await onSubmit(formData);
-        onClose();
-      } catch (err: any) {
-        setInternalError(err?.message || "Failed to save record.");
-      } finally {
-        setInternalLoading(false);
-      }
+    } catch (err: any) {
+      setInternalError(err?.message || fallback);
+    } finally {
+      setBusy(false);
     }
   };
+
+  const handleSubmit = (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
+    if (mode === "view") return onClose();
+    if (isDelete) return run(onDelete, tr("Failed to delete record.", "تعذّر حذف السجل."));
+    if (onSubmit) return run(() => onSubmit(formData), tr("Failed to save record.", "تعذّر حفظ السجل."));
+    onClose();
+  };
+
+  const iconTone = isDelete
+    ? "bg-[var(--color-status-red-bg)] border-[var(--color-status-red-border)] text-[var(--color-status-red)]"
+    : "bg-[var(--color-primary-light)]/10 border-[var(--color-primary-light)]/25 text-[var(--color-primary-light)]";
 
   return (
     <div
@@ -253,188 +226,163 @@ export const DashboardCrudModal: React.FC<DashboardCrudModalProps> = ({
       aria-labelledby={titleId}
       aria-describedby={descId}
       dir={dir}
-      className="fixed inset-0 z-50 overflow-hidden"
+      className="fixed inset-0 z-[60]"
     >
-      {/* ─── BACKDROP (Reactive to Store Owner's Active Theme) ─── */}
+      {/* Backdrop */}
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm transition-opacity duration-300 ease-out animate-in fade-in"
         aria-hidden="true"
+        className={`absolute inset-0 bg-black/55 backdrop-blur-sm transition-opacity duration-300 motion-reduce:transition-none ${
+          shown ? "opacity-100" : "opacity-0"
+        }`}
       />
 
-      {/* ─── MODAL PANEL (Direction-Aware & Responsive) ───
-          Desktop (md: >= 768px):
-            - Takes half the viewport width (50%): w-full md:w-1/2
-            - LTR: Anchored right-0, slides in from right (translate-x-full -> translate-x-0)
-            - RTL: Anchored left-0, slides in from left (-translate-x-full -> translate-x-0)
-            - Full height drawer: top-0 bottom-0 h-full
-          Mobile (< 768px):
-            - Spans full width: w-full
-            - Slides in from top: top-0 inset-x-0 max-h-[92vh] (-translate-y-full -> translate-y-0)
-      */}
+      {/* Sheet: bottom sheet on phones, side drawer from >= md (flips automatically in RTL) */}
       <div
-        className={`fixed top-0 bottom-0 z-50 flex flex-col w-full md:w-1/2 bg-[var(--color-surface)] border-[var(--color-border)] shadow-2xl overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] transform will-change-transform ${
-          isRtl
-            ? "left-0 border-r md:border-r border-y md:border-y-0"
-            : "right-0 border-l md:border-l border-y md:border-y-0"
-        } max-md:max-h-[92vh] max-md:rounded-b-[24px] max-md:border-b max-md:border-x-0 max-md:top-0 max-md:inset-x-0 animate-in ${
-          isRtl ? "slide-in-from-left max-md:slide-in-from-top" : "slide-in-from-right max-md:slide-in-from-top"
-        }`}
-        style={{
-          boxShadow:
-            theme === "light"
-              ? "0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--color-border)"
-              : "0 25px 60px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px var(--color-border-subtle)",
-        }}
+        ref={panelRef}
+        tabIndex={-1}
+        className={`absolute inset-x-0 bottom-0 max-h-[92dvh] md:inset-x-auto md:end-0 md:top-0 md:bottom-0 md:max-h-none md:w-[min(520px,50vw)]
+          flex flex-col overflow-hidden outline-none
+          bg-[var(--color-surface)] border-t border-[var(--color-border)] md:border-t-0 md:border-s
+          rounded-t-[24px] md:rounded-none shadow-2xl
+          transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none will-change-transform
+          ${shown ? "translate-y-0 md:translate-x-0" : "translate-y-full md:translate-y-0 md:translate-x-full md:rtl:-translate-x-full"}`}
       >
-        {/* ─── MODAL HEADER ─── */}
-        <div className="p-4 sm:p-5 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)]/60 flex items-center justify-between gap-3 shrink-0">
+        {/* Grab handle (phones) */}
+        <div className="md:hidden pt-2 flex justify-center shrink-0" aria-hidden="true">
+          <span className="w-10 h-1 rounded-full bg-[var(--color-border)]" />
+        </div>
+
+        {/* Header */}
+        <div className="px-4 py-3 sm:px-5 sm:py-4 border-b border-[var(--color-border-subtle)] flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div
-              className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
-                mode === "delete"
-                  ? "bg-red-500/10 border-red-500/25 text-red-500"
-                  : "bg-[var(--color-primary-light)]/10 border-[var(--color-primary-light)]/25 text-[var(--color-primary-light)]"
-              }`}
-            >
-              {mode === "delete" ? (
-                <AlertTriangle className="w-5 h-5 text-red-500" />
-              ) : (
-                <EntityIcon className="w-5 h-5" />
-              )}
-            </div>
-            <div className="truncate">
-              <h2
-                id={titleId}
-                className="text-base sm:text-lg font-bold font-heading text-[var(--color-text-primary)] tracking-tight truncate"
-              >
-                {getDefaultTitle()}
+            <span className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${iconTone}`}>
+              <i className={`bi ${isDelete ? "bi-exclamation-triangle" : ENTITY_ICONS[entity] || "bi-info-circle"} text-base`} />
+            </span>
+            <div className="min-w-0">
+              <h2 id={titleId} className="text-base font-bold font-heading text-[var(--color-text-primary)] truncate">
+                {title || defaultTitle}
               </h2>
-              <p
-                id={descId}
-                className="text-xs text-[var(--color-text-muted)] font-subtitle truncate mt-0.5"
-              >
-                {getDefaultDescription()}
+              <p id={descId} className="text-[11px] text-[var(--color-text-muted)] font-subtitle truncate mt-0.5">
+                {description || defaultDesc}
               </p>
             </div>
           </div>
-
           <button
             type="button"
             onClick={onClose}
-            aria-label={isRtl ? "إغلاق النافذة" : "Close modal"}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-elevated)] border border-transparent hover:border-[var(--color-border-subtle)] transition-all shrink-0"
+            aria-label={tr("Close", "إغلاق")}
+            className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-[var(--color-text-muted)] ${focusRing}`}
           >
-            <X className="w-4 h-4" />
+            <i className="bi bi-x-lg text-sm" />
           </button>
         </div>
 
-        {/* ─── ERROR BANNER (IF ANY) ─── */}
         {currentError && (
-          <div className="p-3 bg-red-500/10 border-b border-red-500/20 text-red-500 text-xs flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
+          <div
+            role="alert"
+            className="px-4 py-2.5 flex items-center gap-2 text-xs border-b bg-[var(--color-status-red-bg)] border-[var(--color-status-red-border)] text-[var(--color-status-red)]"
+          >
+            <i className="bi bi-exclamation-circle shrink-0" />
             <span className="flex-1">{currentError}</span>
           </div>
         )}
 
-        {/* ─── MODAL BODY (SCROLLABLE) ─── */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
-          {children ? (
-            children
-          ) : mode === "delete" ? (
-            /* DELETE CONFIRMATION STATE */
-            <div className="p-4 sm:p-5 rounded-2xl bg-red-500/5 border border-red-500/20 space-y-3">
-              <div className="flex items-center gap-2.5 text-red-500 font-bold text-sm">
-                <AlertTriangle className="w-5 h-5 shrink-0" />
-                <span>{isRtl ? "تحذير: هذا الإجراء دائم" : "Warning: This action is permanent"}</span>
-              </div>
-              <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-                {getDefaultDescription()}
-              </p>
-              {initialData && Object.keys(initialData).length > 0 && (
-                <div className="mt-3 p-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] text-xs space-y-1">
-                  <div className="font-semibold text-[var(--color-text-primary)]">
-                    {initialData.name || initialData.title || initialData.code || initialData.id}
-                  </div>
-                  {initialData.id && (
-                    <div className="text-[10px] text-[var(--color-text-muted)] font-mono">
-                      ID: {initialData.id}
-                    </div>
-                  )}
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
+          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5 space-y-4">
+            {children ? (
+              children
+            ) : isDelete ? (
+              <div className="p-4 rounded-2xl space-y-2.5 bg-[var(--color-status-red-bg)] border border-[var(--color-status-red-border)]">
+                <div className="flex items-center gap-2 text-sm font-bold text-[var(--color-status-red)]">
+                  <i className="bi bi-exclamation-triangle" />
+                  <span>{tr("Warning: This action is permanent", "تحذير: هذا الإجراء دائم")}</span>
                 </div>
-              )}
-            </div>
-          ) : mode === "view" ? (
-            /* READ / VIEW READ-ONLY STATE */
-            <div className="space-y-4">
-              {fields.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">{defaultDesc}</p>
+                {Object.keys(initialData).length > 0 && (
+                  <div className="p-3 rounded-xl text-xs bg-[var(--color-surface)] border border-[var(--color-border)]">
+                    <div className="font-semibold text-[var(--color-text-primary)] break-words">
+                      {initialData.name || initialData.title || initialData.code || initialData.id}
+                    </div>
+                    {initialData.id && (
+                      <div dir="ltr" className="text-[10px] text-[var(--color-text-muted)] font-mono mt-0.5 text-start">
+                        ID: {initialData.id}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : mode === "view" ? (
+              fields.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {fields.map((f) => {
                     const val = formData[f.name];
                     return (
                       <div
                         key={f.name}
-                        className="p-3 rounded-xl bg-[var(--color-surface-elevated)] border border-[var(--color-border-subtle)] space-y-1"
+                        className="p-3 rounded-xl space-y-1 bg-[var(--color-surface-elevated)] border border-[var(--color-border-subtle)]"
                       >
                         <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] font-subtitle">
                           {f.label}
                         </span>
                         <div className="text-xs font-semibold text-[var(--color-text-primary)] break-words">
-                          {val !== undefined && val !== null && val !== ""
-                            ? typeof val === "boolean"
-                              ? val
-                                ? "Yes"
-                                : "No"
-                              : String(val)
-                            : "—"}
+                          {val === undefined || val === null || val === ""
+                            ? "—"
+                            : typeof val === "boolean"
+                            ? val
+                              ? tr("Yes", "نعم")
+                              : tr("No", "لا")
+                            : String(val)}
                         </div>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <div className="p-4 rounded-xl bg-[var(--color-surface-elevated)] border border-[var(--color-border-subtle)] text-xs space-y-2">
+                <div className="p-4 rounded-xl text-xs space-y-2 bg-[var(--color-surface-elevated)] border border-[var(--color-border-subtle)]">
                   {Object.entries(initialData).map(([k, v]) => (
-                    <div key={k} className="flex justify-between border-b border-[var(--color-border-subtle)]/40 pb-1.5 last:border-b-0">
-                      <span className="text-[var(--color-text-muted)] capitalize">{k.replace(/_/g, " ")}:</span>
-                      <span className="font-semibold text-[var(--color-text-primary)]">{typeof v === "object" ? JSON.stringify(v) : String(v)}</span>
+                    <div key={k} className="flex justify-between gap-3 pb-1.5 border-b border-[var(--color-border-subtle)] last:border-0">
+                      <span className="text-[var(--color-text-muted)] capitalize">{k.replace(/_/g, " ")}</span>
+                      <span className="font-semibold text-[var(--color-text-primary)] text-end break-words">
+                        {typeof v === "object" ? JSON.stringify(v) : String(v)}
+                      </span>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
-          ) : (
-            /* CREATE & EDIT FORM INPUTS */
-            <div className="space-y-4">
-              {fields.map((field) => {
+              )
+            ) : (
+              fields.map((field) => {
                 const value = formData[field.name] ?? "";
+                const disabled = field.disabled || isBusy;
                 return (
                   <div key={field.name} className="space-y-1.5">
-                    <label className="block text-xs font-bold text-[var(--color-text-primary)] font-subtitle">
-                      {field.label}
-                      {field.required && <span className="text-red-500 ms-1">*</span>}
-                    </label>
+                    {field.type !== "checkbox" && (
+                      <label className="block text-xs font-bold text-[var(--color-text-primary)] font-subtitle">
+                        {field.label}
+                        {field.required && <span className="text-[var(--color-status-red)] ms-1">*</span>}
+                      </label>
+                    )}
 
                     {field.type === "textarea" ? (
                       <textarea
                         rows={3}
                         value={value}
-                        onChange={(e) => handleInputChange(field.name, e.target.value)}
+                        onChange={(e) => setField(field.name, e.target.value)}
                         placeholder={field.placeholder}
-                        disabled={field.disabled || isBusy}
+                        disabled={disabled}
                         required={field.required}
-                        className="w-full bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-xl p-3 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary-light)] focus:ring-1 focus:ring-[var(--color-primary-light)]/30 font-ui transition-all"
+                        className={`${inputCls} resize-none`}
                       />
                     ) : field.type === "select" ? (
                       <select
                         value={value}
-                        onChange={(e) => handleInputChange(field.name, e.target.value)}
-                        disabled={field.disabled || isBusy}
+                        onChange={(e) => setField(field.name, e.target.value)}
+                        disabled={disabled}
                         required={field.required}
-                        className="w-full bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-xl p-2.5 text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-primary-light)] focus:ring-1 focus:ring-[var(--color-primary-light)]/30 font-ui transition-all"
+                        className={inputCls}
                       >
                         {field.options?.map((opt) => (
-                          <option key={opt.value} value={opt.value} className="bg-[var(--color-surface)] text-[var(--color-text-primary)]">
+                          <option key={String(opt.value)} value={opt.value}>
                             {opt.label}
                           </option>
                         ))}
@@ -444,92 +392,70 @@ export const DashboardCrudModal: React.FC<DashboardCrudModalProps> = ({
                         <input
                           type="checkbox"
                           checked={Boolean(value)}
-                          onChange={(e) => handleInputChange(field.name, e.target.checked)}
-                          disabled={field.disabled || isBusy}
-                          className="w-4 h-4 rounded text-[var(--color-primary-light)] bg-[var(--color-surface-elevated)] border-[var(--color-border)] focus:ring-0"
+                          onChange={(e) => setField(field.name, e.target.checked)}
+                          disabled={disabled}
+                          className="w-4 h-4 rounded accent-[var(--color-primary-light)]"
                         />
                         <span>{field.placeholder || field.label}</span>
                       </label>
                     ) : (
                       <input
                         type={field.type || "text"}
+                        inputMode={field.type === "number" ? "decimal" : undefined}
+                        dir={field.type === "email" || field.type === "tel" ? "ltr" : undefined}
                         value={value}
                         onChange={(e) =>
-                          handleInputChange(
+                          setField(
                             field.name,
                             field.type === "number" ? (e.target.value === "" ? "" : Number(e.target.value)) : e.target.value
                           )
                         }
                         placeholder={field.placeholder}
-                        disabled={field.disabled || isBusy}
+                        disabled={disabled}
                         required={field.required}
-                        className="w-full bg-[var(--color-surface-elevated)] border border-[var(--color-border)] rounded-xl py-2 px-3 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary-light)] focus:ring-1 focus:ring-[var(--color-primary-light)]/30 font-ui transition-all"
+                        className={`${inputCls} ${field.type === "email" || field.type === "tel" ? "text-start" : ""}`}
                       />
                     )}
 
                     {field.helpText && (
-                      <p className="text-[10px] text-[var(--color-text-muted)] font-subtitle">
-                        {field.helpText}
-                      </p>
+                      <p className="text-[10px] text-[var(--color-text-muted)] font-subtitle">{field.helpText}</p>
                     )}
                   </div>
                 );
-              })}
-            </div>
-          )}
+              })
+            )}
+          </div>
 
-          {/* ─── MODAL FOOTER ACTIONS ─── */}
-          <div className="pt-4 border-t border-[var(--color-border-subtle)] flex items-center justify-end gap-2.5 shrink-0">
+          {/* Footer: full-width buttons on phones, end-aligned on desktop */}
+          <div className="px-4 sm:px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-[var(--color-border-subtle)] bg-[var(--color-surface)] flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={onClose}
               disabled={isBusy}
-              className="px-4 py-2 rounded-xl text-xs font-bold font-ui text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] hover:bg-[var(--color-surface-hover)] transition-all"
+              className={`${btnGhost} flex-1 md:flex-none !px-4 !py-2.5 md:!py-2 !text-xs md:ms-auto`}
             >
-              {mode === "view"
-                ? isRtl
-                  ? "إغلاق"
-                  : "Close"
-                : isRtl
-                ? "إلغاء"
-                : "Cancel"}
+              {mode === "view" ? tr("Close", "إغلاق") : tr("Cancel", "إلغاء")}
             </button>
 
-            {mode === "delete" ? (
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={isBusy}
-                className="px-4 py-2 rounded-xl text-xs font-bold font-ui bg-red-600 hover:bg-red-700 active:scale-95 text-white transition-all shadow-md flex items-center gap-1.5"
-              >
-                {isBusy ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Trash2 className="w-3.5 h-3.5" />
-                )}
-                <span>{isRtl ? "تأكيد الحذف" : "Confirm Delete"}</span>
-              </button>
-            ) : mode === "view" ? null : (
+            {mode !== "view" && (
               <button
                 type="submit"
                 disabled={isBusy}
-                className="px-5 py-2 rounded-xl text-xs font-bold font-ui bg-gradient-to-r from-[var(--color-primary-dark)] to-[var(--color-primary-light)] hover:opacity-95 active:scale-95 text-white transition-all shadow-sm flex items-center gap-1.5"
+                className={`${btnPrimary} flex-1 md:flex-none !px-5 !py-2.5 md:!py-2 !text-xs ${
+                  isDelete ? "!bg-none !bg-[var(--color-status-red)]" : ""
+                }`}
               >
                 {isBusy ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : mode === "create" ? (
-                  <PlusCircle className="w-3.5 h-3.5" />
+                  <i className="bi bi-arrow-repeat animate-spin" />
                 ) : (
-                  <Check className="w-3.5 h-3.5" />
+                  <i className={`bi ${isDelete ? "bi-trash3" : mode === "create" ? "bi-plus-circle" : "bi-check2"}`} />
                 )}
                 <span>
-                  {mode === "create"
-                    ? isRtl
-                      ? "إضافة السجل"
-                      : "Create Record"
-                    : isRtl
-                    ? "حفظ التغييرات"
-                    : "Save Changes"}
+                  {isDelete
+                    ? tr("Confirm Delete", "تأكيد الحذف")
+                    : mode === "create"
+                    ? tr("Create Record", "إضافة السجل")
+                    : tr("Save Changes", "حفظ التغييرات")}
                 </span>
               </button>
             )}

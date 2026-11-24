@@ -16,21 +16,20 @@ src/
 ├── components/
 │   ├── dashboard/
 │   │   ├── TopNav.tsx             # Sticky navbar (Logo, breadcrumb, search, EN/AR, theme, avatar)
-│   │   ├── KpiStrip.tsx           # Welcome greeting + 4 KPI cards (with sparklines & shimmer skeletons)
-│   │   ├── ActionHub.tsx          # Snap-scroll action cards + Default Domain row
-│   │   ├── PlanCard.tsx           # Matager-100 usage bar + Upgrade button
-│   │   ├── LiveVisitors.tsx       # Real-time counter + 4 mini-metrics + sources & devices
-│   │   ├── TeamRoster.tsx         # 4-member roster with role pills + Add Member button
-│   │   ├── RecentOrders.tsx       # 3-drawer stacked collapsibles + sendCartReminder() + orders table
-│   │   ├── RevenueLedger.tsx      # Year switcher (2025/2026), monthly breakdown, finalized pills
-│   │   ├── PaymentAnalytics.tsx   # 3 stat tiles, transaction history, captured/refunded, pagination
-│   │   ├── InventoryPanel.tsx     # 3 sub-tabs: Capacity & Health, Live Products, Stock Settings
-│   │   ├── CustomerBase.tsx       # 1,284 total, +12% growth, 142 new joins, 71% goal bar
-│   │   ├── Discounts.tsx          # Promo codes, site-wide sales, gift cards, SUMMER25 rows
-│   │   ├── FinancialLedger.tsx    # 3-column financial grid: Funds, Pending, Expenses
+│   │   ├── KpiStrip.tsx           # Welcome greeting + 4 KPI cards (with sparklines & trend arrows)
+│   │   ├── OverviewPanel.tsx      # Consolidated ActionHub, PlanCard & Domain, Live telemetry
+│   │   ├── RecentOrders.tsx       # Live orders list, stage filters, CRUD modal integration
+│   │   ├── InventoryPanel.tsx     # Stock management, live products, CRUD modal integration
+│   │   ├── Discounts.tsx          # Promo codes, discounts list, CRUD modal integration
+│   │   ├── WholesalerPanel.tsx    # B2B supplier inquiries & catalog orders
+│   │   ├── FinancePanel.tsx       # Consolidated Revenue Ledger, Payment Analytics, Payouts
+│   │   ├── CustomersPanel.tsx     # Consolidated Customer Base & Product Reviews
+│   │   ├── StorefrontConfig.tsx   # FastCart / 3D Bento modes, themes, logistics config
+│   │   ├── PosNodeManager.tsx     # POS cashier terminals management & provisioning
+│   │   ├── TeamRoster.tsx         # Store staff & role permissions
 │   │   ├── AdTracking.tsx         # Pixel health live, Meta, TikTok, GA4 status
-│   │   ├── ProductReviews.tsx     # Searchable feedback list, Air Max 270 by Michael R.
-│   │   └── StorefrontConfig.tsx   # Custom domain, themes, carrier integration, internal fleet
+│   │   ├── DashboardCrudModal.tsx # Direction-aware, theme-reactive universal CRUD modal
+│   │   └── ui/                    # Design system primitives (Panel, Stat, EmptyState, Switch, Collapse, styles, tones)
 │   ├── ui/
 │   │   ├── Collapsible.tsx        # Pure-CSS peer-checkbox pattern (Zero JS required)
 │   │   ├── StatusPill.tsx         # 8px font-black uppercase status indicators
