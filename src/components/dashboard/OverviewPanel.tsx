@@ -13,21 +13,22 @@ import { surface, divider, eyebrow, btnPrimary, btnGhost, focusRing } from "./ui
 const stripLeadingNumber = (s: string) => s.replace(/^\s*\d+\s*/, "");
 
 const ActionTile: React.FC<{
-  tone: Tone;
   icon: string;
   count: number;
   label: string;
   desc: string;
-}> = ({ tone, icon, count, label, desc }) => (
-  <div className={`min-w-0 rounded-xl border px-2.5 py-2 sm:px-3 sm:py-2.5 ${TONES[tone].box}`}>
-    <div className="flex items-center justify-between gap-1">
-      <span className="text-lg sm:text-xl font-bold font-heading leading-none text-[var(--color-text-primary)]">{count}</span>
-      <i className={`bi ${icon} text-base leading-none ${TONES[tone].text}`} aria-hidden="true" />
+}> = ({ icon, count, label, desc }) => (
+  <div className="min-w-0 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-3 sm:p-4 transition-all duration-200 hover:-translate-y-[2px] hover:border-[var(--color-border)] hover:shadow-sm">
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-xl sm:text-2xl font-bold font-heading leading-none text-[var(--color-text-primary)]">{count}</span>
+      <span className="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--color-primary-light)]/10 text-[var(--color-primary-light)] border border-[var(--color-primary-light)]/20 shrink-0">
+        <i className={`bi ${icon} text-sm leading-none`} aria-hidden="true" />
+      </span>
     </div>
-    <p className="mt-1.5 text-[11px] font-bold font-heading leading-tight text-[var(--color-text-primary)] line-clamp-2 sm:truncate">
+    <p className="mt-2 text-xs font-bold font-heading leading-tight text-[var(--color-text-primary)] line-clamp-2 sm:truncate">
       {stripLeadingNumber(label)}
     </p>
-    <p className="hidden sm:block text-[10px] font-subtitle text-[var(--color-text-muted)] truncate">{desc}</p>
+    <p className="hidden sm:block text-[11px] font-subtitle text-[var(--color-text-muted)] mt-0.5 truncate">{desc}</p>
   </div>
 );
 
@@ -39,7 +40,7 @@ const BreakdownRow: React.FC<{
   value: string;
   last?: boolean;
 }> = ({ dot, icon, iconClass = "", label, value, last }) => (
-  <div className={`flex items-center justify-between gap-2 py-1 text-xs ${last ? "" : `border-b ${divider}`}`}>
+  <div className={`flex items-center justify-between gap-2 py-1.5 text-xs ${last ? "" : `border-b ${divider}`}`}>
     <span className="flex items-center gap-2 min-w-0 text-[var(--color-text-secondary)]">
       {dot && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />}
       {icon && <i className={`bi ${icon} text-xs shrink-0 ${iconClass}`} aria-hidden="true" />}
@@ -70,100 +71,107 @@ export const OverviewPanel: React.FC = () => {
     <section className={`${surface} overflow-hidden`}>
       {/* Row 1: actions + plan */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <div className="p-3 sm:p-4">
-          <h3 className={`${eyebrow} mb-2.5`}>{t.actionHub.title}</h3>
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            <ActionTile tone="amber" icon="bi-clock-history" count={pendingOrdersCount} label={t.actionHub.pendingOrders} desc={t.actionHub.pendingDesc} />
-            <ActionTile tone="blue" icon="bi-cart-x" count={stuckCartsCount} label={t.actionHub.stuckCarts} desc={t.actionHub.stuckDesc} />
-            <ActionTile tone="red" icon="bi-arrow-return-left" count={refundRequestsCount} label={t.actionHub.refundRequests} desc={t.actionHub.refundDesc} />
+        <div className="p-4 sm:p-5 lg:p-6">
+          <h3 className={`${eyebrow} mb-3`}>{t.actionHub.title}</h3>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3.5">
+            <ActionTile icon="bi-clock-history" count={pendingOrdersCount} label={t.actionHub.pendingOrders} desc={t.actionHub.pendingDesc} />
+            <ActionTile icon="bi-cart-x" count={stuckCartsCount} label={t.actionHub.stuckCarts} desc={t.actionHub.stuckDesc} />
+            <ActionTile icon="bi-arrow-return-left" count={refundRequestsCount} label={t.actionHub.refundRequests} desc={t.actionHub.refundDesc} />
           </div>
         </div>
 
-        <div className={`p-3 sm:p-4 border-t lg:border-t-0 lg:border-s ${divider} flex flex-col justify-center`}>
+        <div className={`p-4 sm:p-5 lg:p-6 border-t lg:border-t-0 lg:border-s ${divider} flex flex-col justify-center`}>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <span className={eyebrow}>{t.plan.currentPlan}</span>
-              <StatusPill variant="info">{subscription?.status || t.plan.statusActive}</StatusPill>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-[var(--color-primary-light)]/10 text-[var(--color-primary-light)] border border-[var(--color-primary-light)]/20">
+                {subscription?.status || t.plan.statusActive}
+              </span>
             </div>
             <span dir="ltr" className="text-[10px] font-mono text-[var(--color-text-muted)] shrink-0">{endsDate}</span>
           </div>
 
-          <div className="mt-1.5 flex items-center justify-between gap-3">
-            <h4 className="text-base sm:text-lg font-bold font-heading text-[var(--color-text-primary)] truncate">{planName}</h4>
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <h4 className="text-base sm:text-xl font-bold font-heading text-[var(--color-text-primary)] truncate">{planName}</h4>
             <button type="button" className={btnGhost}>{t.plan.upgradeButton}</button>
           </div>
 
           <div
-            className={`mt-2 h-1.5 w-full rounded-full overflow-hidden bg-[var(--color-surface-elevated)] border ${divider}`}
+            className={`mt-2.5 h-2 w-full rounded-full overflow-hidden bg-[var(--color-surface-elevated)] border ${divider}`}
             role="progressbar"
             aria-valuenow={usagePct}
             aria-valuemin={0}
             aria-valuemax={100}
           >
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary-dark)] to-[var(--color-status-green)] transition-[width] duration-500"
+              className="h-full rounded-full bg-[var(--color-primary-light)] transition-[width] duration-500"
               style={{ width: `${usagePct}%` }}
             />
           </div>
-          <p className="mt-1.5 text-[11px] font-subtitle text-[var(--color-text-secondary)]">
+          <p className="mt-2 text-xs font-subtitle text-[var(--color-text-secondary)]">
             {usageCount} / {maxCapacity} {tr("products connected", "منتج متصل")} ({usagePct}%)
           </p>
         </div>
       </div>
 
       {/* Row 2: domain */}
-      <div className={`px-3 py-2.5 sm:px-4 border-t ${divider} flex items-center justify-between gap-3`}>
-        <div className="flex items-center gap-2.5 min-w-0">
-          <i className="bi bi-globe2 text-base text-[var(--color-primary-light)] shrink-0" aria-hidden="true" />
+      <div className={`px-4 sm:px-6 py-3.5 border-t ${divider} flex items-center justify-between gap-3`}>
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--color-primary-light)]/10 text-[var(--color-primary-light)] shrink-0">
+            <i className="bi bi-globe2 text-base" aria-hidden="true" />
+          </span>
           <div className="min-w-0 leading-tight">
             <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] font-subtitle">{t.actionHub.defaultDomain}</p>
-            <p dir="ltr" className="text-xs font-medium text-[var(--color-text-primary)] select-all truncate text-start">{currentDomain}</p>
+            <p dir="ltr" className="text-xs sm:text-sm font-medium text-[var(--color-text-primary)] select-all truncate text-start mt-0.5">{currentDomain}</p>
           </div>
         </div>
         <button type="button" className={btnPrimary}>{t.actionHub.requestDomain}</button>
       </div>
 
-      {/* Row 3: live visitors toggle */}
+      {/* Row 3: live visitors toggle (generous padding & weightless polish) */}
       <button
         type="button"
         onClick={() => setLiveOpen((v) => !v)}
         aria-expanded={liveOpen}
-        className={`w-full px-3 py-2.5 sm:px-4 border-t ${divider} flex items-center justify-between gap-3 text-start ${focusRing}`}
+        className={`w-full px-4 sm:px-6 py-3.5 border-t ${divider} flex items-center justify-between gap-3 text-start hover:bg-[var(--color-surface-elevated)]/50 transition-colors ${focusRing}`}
       >
-        <span className="flex items-center gap-2 min-w-0">
-          <span className="w-2 h-2 rounded-full shrink-0 bg-[var(--color-status-green)] animate-pulse" />
-          <span className="text-sm font-bold font-heading text-[var(--color-text-primary)] truncate">{t.liveVisitors.title}</span>
-          <span className="hidden sm:inline text-[10px] font-subtitle px-1.5 py-0.5 rounded border border-[var(--color-border-subtle)] text-[var(--color-text-muted)]">
+        <span className="flex items-center gap-2.5 min-w-0">
+          <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-[var(--color-status-green)] animate-pulse" />
+          <span className="text-sm sm:text-base font-bold font-heading text-[var(--color-text-primary)] truncate">{t.liveVisitors.title}</span>
+          <span className="inline-flex text-[10px] font-bold font-ui px-2 py-0.5 rounded-full border border-[var(--color-border-subtle)] text-[var(--color-text-muted)] bg-[var(--color-surface-elevated)]">
             {t.liveVisitors.badge}
           </span>
         </span>
         <span className="flex items-center gap-3 shrink-0">
-          <span className="text-[11px] font-bold font-ui text-[var(--color-status-green)]">0 {t.liveVisitors.onlineNow}</span>
-          <i className={`bi bi-chevron-down text-[10px] text-[var(--color-text-secondary)] transition-transform duration-300 ${liveOpen ? "rotate-180" : ""}`} aria-hidden="true" />
+          <span className="text-xs font-bold font-ui text-[var(--color-status-green)] flex items-center gap-1.5">
+            <i className="bi bi-broadcast text-xs" />
+            <span>0 {t.liveVisitors.onlineNow}</span>
+          </span>
+          <i className={`bi bi-chevron-down text-xs text-[var(--color-text-secondary)] transition-transform duration-300 ${liveOpen ? "rotate-180" : ""}`} aria-hidden="true" />
         </span>
       </button>
 
       <Collapse open={liveOpen}>
-        <div className={`px-3 pb-3 pt-3 sm:px-4 space-y-3 border-t ${divider}`}>
-          <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+        <div className={`px-4 sm:px-6 pb-5 pt-4 space-y-4 border-t ${divider} bg-[var(--color-surface-elevated)]/25`}>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
             <Stat tone="green" label={t.liveVisitors.liveNow} value="0" pulse />
             <Stat tone="blue" label={t.liveVisitors.views5m} value="0" />
             <Stat tone="purple" label={t.liveVisitors.avgTime} value="0:00" />
             <Stat tone="amber" label={t.liveVisitors.bounce} value="0%" />
           </div>
 
-          <div className="grid grid-cols-2 gap-x-4 sm:gap-x-8">
-            <div className="min-w-0">
-              <p className={`${eyebrow} mb-1`}>{t.liveVisitors.trafficSources}</p>
-              <BreakdownRow dot={TONES.green.bg} label={t.liveVisitors.organic} value="62%" />
-              <BreakdownRow dot={TONES.blue.bg} label={t.liveVisitors.direct} value="24%" />
-              <BreakdownRow dot={TONES.purple.bg} label={t.liveVisitors.social} value="14%" last />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 pt-1">
+            <div className="rounded-xl border border-[var(--color-border-subtle)] p-3.5 sm:p-4 bg-[var(--color-surface)]">
+              <p className={`${eyebrow} mb-2`}>{t.liveVisitors.trafficSources}</p>
+              <BreakdownRow dot="bg-[var(--color-status-green)]" label={t.liveVisitors.organic} value="62%" />
+              <BreakdownRow dot="bg-[var(--color-primary-light)]" label={t.liveVisitors.direct} value="24%" />
+              <BreakdownRow dot="bg-[var(--color-status-purple)]" label={t.liveVisitors.social} value="14%" last />
             </div>
-            <div className="min-w-0">
-              <p className={`${eyebrow} mb-1`}>{t.liveVisitors.devices}</p>
+            <div className="rounded-xl border border-[var(--color-border-subtle)] p-3.5 sm:p-4 bg-[var(--color-surface)]">
+              <p className={`${eyebrow} mb-2`}>{t.liveVisitors.devices}</p>
               <BreakdownRow icon="bi-phone" iconClass="text-[var(--color-primary-light)]" label={t.liveVisitors.mobile} value="68%" />
-              <BreakdownRow icon="bi-laptop" iconClass={TONES.blue.text} label={t.liveVisitors.desktop} value="26%" />
-              <BreakdownRow icon="bi-tablet" iconClass={TONES.purple.text} label={t.liveVisitors.tablet} value="6%" last />
+              <BreakdownRow icon="bi-laptop" iconClass="text-[var(--color-primary-light)]" label={t.liveVisitors.desktop} value="26%" />
+              <BreakdownRow icon="bi-tablet" iconClass="text-[var(--color-status-purple)]" label={t.liveVisitors.tablet} value="6%" last />
             </div>
           </div>
         </div>

@@ -24,6 +24,9 @@ import {
   type StoreProduct,
   type ViewerProfile,
 } from "@/lib/store-registry";
+import { rtdb } from "@/lib/firebase";
+import { ref as rtdbRef, onValue, off } from "firebase/database";
+import { createLiveOrder } from "@/lib/storeowner-service";
 
 /* ─────────────────────────── Types ─────────────────────────── */
 interface CartItem {
@@ -389,6 +392,60 @@ function StorefrontContent() {
     if (typeof window !== "undefined") {
       localStorage.setItem("matager_active_store_id", updatedStore.id);
     }
+
+    if (!rtdb) return;
+    const cleanUid = (storeIdParam || "peacock_store").replace(/^store_/, "");
+    const storeIdFull = (storeIdParam || "peacock_store").startsWith("store_")
+      ? (storeIdParam || "peacock_store")
+      : `store_${storeIdParam || "peacock_store"}`;
+
+    const storeRef = rtdbRef(rtdb, `stores/${cleanUid}`);
+    const storeFullRef = rtdbRef(rtdb, `stores/${storeIdFull}`);
+    const storeAltRef = rtdbRef(rtdb, `store/${cleanUid}`);
+
+    const handleSnapshot = (snapVal: any) => {
+      if (!snapVal) return;
+      const rawProducts = snapVal.products || {};
+      const liveProducts: StoreProduct[] = Object.entries(rawProducts)
+        .filter(([k]) => k !== "_initialized" && k !== "total")
+        .map(([k, p]: [string, any]) => ({
+          id: p.id || k,
+          title: p.name || p.title || "Product Item",
+          category: p.category || "General",
+          storeId: updatedStore.id,
+          storeName: snapVal.store_name || updatedStore.name,
+          price: Number(p.price) || 0,
+          stock: Number(p.stockQty) || Number(p.stock) || 10,
+          image: p.image || "https://assets.adidas.com/images/w_1880,f_auto,q_auto/a4ff4a779ee34deca8cc9a6f1f411440_9366/KC6611_HM1.jpg",
+          currency: p.currency || snapVal.currency || "EGP",
+          badge: p.badge || (Number(p.stockQty) > 5 ? "IN STOCK" : "FEATURED"),
+        }));
+
+      setCurrentStore((prev) => ({
+        ...prev,
+        name: snapVal.store_name || prev.name,
+        subdomain: snapVal.subdomain || prev.subdomain,
+        currency: snapVal.currency || prev.currency,
+        products: liveProducts.length > 0 ? liveProducts : prev.products,
+        productsCount: liveProducts.length > 0 ? liveProducts.length : prev.productsCount,
+      }));
+    };
+
+    onValue(storeRef, (snap) => {
+      if (snap.exists()) handleSnapshot(snap.val());
+    });
+    onValue(storeFullRef, (snap) => {
+      if (snap.exists()) handleSnapshot(snap.val());
+    });
+    onValue(storeAltRef, (snap) => {
+      if (snap.exists()) handleSnapshot(snap.val());
+    });
+
+    return () => {
+      off(storeRef);
+      off(storeFullRef);
+      off(storeAltRef);
+    };
   }, [storeIdParam]);
 
   useEffect(() => {
@@ -892,6 +949,24 @@ function StorefrontContent() {
       } catch (_) { }
       saveCart({});
       setViewerOrders((prev) => [unifiedOrder, ...prev]);
+      const cleanUid = (storeIdParam || currentStore.id || "").replace(/^store_/, "");
+      if (cleanUid) {
+        try {
+          createLiveOrder(cleanUid, {
+            id: orderId,
+            customer: customerName,
+            phone: customerPhone,
+            address: customerAddress,
+            amount: grandTotal,
+            total: `EGP ${grandTotal.toLocaleString()}`,
+            status: "Pending",
+            created_at: new Date().toISOString(),
+            items: (unifiedOrder.stores || []).flatMap((s: any) =>
+              (s.items || []).map((it: any) => ({ name: it.title || "Item", qty: it.qty || 1, price: it.price || 0 }))
+            ),
+          });
+        } catch (_) {}
+      }
       window.dispatchEvent(new CustomEvent("matager:new_order", { detail: unifiedOrder }));
       window.dispatchEvent(new CustomEvent("matager:storefront_order", { detail: unifiedOrder }));
       try {

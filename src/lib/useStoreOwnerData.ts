@@ -79,9 +79,15 @@ export function useStoreOwnerData(customUid?: string) {
 
     setState((prev) => ({ ...prev, loading: true, error: null }));
 
-    // Reference primary nodes: stores/<uid> and storeowner/<uid>
-    const storeRef = rtdbRef(rtdb, `stores/${uid}`);
-    const storeOwnerRef = rtdbRef(rtdb, `storeowner/${uid}`);
+    const cleanUid = uid.replace(/^store_/, "");
+    const storeIdFull = uid.startsWith("store_") ? uid : `store_${uid}`;
+
+    // Reference primary nodes: stores/<cleanUid>, stores/<storeIdFull>, store/<cleanUid>, storeowner/<cleanUid>, client/<cleanUid>
+    const storeRef = rtdbRef(rtdb, `stores/${cleanUid}`);
+    const storeFullRef = rtdbRef(rtdb, `stores/${storeIdFull}`);
+    const storeAltRef = rtdbRef(rtdb, `store/${cleanUid}`);
+    const storeOwnerRef = rtdbRef(rtdb, `storeowner/${cleanUid}`);
+    const clientRef = rtdbRef(rtdb, `client/${cleanUid}`);
 
     let activeData: any = null;
 
@@ -246,39 +252,52 @@ export function useStoreOwnerData(customUid?: string) {
       });
     };
 
-    // Listen to stores/<uid>
-    const unsubStore = onValue(
-      storeRef,
-      (snapshot) => {
-        if (snapshot.exists()) {
-          handleDataSnapshot(snapshot.val());
-        } else {
-          // If node doesn't exist yet, normalize cleanly to zero
-          setState((prev) => ({ ...prev, loading: false }));
-        }
-      },
-      (err) => {
-        console.warn("RTDB store listener error:", err);
-        setState((prev) => ({ ...prev, loading: false, error: err.message }));
-      }
-    );
+    // Listen to stores/<cleanUid>
+    onValue(storeRef, (snap) => {
+      if (snap.exists()) handleDataSnapshot(snap.val());
+      else setState((prev) => ({ ...prev, loading: false }));
+    }, (err) => console.warn("RTDB store listener error:", err));
 
-    // Also listen to storeowner/<uid>
-    const unsubOwner = onValue(
-      storeOwnerRef,
-      (snapshot) => {
-        if (snapshot.exists()) {
-          handleDataSnapshot(snapshot.val());
+    // Listen to stores/<storeIdFull>
+    onValue(storeFullRef, (snap) => {
+      if (snap.exists()) handleDataSnapshot(snap.val());
+    }, (err) => console.warn("RTDB storeFull listener error:", err));
+
+    // Listen to store/<cleanUid>
+    onValue(storeAltRef, (snap) => {
+      if (snap.exists()) handleDataSnapshot(snap.val());
+    }, (err) => console.warn("RTDB storeAlt listener error:", err));
+
+    // Listen to storeowner/<cleanUid>
+    onValue(storeOwnerRef, (snap) => {
+      if (snap.exists()) handleDataSnapshot(snap.val());
+    }, (err) => console.warn("RTDB storeowner listener error:", err));
+
+    // Listen to client/<cleanUid>
+    onValue(clientRef, (snap) => {
+      if (snap.exists()) {
+        const val = snap.val();
+        if (val && typeof val === "object") {
+          setState((prev) => ({
+            ...prev,
+            storeId: val.store_id || prev.storeId,
+            storeConfig: {
+              ...prev.storeConfig,
+              store_name: val.name || prev.storeConfig.store_name,
+              email: val.email || prev.storeConfig.email,
+              phone: val.phone || prev.storeConfig.phone,
+            },
+          }));
         }
-      },
-      (err) => {
-        console.warn("RTDB storeowner listener error:", err);
       }
-    );
+    }, (err) => console.warn("RTDB client listener error:", err));
 
     return () => {
       off(storeRef);
+      off(storeFullRef);
+      off(storeAltRef);
       off(storeOwnerRef);
+      off(clientRef);
     };
   }, [uid]);
 

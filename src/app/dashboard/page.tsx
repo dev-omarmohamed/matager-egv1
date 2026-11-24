@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { DashboardLanguageProvider } from "@/lib/i18n";
 import { useDash } from "@/lib/useDash";
 import { useStoreOwnerData } from "@/lib/useStoreOwnerData";
@@ -52,9 +52,9 @@ function SectionBar({
   return (
     <nav
       aria-label={tr("Dashboard sections", "أقسام لوحة التحكم")}
-      className="sticky top-14 sm:top-16 z-40 bg-[var(--color-canvas)]/90 backdrop-blur-xl border-b border-[var(--color-border-subtle)]"
+      className="sticky top-14 sm:top-16 z-40 bg-[var(--color-canvas)]/95 backdrop-blur-xl border-b border-[var(--color-border-subtle)] py-2"
     >
-      <div className={`max-w-[1400px] mx-auto px-3 sm:px-6 lg:px-8 flex gap-1 overflow-x-auto ${scrollNone}`}>
+      <div className={`max-w-[1400px] mx-auto px-3 sm:px-6 lg:px-8 flex items-center gap-1.5 sm:gap-2 overflow-x-auto ${scrollNone}`}>
         {items.map((it) => {
           const on = it.id === active;
           return (
@@ -63,22 +63,21 @@ function SectionBar({
               type="button"
               onClick={() => onChange(it.id)}
               aria-current={on ? "page" : undefined}
-              className={`relative shrink-0 flex items-center gap-1.5 px-3 py-3 text-xs font-bold font-ui transition-colors rounded-t-lg ${focusRing} ${
-                on ? "text-[var(--color-primary-light)]" : "text-[var(--color-text-muted)]"
+              className={`relative shrink-0 flex items-center gap-1.5 px-3.5 sm:px-4 py-2 text-xs font-bold font-ui transition-all duration-200 rounded-full ${focusRing} ${
+                on
+                  ? "bg-[var(--color-primary-light)] text-white shadow-sm hover:opacity-95"
+                  : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-elevated)]"
               }`}
             >
               <i className={`bi ${it.icon} text-[13px]`} aria-hidden="true" />
               <span>{it.label}</span>
               {!!it.badge && (
-                <span className="min-w-4 h-4 px-1 rounded-full text-[9px] leading-4 text-center text-white bg-[var(--color-status-amber)]">
+                <span className={`min-w-4 h-4 px-1 rounded-full text-[9px] leading-4 text-center font-bold ${
+                  on ? "bg-white text-[var(--color-primary-light)]" : "bg-[var(--color-status-amber)] text-white"
+                }`}>
                   {it.badge}
                 </span>
               )}
-              <span
-                className={`absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-[var(--color-primary-light)] transition-transform duration-200 ${
-                  on ? "scale-x-100" : "scale-x-0"
-                }`}
-              />
             </button>
           );
         })}
@@ -89,13 +88,31 @@ function SectionBar({
 
 function DashboardContent() {
   const router = useRouter();
-  const { orders } = useStoreOwnerData();
+  const searchParams = useSearchParams();
+  const urlStoreId = searchParams.get("storeId") || searchParams.get("store");
+  const urlUid = searchParams.get("uid") || searchParams.get("userId");
+  const cleanUid = useMemo(() => {
+    if (urlStoreId) return urlStoreId.replace(/^store_/, "");
+    if (urlUid) return urlUid.replace(/^store_/, "");
+    return undefined;
+  }, [urlStoreId, urlUid]);
+
+  const { orders } = useStoreOwnerData(cleanUid);
   const [globalSearch, setGlobalSearch] = useState("");
   const [section, setSection] = useState<SectionId>("overview");
 
   /* Auth / role routing (unchanged behaviour) */
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (urlStoreId || cleanUid) {
+      if (cleanUid) localStorage.setItem("matager_active_user_id", cleanUid);
+      if (urlStoreId) {
+        localStorage.setItem("matager_current_store_id", urlStoreId);
+        localStorage.setItem("matager_active_store_id", urlStoreId);
+      }
+      return;
+    }
+
     const storedRole = localStorage.getItem("matager_user_role");
     const activeUid = localStorage.getItem("matager_active_user_id");
     const currentStoreId = localStorage.getItem("matager_current_store_id") || localStorage.getItem("matager_active_store_id");
@@ -110,7 +127,7 @@ function DashboardContent() {
       return;
     }
     if (!activeUid && !storedRole && !currentStoreId) router.push("/?auth=signin");
-  }, [router]);
+  }, [router, urlStoreId, cleanUid]);
 
   /* Section <-> URL hash, so links like /dashboard#orders (and the nav's quick links) work. */
   useEffect(() => {

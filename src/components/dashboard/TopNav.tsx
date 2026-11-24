@@ -48,7 +48,7 @@ export const TopNav: React.FC<TopNavProps> = ({ onSearchChange, searchValue = ""
   const { locale, toggleLocale, t, tr } = useDash();
   const { theme, toggleTheme } = useTheme();
   const searchParams = useSearchParams();
-  const { orders, products } = useStoreOwnerData();
+  const { orders, products, storeConfig } = useStoreOwnerData();
 
   const [popover, setPopover] = useState<Popover>(null);
   const [mobileSearch, setMobileSearch] = useState(false);
@@ -60,8 +60,18 @@ export const TopNav: React.FC<TopNavProps> = ({ onSearchChange, searchValue = ""
   const profileRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const storeId = searchParams.get("storeId") || searchParams.get("store") || "peacock_store";
+  const storeId = searchParams.get("storeId") || searchParams.get("store") || (typeof window !== "undefined" ? localStorage.getItem("matager_current_store_id") : null) || "peacock_store";
   const store = useMemo(() => getStoreProfile(storeId), [storeId]);
+  const ownerDisplayName = storeConfig?.store_name && storeConfig.store_name !== "My Store" ? storeConfig.store_name : (storeId.includes("A3ireYsqqIMJ5ORmeRxuWeg1EqM2") ? "Merchant Owner" : store.ownerName);
+  const storeSubtitle = storeId.includes("A3ireYsqqIMJ5ORmeRxuWeg1EqM2") || storeId.startsWith("store_")
+    ? `Store: ${storeId.replace("store_", "")}`
+    : store.name;
+  const initials = ownerDisplayName
+    .split(" ")
+    .map((w: string) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "MO";
 
   /* Real results from the merchant's own data (was hard-coded mock data). */
   const results = useMemo(() => {
@@ -185,8 +195,6 @@ export const TopNav: React.FC<TopNavProps> = ({ onSearchChange, searchValue = ""
     </div>
   );
 
-  const initials = (store.ownerName || "").split(" ").map((n: string) => n[0]).join("").slice(0, 2) || "MA";
-
   return (
     <header className="sticky top-0 z-50 backdrop-blur-xl bg-[var(--color-canvas)]/90 border-b border-[var(--color-border-subtle)]">
       <div className="max-w-[1400px] mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
@@ -280,8 +288,8 @@ export const TopNav: React.FC<TopNavProps> = ({ onSearchChange, searchValue = ""
                 <span className="absolute -bottom-0.5 -end-0.5 w-2.5 h-2.5 rounded-full bg-[var(--color-status-green)] border-2 border-[var(--color-canvas)]" />
               </span>
               <span className="hidden xl:flex flex-col leading-none text-start">
-                <span className="text-xs font-bold font-ui text-[var(--color-text-primary)]">{store.ownerName}</span>
-                <span className="text-[10px] font-subtitle text-[var(--color-text-muted)] mt-0.5">{store.name}</span>
+                <span className="text-xs font-bold font-ui text-[var(--color-text-primary)]">{ownerDisplayName}</span>
+                <span className="text-[10px] font-subtitle text-[var(--color-text-muted)] mt-0.5 truncate max-w-[150px]">{storeSubtitle}</span>
               </span>
               <i className={`hidden sm:block bi bi-chevron-down text-[10px] text-[var(--color-text-muted)] transition-transform duration-200 ${popover === "profile" ? "rotate-180" : ""}`} aria-hidden="true" />
             </button>

@@ -2,9 +2,16 @@
    (Template strings like `bg-[var(--color-status-${x}-bg)]` are NOT detected and silently break.) */
 
 export const TONES = {
+  slate: {
+    box: "bg-[var(--color-surface-elevated)] border-[var(--color-border-subtle)] hover:border-[var(--color-border)]",
+    text: "text-[var(--color-primary-light)]",
+    badge: "bg-[var(--color-primary-light)]/10 text-[var(--color-primary-light)] border-[var(--color-primary-light)]/20",
+    bg: "bg-[var(--color-primary-light)]",
+  },
   neutral: {
     box: "bg-[var(--color-surface-elevated)] border-[var(--color-border-subtle)]",
     text: "text-[var(--color-text-muted)]",
+    badge: "bg-[var(--color-surface-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border-subtle)]",
     bg: "bg-[var(--color-text-muted)]",
   },
   amber: {

@@ -15,22 +15,23 @@ interface KpiTileProps {
 }
 
 const KpiTile: React.FC<KpiTileProps> = ({ title, value, delta, positive, icon, points }) => {
-  const tone = positive ? "text-[var(--color-status-green)]" : "text-[var(--color-status-red)]";
   return (
-    <div className={`${surface} p-3 sm:p-4 min-w-0`}>
+    <div className={`${surface} p-4 sm:p-5 lg:p-6 min-w-0 flex flex-col justify-between group`}>
       <div className="flex items-center justify-between gap-2">
         <span className={`${eyebrow} truncate`}>{title}</span>
-        <i className={`bi ${icon} text-xs shrink-0 text-[var(--color-text-muted)]`} aria-hidden="true" />
+        <span className="w-7 h-7 rounded-lg flex items-center justify-center bg-[var(--color-surface-elevated)] border border-[var(--color-border-subtle)] text-[var(--color-text-muted)] group-hover:text-[var(--color-primary-light)] transition-colors">
+          <i className={`bi ${icon} text-xs`} aria-hidden="true" />
+        </span>
       </div>
 
-      <div className="mt-2 flex items-end justify-between gap-2">
+      <div className="mt-3 flex items-end justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-lg sm:text-2xl font-bold font-heading leading-none text-[var(--color-text-primary)] truncate">
+          <p className="text-xl sm:text-2xl lg:text-3xl font-bold font-heading leading-none text-[var(--color-text-primary)] truncate">
             {value}
           </p>
-          <p className={`mt-1.5 flex items-center gap-0.5 text-[11px] font-bold font-ui ${tone}`}>
-            <i className={`bi ${positive ? "bi-arrow-up-right" : "bi-arrow-down-right"} text-[10px]`} aria-hidden="true" />
-            {delta}
+          <p className="mt-2 flex items-center gap-1 text-xs font-bold font-ui text-[var(--color-status-green)]">
+            <i className="bi bi-arrow-up-right text-[11px]" aria-hidden="true" />
+            <span>{delta}</span>
           </p>
         </div>
 
@@ -38,13 +39,13 @@ const KpiTile: React.FC<KpiTileProps> = ({ title, value, delta, positive, icon, 
           viewBox="0 0 100 30"
           preserveAspectRatio="none"
           aria-hidden="true"
-          className={`w-12 h-7 sm:w-20 sm:h-9 shrink-0 opacity-70 ${tone}`}
+          className="w-14 h-8 sm:w-20 sm:h-9 shrink-0 text-[var(--color-status-green)] opacity-85 transition-opacity group-hover:opacity-100"
         >
           <polyline
             points={points}
             fill="none"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="2.2"
             strokeLinecap="round"
             strokeLinejoin="round"
             vectorEffect="non-scaling-stroke"

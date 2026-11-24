@@ -131,9 +131,28 @@ export interface StoreOwnerState {
 
 /**
  * Resolves current active store owner UID.
+ * Supports URL searchParams (?storeId=store_... or ?uid=...), auth, and localStorage.
  */
 export function getActiveStoreOwnerUid(): string {
   if (typeof window !== "undefined") {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlStoreId = params.get("storeId") || params.get("store");
+      const urlUid = params.get("uid") || params.get("userId");
+      if (urlStoreId) {
+        const cleanUid = urlStoreId.replace(/^store_/, "");
+        localStorage.setItem("matager_active_user_id", cleanUid);
+        localStorage.setItem("matager_current_store_id", urlStoreId);
+        localStorage.setItem("matager_active_store_id", urlStoreId);
+        return cleanUid;
+      }
+      if (urlUid) {
+        const clean = urlUid.replace(/^store_/, "");
+        localStorage.setItem("matager_active_user_id", clean);
+        return clean;
+      }
+    } catch (_) {}
+
     const userUid = auth.currentUser?.uid;
     if (userUid) return userUid;
 
