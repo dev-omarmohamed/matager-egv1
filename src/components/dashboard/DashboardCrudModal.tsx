@@ -158,13 +158,50 @@ export const DashboardCrudModal: React.FC<DashboardCrudModalProps> = ({
     return () => window.removeEventListener("keydown", onKey);
   }, [isOpen, onClose]);
 
-  /* Lock page scroll while any part of the modal is on screen. */
+  /* Lock page and dashboard scroll while any part of the modal is on screen. */
   useEffect(() => {
     if (!mounted) return;
-    const prev = document.body.style.overflow;
+
+    // 1. Prevent background smooth scroll via Lenis if active
+    const lenis = (typeof window !== "undefined" && (window as any).__lenis) || null;
+    lenis?.stop?.();
+
+    // 2. Lock html and body scroll
+    const origBodyOverflow = document.body.style.overflow;
+    const origHtmlOverflow = document.documentElement.style.overflow;
+    const origBodyPaddingRight = document.body.style.paddingRight;
+    const origBodyTouchAction = document.body.style.touchAction;
+
+    // Compensate for scrollbar width to prevent background layout shift
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+
+    // 3. Fallback: prevent touchmove on non-scrollable backdrop from scrolling background
+    const handleTouchMove = (e: TouchEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (panelRef.current && panelRef.current.contains(target)) {
+        return; // allow modal inner scrolling
+      }
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener("touchmove", handleTouchMove, { passive: false });
+
     return () => {
-      document.body.style.overflow = prev;
+      document.body.style.overflow = origBodyOverflow;
+      document.documentElement.style.overflow = origHtmlOverflow;
+      document.body.style.paddingRight = origBodyPaddingRight;
+      document.body.style.touchAction = origBodyTouchAction;
+      document.removeEventListener("touchmove", handleTouchMove);
+      lenis?.start?.();
     };
   }, [mounted]);
 
@@ -228,13 +265,13 @@ export const DashboardCrudModal: React.FC<DashboardCrudModalProps> = ({
       aria-labelledby={titleId}
       aria-describedby={descId}
       dir={dir}
-      className="fixed inset-0 z-[60]"
+      className="fixed inset-0 z-[60] overflow-hidden"
     >
       {/* Backdrop */}
       <div
         onClick={onClose}
         aria-hidden="true"
-        className={`absolute inset-0 bg-black/55 backdrop-blur-sm transition-opacity duration-300 motion-reduce:transition-none ${
+        className={`absolute inset-0 bg-black/55 backdrop-blur-sm transition-opacity duration-300 motion-reduce:transition-none touch-none overscroll-none ${
           shown ? "opacity-100" : "opacity-0"
         }`}
       />
@@ -243,20 +280,21 @@ export const DashboardCrudModal: React.FC<DashboardCrudModalProps> = ({
       <div
         ref={panelRef}
         tabIndex={-1}
-        className={`absolute inset-x-0 bottom-0 max-h-[92dvh] md:inset-x-auto md:end-0 md:top-0 md:bottom-0 md:max-h-none md:w-[min(520px,50vw)]
-          flex flex-col overflow-hidden outline-none
+        data-lenis-prevent
+        className={`absolute inset-x-0 bottom-0 max-h-[92dvh] md:inset-x-auto md:end-0 md:top-0 md:bottom-0 md:max-h-none md:w-[min(540px,50vw)]
+          h-[92dvh] md:h-full flex flex-col overflow-hidden outline-none
           bg-[var(--color-surface)] border-t border-[var(--color-border)] md:border-t-0 md:border-s
           rounded-t-[24px] md:rounded-none shadow-2xl
           transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none will-change-transform
           ${shown ? "translate-y-0 md:translate-x-0" : "translate-y-full md:translate-y-0 md:translate-x-full md:rtl:-translate-x-full"}`}
       >
         {/* Grab handle (phones) */}
-        <div className="md:hidden pt-2 flex justify-center shrink-0" aria-hidden="true">
+        <div className="md:hidden pt-2.5 pb-1 flex justify-center shrink-0 bg-[var(--color-surface)]" aria-hidden="true">
           <span className="w-10 h-1 rounded-full bg-[var(--color-border)]" />
         </div>
 
-        {/* Header */}
-        <div className="px-4 py-3 sm:px-5 sm:py-4 border-b border-[var(--color-border-subtle)] flex items-center justify-between gap-3 shrink-0">
+        {/* 1. Header: Static docked to top */}
+        <div className="px-4 py-3 sm:px-5 sm:py-4 border-b border-[var(--color-border-subtle)] flex items-center justify-between gap-3 shrink-0 bg-[var(--color-surface)] sticky top-0 z-20">
           <div className="flex items-center gap-3 min-w-0">
             <span className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${iconTone}`}>
               <i className={`bi ${isDelete ? "bi-exclamation-triangle" : ENTITY_ICONS[entity] || "bi-info-circle"} text-base`} />
@@ -274,7 +312,7 @@ export const DashboardCrudModal: React.FC<DashboardCrudModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label={tr("Close", "إغلاق")}
-            className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-[var(--color-text-muted)] ${focusRing}`}
+            className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-elevated)] transition-colors ${focusRing}`}
           >
             <i className="bi bi-x-lg text-sm" />
           </button>
@@ -283,18 +321,28 @@ export const DashboardCrudModal: React.FC<DashboardCrudModalProps> = ({
         {currentError && (
           <div
             role="alert"
-            className="px-4 py-2.5 flex items-center gap-2 text-xs border-b bg-[var(--color-status-red-bg)] border-[var(--color-status-red-border)] text-[var(--color-status-red)]"
+            className="px-4 py-2.5 flex items-center gap-2 text-xs border-b bg-[var(--color-status-red-bg)] border-[var(--color-status-red-border)] text-[var(--color-status-red)] shrink-0 z-10"
           >
             <i className="bi bi-exclamation-circle shrink-0" />
-            <span className="flex-1">{currentError}</span>
+            <span className="flex-1 font-medium">{currentError}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
-          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5 space-y-4">
-            {children ? (
-              children
-            ) : isDelete ? (
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          {/* 2. Inner Body: Scrollable */}
+          {children ? (
+            hideFooter ? (
+              <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                {children}
+              </div>
+            ) : (
+              <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5 space-y-4 custom-scrollbar">
+                {children}
+              </div>
+            )
+          ) : (
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5 space-y-4 custom-scrollbar">
+              {isDelete ? (
               <div className="p-4 rounded-2xl space-y-2.5 bg-[var(--color-status-red-bg)] border border-[var(--color-status-red-border)]">
                 <div className="flex items-center gap-2 text-sm font-bold text-[var(--color-status-red)]">
                   <i className="bi bi-exclamation-triangle" />
@@ -427,10 +475,11 @@ export const DashboardCrudModal: React.FC<DashboardCrudModalProps> = ({
               })
             )}
           </div>
+          )}
 
-          {/* Footer: full-width buttons on phones, end-aligned on desktop */}
+          {/* 3. Footer: Static docked to bottom */}
           {!hideFooter && (
-            <div className="px-4 sm:px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-[var(--color-border-subtle)] bg-[var(--color-surface)] flex items-center gap-2 shrink-0">
+            <div className="px-4 sm:px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-[var(--color-border-subtle)] bg-[var(--color-surface)] flex items-center gap-2 shrink-0 sticky bottom-0 z-20">
               <button
                 type="button"
                 onClick={onClose}

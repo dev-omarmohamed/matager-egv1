@@ -323,58 +323,62 @@ export const ProductWizardModal: React.FC<ProductWizardModalProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      {/* ─── 3-STEP PROGRESS STEPPER ─── */}
-      <div className="flex items-center justify-between border-b border-[var(--color-border-subtle)] pb-3">
-        {[
-          { num: 1, label: tr("1. Basic Attributes", "١. البيانات الأساسية"), icon: "bi-card-list" },
-          { num: 2, label: tr("2. Media & Variants", "٢. الوسائط والمتغيرات"), icon: "bi-layers" },
-          { num: 3, label: tr("3. Settings", "٣. الإعدادات"), icon: "bi-sliders" },
-        ].map((s) => {
-          const isCurrent = step === s.num;
-          const isDone = step > s.num;
-          return (
-            <button
-              key={s.num}
-              type="button"
-              onClick={() => {
-                if (s.num < step) setStep(s.num as any);
-              }}
-              disabled={s.num > step}
-              className={`flex items-center gap-1.5 text-xs font-bold font-ui transition-colors ${
-                isCurrent
-                  ? "text-[var(--color-primary-light)]"
-                  : isDone
-                  ? "text-[var(--color-status-green)] cursor-pointer"
-                  : "text-[var(--color-text-muted)] opacity-60 cursor-not-allowed"
-              }`}
-            >
-              <span
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
+    <div className="flex-1 min-h-0 flex flex-col overflow-hidden h-full">
+      {/* ─── STATIC DOCKED SUB-HEADER: 3-STEP PROGRESS STEPPER ─── */}
+      <div className="px-4 sm:px-5 py-3 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface)] shrink-0 sticky top-0 z-10">
+        <div className="flex items-center justify-between">
+          {[
+            { num: 1, label: tr("1. Basic Attributes", "١. البيانات الأساسية"), icon: "bi-card-list" },
+            { num: 2, label: tr("2. Media & Variants", "٢. الوسائط والمتغيرات"), icon: "bi-layers" },
+            { num: 3, label: tr("3. Settings", "٣. الإعدادات"), icon: "bi-sliders" },
+          ].map((s) => {
+            const isCurrent = step === s.num;
+            const isDone = step > s.num;
+            return (
+              <button
+                key={s.num}
+                type="button"
+                onClick={() => {
+                  if (s.num < step) setStep(s.num as any);
+                }}
+                disabled={s.num > step}
+                className={`flex items-center gap-1.5 text-xs font-bold font-ui transition-colors ${
                   isCurrent
-                    ? "bg-[var(--color-primary-light)] text-white shadow-sm"
+                    ? "text-[var(--color-primary-light)]"
                     : isDone
-                    ? "bg-[var(--color-status-green-bg)] text-[var(--color-status-green)] border border-[var(--color-status-green-border)]"
-                    : "bg-[var(--color-surface-elevated)] border border-[var(--color-border-subtle)]"
+                    ? "text-[var(--color-status-green)] cursor-pointer"
+                    : "text-[var(--color-text-muted)] opacity-60 cursor-not-allowed"
                 }`}
               >
-                {isDone ? <i className="bi bi-check2 text-xs" /> : s.num}
-              </span>
-              <span className="hidden sm:inline">{s.label}</span>
-            </button>
-          );
-        })}
+                <span
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    isCurrent
+                      ? "bg-[var(--color-primary-light)] text-white shadow-sm"
+                      : isDone
+                      ? "bg-[var(--color-status-green-bg)] text-[var(--color-status-green)] border border-[var(--color-status-green-border)]"
+                      : "bg-[var(--color-surface-elevated)] border border-[var(--color-border-subtle)]"
+                  }`}
+                >
+                  {isDone ? <i className="bi bi-check2 text-xs" /> : s.num}
+                </span>
+                <span className="hidden sm:inline">{s.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {errorMessage && (
-        <div
-          role="alert"
-          className="p-3 rounded-xl flex items-center gap-2 text-xs bg-[var(--color-status-red-bg)] border border-[var(--color-status-red-border)] text-[var(--color-status-red)]"
-        >
-          <i className="bi bi-exclamation-circle shrink-0" />
-          <span className="flex-1 font-medium">{errorMessage}</span>
-        </div>
-      )}
+      {/* ─── SCROLLABLE INNER BODY ─── */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-5 py-4 space-y-4 custom-scrollbar">
+        {errorMessage && (
+          <div
+            role="alert"
+            className="p-3 rounded-xl flex items-center gap-2 text-xs bg-[var(--color-status-red-bg)] border border-[var(--color-status-red-border)] text-[var(--color-status-red)]"
+          >
+            <i className="bi bi-exclamation-circle shrink-0" />
+            <span className="flex-1 font-medium">{errorMessage}</span>
+          </div>
+        )}
 
       {/* ─── STEP 1: BASIC ATTRIBUTES & CATEGORY LOGIC ─── */}
       {step === 1 && (
@@ -565,17 +569,6 @@ export const ProductWizardModal: React.FC<ProductWizardModalProps> = ({
               </div>
             </div>
           </div>
-
-          {/* Step 1 Actions */}
-          <div className="pt-2 flex justify-between gap-2 border-t border-[var(--color-border-subtle)]">
-            <button type="button" onClick={onClose} className={btnGhost}>
-              {tr("Cancel", "إلغاء")}
-            </button>
-            <button type="button" onClick={handleNextStep1} className={btnPrimary}>
-              <span>{tr("Next: Media & Variants", "التالي: الوسائط والمتغيرات")}</span>
-              <i className={`bi ${isRtl ? "bi-arrow-left" : "bi-arrow-right"}`} />
-            </button>
-          </div>
         </div>
       )}
 
@@ -760,18 +753,6 @@ export const ProductWizardModal: React.FC<ProductWizardModalProps> = ({
               ))}
             </div>
           </div>
-
-          {/* Step 2 Actions */}
-          <div className="pt-2 flex justify-between gap-2 border-t border-[var(--color-border-subtle)]">
-            <button type="button" onClick={() => setStep(1)} className={btnGhost}>
-              <i className={`bi ${isRtl ? "bi-arrow-right" : "bi-arrow-left"}`} />
-              <span>{tr("Back: Step 1", "الرجوع: الخطوة ١")}</span>
-            </button>
-            <button type="button" onClick={handleNextStep2} className={btnPrimary}>
-              <span>{tr("Next: Settings", "التالي: الإعدادات")}</span>
-              <i className={`bi ${isRtl ? "bi-arrow-left" : "bi-arrow-right"}`} />
-            </button>
-          </div>
         </div>
       )}
 
@@ -880,9 +861,39 @@ export const ProductWizardModal: React.FC<ProductWizardModalProps> = ({
               </span>
             </div>
           </div>
+        </div>
+      )}
+      </div>
 
-          {/* Step 3 Actions */}
-          <div className="pt-2 flex justify-between gap-2 border-t border-[var(--color-border-subtle)]">
+      {/* ─── STATIC DOCKED FOOTER: ACTIONS ─── */}
+      <div className="px-4 sm:px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-[var(--color-border-subtle)] bg-[var(--color-surface)] flex items-center justify-between gap-2 shrink-0 sticky bottom-0 z-10">
+        {step === 1 && (
+          <>
+            <button type="button" onClick={onClose} className={btnGhost}>
+              {tr("Cancel", "إلغاء")}
+            </button>
+            <button type="button" onClick={handleNextStep1} className={btnPrimary}>
+              <span>{tr("Next: Media & Variants", "التالي: الوسائط والمتغيرات")}</span>
+              <i className={`bi ${isRtl ? "bi-arrow-left" : "bi-arrow-right"}`} />
+            </button>
+          </>
+        )}
+
+        {step === 2 && (
+          <>
+            <button type="button" onClick={() => setStep(1)} className={btnGhost}>
+              <i className={`bi ${isRtl ? "bi-arrow-right" : "bi-arrow-left"}`} />
+              <span>{tr("Back: Step 1", "الرجوع: الخطوة ١")}</span>
+            </button>
+            <button type="button" onClick={handleNextStep2} className={btnPrimary}>
+              <span>{tr("Next: Settings", "التالي: الإعدادات")}</span>
+              <i className={`bi ${isRtl ? "bi-arrow-left" : "bi-arrow-right"}`} />
+            </button>
+          </>
+        )}
+
+        {step === 3 && (
+          <>
             <button type="button" onClick={() => setStep(2)} disabled={isSubmitting} className={btnGhost}>
               <i className={`bi ${isRtl ? "bi-arrow-right" : "bi-arrow-left"}`} />
               <span>{tr("Back: Step 2", "الرجوع: الخطوة ٢")}</span>
@@ -900,9 +911,9 @@ export const ProductWizardModal: React.FC<ProductWizardModalProps> = ({
                 </>
               )}
             </button>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 };
