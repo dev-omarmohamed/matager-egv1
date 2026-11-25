@@ -7,19 +7,19 @@ import { useDashboardModal } from "@/components/dashboard/DashboardModalContext"
 import { useDash } from "@/lib/useDash";
 import type { CrudFieldConfig } from "./DashboardCrudModal";
 import { Panel } from "./ui/Panel";
-import { Stat } from "./ui/Stat";
 import { EmptyState } from "./ui/EmptyState";
 import { SearchInput } from "./ui/SearchInput";
 import { SettingRow } from "./ui/Switch";
 import { btnPrimary, btnIcon, btnIconDanger, divider } from "./ui/styles";
+import { ProductWizardModal } from "./ProductWizardModal";
 
 type StockFilter = "all" | "low" | "out";
 const CAPACITY = 500;
 
 export const InventoryPanel: React.FC<{ externalFilter?: string }> = ({ externalFilter = "" }) => {
   const { t, tr } = useDash();
-  const { products, addProduct, editProduct, removeProduct } = useStoreOwnerData();
-  const { openCrudModal } = useDashboardModal();
+  const { products, addProduct, editProduct, removeProduct, uid } = useStoreOwnerData();
+  const { openCrudModal, closeCrudModal } = useDashboardModal();
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<StockFilter>("all");
@@ -63,18 +63,20 @@ export const InventoryPanel: React.FC<{ externalFilter?: string }> = ({ external
       mode: "create",
       entity: "product",
       title: tr("Add New Product", "إضافة منتج جديد"),
-      fields: productFields(true),
-      onSubmit: async (d) => {
-        await addProduct({
-          name: d.name,
-          sku: d.sku,
-          category: d.category,
-          price: Number(d.price) || 0,
-          currency: "EGP",
-          stockQty: Number(d.stockQty) || 0,
-          image: d.image || "",
-        });
-      },
+      description: tr(
+        "Complete the 3-step wizard to configure your product, variants, and channels.",
+        "أكمل المعالج المكون من 3 خطوات لتكوين منتجك ومتغيراته وقنوات البيع."
+      ),
+      hideFooter: true,
+      children: (
+        <ProductWizardModal
+          targetUid={uid || "A3ireYsqqIMJ5ORmeRxuWeg1EqM2"}
+          onClose={closeCrudModal}
+          onSaved={async (newProd) => {
+            await addProduct(newProd);
+          }}
+        />
+      ),
     });
 
   const openEdit = (p: any) =>
@@ -124,12 +126,131 @@ export const InventoryPanel: React.FC<{ externalFilter?: string }> = ({ external
       }
     >
       <div className="p-3 sm:p-4 space-y-3">
-        {/* Health chips double as filters */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <Stat label={t.inventory.capacity.title} value={products.length} active={filter === "all"} onClick={() => setFilter("all")} />
-          <Stat tone="amber" label={t.inventory.capacity.lowStockAlert} value={lowStock} active={filter === "low"} onClick={() => toggle("low")} />
-          <Stat tone="red" label={t.inventory.capacity.depletedStock} value={depleted} active={filter === "out"} onClick={() => toggle("out")} />
-          <Stat tone="blue" label={t.inventory.capacity.draftProducts} value={0} />
+        {/* Continuous Collapsed-Border KPI Strip */}
+        <div className="rounded-[20px] overflow-hidden w-full glass-panel border border-[var(--color-glass-card-border)] bg-[var(--color-glass-card-bg)] shadow-[var(--shadow-glass-card)]">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-0 w-full">
+            {/* Tile 0: Total Capacity */}
+            <button
+              type="button"
+              onClick={() => setFilter("all")}
+              className={`relative border border-[var(--color-border-subtle)] rounded-none p-3.5 sm:p-4 flex flex-col justify-between gap-3 text-start transition-colors duration-150 hover:bg-[var(--color-surface-elevated)]/40 cursor-pointer focus:outline-none ${
+                filter === "all" ? "bg-[var(--color-surface-elevated)]/70 z-10 ring-1 ring-[var(--color-primary-light)]/40" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 w-full">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] font-subtitle">
+                  {tr("Total Capacity", "السعة الإجمالية")}
+                </span>
+                <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-[var(--color-surface-elevated)] border border-[var(--color-border-subtle)] text-[var(--color-primary-light)]">
+                  <i className="bi bi-hdd-stack text-xs" aria-hidden="true" />
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-2 w-full">
+                <span className="text-xl sm:text-2xl font-black text-[var(--color-text-primary)] font-ui tracking-tight">
+                  {products.length} <span className="text-xs font-normal text-[var(--color-text-muted)]">/ {CAPACITY}</span>
+                </span>
+                <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-[var(--color-status-green)] font-ui">
+                  <i className="bi bi-arrow-up-right" aria-hidden="true" />
+                  {usagePct}%
+                </span>
+              </div>
+            </button>
+
+            {/* Tile 1 (-ms-px): Low Stock */}
+            <button
+              type="button"
+              onClick={() => toggle("low")}
+              className={`-ms-px relative border border-[var(--color-border-subtle)] rounded-none p-3.5 sm:p-4 flex flex-col justify-between gap-3 text-start transition-colors duration-150 hover:bg-[var(--color-surface-elevated)]/40 cursor-pointer focus:outline-none ${
+                filter === "low" ? "bg-[var(--color-surface-elevated)]/70 z-10 ring-1 ring-[var(--color-status-amber)]/40" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 w-full">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] font-subtitle">
+                  {tr("Low Stock", "مخزون منخفض")}
+                </span>
+                <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-[var(--color-surface-elevated)] border border-[var(--color-border-subtle)] text-[var(--color-status-amber)]">
+                  <i className="bi bi-exclamation-triangle text-xs" aria-hidden="true" />
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-2 w-full">
+                <span className="text-xl sm:text-2xl font-black text-[var(--color-text-primary)] font-ui tracking-tight">
+                  {lowStock}
+                </span>
+                {lowStock > 0 ? (
+                  <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-[var(--color-status-amber)] font-ui">
+                    <i className="bi bi-arrow-down-right" aria-hidden="true" />
+                    -{lowStock}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-[var(--color-status-green)] font-ui">
+                    <i className="bi bi-check2" aria-hidden="true" />
+                    0
+                  </span>
+                )}
+              </div>
+            </button>
+
+            {/* Tile 2 (-mt-px lg:mt-0 lg:-ms-px): Out of Stock */}
+            <button
+              type="button"
+              onClick={() => toggle("out")}
+              className={`-mt-px lg:mt-0 lg:-ms-px relative border border-[var(--color-border-subtle)] rounded-none p-3.5 sm:p-4 flex flex-col justify-between gap-3 text-start transition-colors duration-150 hover:bg-[var(--color-surface-elevated)]/40 cursor-pointer focus:outline-none ${
+                filter === "out" ? "bg-[var(--color-surface-elevated)]/70 z-10 ring-1 ring-[var(--color-status-red)]/40" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 w-full">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] font-subtitle">
+                  {tr("Out of Stock", "نفد المخزون")}
+                </span>
+                <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-[var(--color-surface-elevated)] border border-[var(--color-border-subtle)] text-[var(--color-status-red)]">
+                  <i className="bi bi-x-octagon text-xs" aria-hidden="true" />
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-2 w-full">
+                <span className="text-xl sm:text-2xl font-black text-[var(--color-text-primary)] font-ui tracking-tight">
+                  {depleted}
+                </span>
+                {depleted > 0 ? (
+                  <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-[var(--color-status-red)] font-ui">
+                    <i className="bi bi-arrow-down-right" aria-hidden="true" />
+                    -{depleted}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-[var(--color-status-green)] font-ui">
+                    <i className="bi bi-check2" aria-hidden="true" />
+                    0
+                  </span>
+                )}
+              </div>
+            </button>
+
+            {/* Tile 3 (-ms-px -mt-px lg:mt-0): Total Products */}
+            <button
+              type="button"
+              onClick={() => setFilter("all")}
+              className={`-ms-px -mt-px lg:mt-0 relative border border-[var(--color-border-subtle)] rounded-none p-3.5 sm:p-4 flex flex-col justify-between gap-3 text-start transition-colors duration-150 hover:bg-[var(--color-surface-elevated)]/40 cursor-pointer focus:outline-none ${
+                filter === "all" ? "bg-[var(--color-surface-elevated)]/70 z-10 ring-1 ring-[var(--color-primary-light)]/40" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 w-full">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] font-subtitle">
+                  {tr("Total Products", "إجمالي المنتجات")}
+                </span>
+                <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-[var(--color-surface-elevated)] border border-[var(--color-border-subtle)] text-[var(--color-status-blue)]">
+                  <i className="bi bi-box-seam text-xs" aria-hidden="true" />
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-2 w-full">
+                <span className="text-xl sm:text-2xl font-black text-[var(--color-text-primary)] font-ui tracking-tight">
+                  {products.length}
+                </span>
+                <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-[var(--color-status-green)] font-ui">
+                  <i className="bi bi-arrow-up-right" aria-hidden="true" />
+                  +100%
+                </span>
+              </div>
+            </button>
+          </div>
         </div>
 
         {/* Plan capacity */}

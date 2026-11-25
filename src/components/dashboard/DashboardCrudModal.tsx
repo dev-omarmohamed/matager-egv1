@@ -39,6 +39,7 @@ export interface DashboardCrudModalProps {
   onSubmit?: (formData: Record<string, any>) => Promise<void> | void;
   onDelete?: () => Promise<void> | void;
   children?: React.ReactNode;
+  hideFooter?: boolean;
   loading?: boolean;
   error?: string | null;
 }
@@ -79,6 +80,7 @@ export const DashboardCrudModal: React.FC<DashboardCrudModalProps> = ({
   onSubmit,
   onDelete,
   children,
+  hideFooter = false,
   loading: externalLoading = false,
   error: externalError = null,
 }) => {
@@ -427,39 +429,41 @@ export const DashboardCrudModal: React.FC<DashboardCrudModalProps> = ({
           </div>
 
           {/* Footer: full-width buttons on phones, end-aligned on desktop */}
-          <div className="px-4 sm:px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-[var(--color-border-subtle)] bg-[var(--color-surface)] flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isBusy}
-              className={`${btnGhost} flex-1 md:flex-none !px-4 !py-2.5 md:!py-2 !text-xs md:ms-auto`}
-            >
-              {mode === "view" ? tr("Close", "إغلاق") : tr("Cancel", "إلغاء")}
-            </button>
-
-            {mode !== "view" && (
+          {!hideFooter && (
+            <div className="px-4 sm:px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-[var(--color-border-subtle)] bg-[var(--color-surface)] flex items-center gap-2 shrink-0">
               <button
-                type="submit"
+                type="button"
+                onClick={onClose}
                 disabled={isBusy}
-                className={`${btnPrimary} flex-1 md:flex-none !px-5 !py-2.5 md:!py-2 !text-xs ${
-                  isDelete ? "!bg-none !bg-[var(--color-status-red)]" : ""
-                }`}
+                className={`${btnGhost} flex-1 md:flex-none !px-4 !py-2.5 md:!py-2 !text-xs md:ms-auto`}
               >
-                {isBusy ? (
-                  <i className="bi bi-arrow-repeat animate-spin" />
-                ) : (
-                  <i className={`bi ${isDelete ? "bi-trash3" : mode === "create" ? "bi-plus-circle" : "bi-check2"}`} />
-                )}
-                <span>
-                  {isDelete
-                    ? tr("Confirm Delete", "تأكيد الحذف")
-                    : mode === "create"
-                    ? tr("Create Record", "إضافة السجل")
-                    : tr("Save Changes", "حفظ التغييرات")}
-                </span>
+                {mode === "view" ? tr("Close", "إغلاق") : tr("Cancel", "إلغاء")}
               </button>
-            )}
-          </div>
+
+              {mode !== "view" && (
+                <button
+                  type="submit"
+                  disabled={isBusy}
+                  className={`${btnPrimary} flex-1 md:flex-none !px-5 !py-2.5 md:!py-2 !text-xs ${
+                    isDelete ? "!bg-none !bg-[var(--color-status-red)]" : ""
+                  }`}
+                >
+                  {isBusy ? (
+                    <i className="bi bi-arrow-repeat animate-spin" />
+                  ) : (
+                    <i className={`bi ${isDelete ? "bi-trash3" : mode === "create" ? "bi-plus-circle" : "bi-check2"}`} />
+                  )}
+                  <span>
+                    {isDelete
+                      ? tr("Confirm Delete", "تأكيد الحذف")
+                      : mode === "create"
+                      ? tr("Create Record", "إضافة السجل")
+                      : tr("Save Changes", "حفظ التغييرات")}
+                  </span>
+                </button>
+              )}
+            </div>
+          )}
         </form>
       </div>
     </div>

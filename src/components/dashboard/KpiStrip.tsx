@@ -3,7 +3,6 @@
 import React from "react";
 import { useDash } from "@/lib/useDash";
 import { useStoreOwnerData } from "@/lib/useStoreOwnerData";
-import { surface, eyebrow } from "./ui/styles";
 
 interface KpiTileProps {
   title: string;
@@ -11,46 +10,49 @@ interface KpiTileProps {
   delta: string;
   positive: boolean;
   icon: string;
-  points: string;
+  index: number;
 }
 
-const KpiTile: React.FC<KpiTileProps> = ({ title, value, delta, positive, icon, points }) => {
+const KpiTile: React.FC<KpiTileProps> = ({ title, value, delta, positive, icon, index }) => {
+  // Collapse borders to create a single continuous strip
+  const marginClasses =
+    index === 1
+      ? "-ms-px"
+      : index === 2
+        ? "-mt-px lg:mt-0 lg:-ms-px"
+        : index === 3
+          ? "-ms-px -mt-px lg:mt-0"
+          : "";
+
   return (
-    <div className={`${surface} p-4 sm:p-5 lg:p-6 min-w-0 flex flex-col justify-between group`}>
+    <div
+      className={`glass-panel bg-[var(--color-glass-card-bg)] border border-[var(--color-glass-card-border)] shadow-[var(--shadow-glass-card)] transition-all duration-200 ease-out p-4 sm:p-5 lg:p-6 min-w-0 flex flex-col justify-between group rounded-none ${marginClasses}`}
+    >
       <div className="flex items-center justify-between gap-2">
-        <span className={`${eyebrow} truncate`}>{title}</span>
+        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] font-subtitle truncate">
+          {title}
+        </span>
         <span className="w-7 h-7 rounded-lg flex items-center justify-center bg-[var(--color-surface-elevated)] border border-[var(--color-border-subtle)] text-[var(--color-text-muted)] group-hover:text-[var(--color-primary-light)] transition-colors">
           <i className={`bi ${icon} text-xs`} aria-hidden="true" />
         </span>
       </div>
 
-      <div className="mt-3 flex items-end justify-between gap-2">
+      <div className="mt-3 flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-xl sm:text-2xl lg:text-3xl font-bold font-heading leading-none text-[var(--color-text-primary)] truncate">
+          <p className="text-xl sm:text-2xl lg:text-xl font-bold font-heading leading-none text-[var(--color-text-primary)] truncate">
             {value}
           </p>
-          <p className="mt-2 flex items-center gap-1 text-xs font-bold font-ui text-[var(--color-status-green)]">
-            <i className="bi bi-arrow-up-right text-[11px]" aria-hidden="true" />
-            <span>{delta}</span>
-          </p>
         </div>
-
-        <svg
-          viewBox="0 0 100 30"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-          className="w-14 h-8 sm:w-20 sm:h-9 shrink-0 text-[var(--color-status-green)] opacity-85 transition-opacity group-hover:opacity-100"
+        <p
+          className={`flex items-center gap-1 text-xs font-bold font-ui ${positive ? "text-[var(--color-status-green)]" : "text-[var(--color-status-red)]"
+            }`}
         >
-          <polyline
-            points={points}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
+          <i
+            className={`bi ${positive ? "bi-arrow-up-right" : "bi-arrow-down-right"} text-[11px]`}
+            aria-hidden="true"
           />
-        </svg>
+          <span>{delta}</span>
+        </p>
       </div>
     </div>
   );
@@ -61,14 +63,13 @@ export const KpiStrip: React.FC = () => {
   const { totalRevenue, totalOrders, totalCustomers, averageCartValue } = useStoreOwnerData();
   const hasOrders = totalOrders > 0;
 
-  const tiles: KpiTileProps[] = [
+  const tiles = [
     {
       title: t.kpis.revenue.title,
       value: `EGP ${totalRevenue.toLocaleString()}`,
       delta: hasOrders ? t.kpis.revenue.delta : "0%",
       positive: hasOrders,
       icon: "bi-cash-coin",
-      points: "0,26 15,22 30,24 45,18 60,19 75,12 90,14 100,5",
     },
     {
       title: t.kpis.orders.title,
@@ -76,7 +77,6 @@ export const KpiStrip: React.FC = () => {
       delta: hasOrders ? t.kpis.orders.delta : "0%",
       positive: hasOrders,
       icon: "bi-bag-check",
-      points: "0,24 20,20 40,22 60,15 80,14 100,6",
     },
     {
       title: t.kpis.customers.title,
@@ -84,7 +84,6 @@ export const KpiStrip: React.FC = () => {
       delta: hasOrders ? t.kpis.customers.delta : "0%",
       positive: hasOrders,
       icon: "bi-people",
-      points: "0,25 20,22 40,18 60,19 80,11 100,7",
     },
     {
       title: t.kpis.cartValue.title,
@@ -92,7 +91,6 @@ export const KpiStrip: React.FC = () => {
       delta: hasOrders ? t.kpis.cartValue.delta : "0%",
       positive: hasOrders,
       icon: "bi-cart3",
-      points: "0,22 20,24 40,19 60,16 80,12 100,8",
     },
   ];
 
@@ -107,11 +105,13 @@ export const KpiStrip: React.FC = () => {
         </p>
       </div>
 
-      {/* 2x2 on phones so all four numbers are visible without scrolling */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-        {tiles.map((tile) => (
-          <KpiTile key={tile.icon} {...tile} />
-        ))}
+      {/* Wrapper handles the outer rounded corners and hides the square inner corners */}
+      <div className="rounded-[20px] overflow-hidden w-full">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-0 w-full">
+          {tiles.map((tile, i) => (
+            <KpiTile key={tile.icon} {...tile} index={i} />
+          ))}
+        </div>
       </div>
     </section>
   );

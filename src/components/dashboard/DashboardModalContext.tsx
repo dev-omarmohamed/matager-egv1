@@ -18,6 +18,7 @@ export interface OpenModalOptions {
   onSubmit?: (data: Record<string, any>) => Promise<void> | void;
   onDelete?: () => Promise<void> | void;
   children?: React.ReactNode;
+  hideFooter?: boolean;
 }
 
 export interface DashboardModalContextValue {
@@ -59,6 +60,7 @@ export const DashboardModalProvider: React.FC<{ children: React.ReactNode }> = (
         fields={config.fields}
         onSubmit={config.onSubmit}
         onDelete={config.onDelete}
+        hideFooter={config.hideFooter}
       >
         {config.children}
       </DashboardCrudModal>
