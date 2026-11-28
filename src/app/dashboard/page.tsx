@@ -89,6 +89,7 @@ function SectionBar({
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { tr, isRtl } = useDash();
   const urlStoreId = searchParams.get("storeId") || searchParams.get("store");
   const urlUid = searchParams.get("uid") || searchParams.get("userId");
   const cleanUid = useMemo(() => {
@@ -97,7 +98,7 @@ function DashboardContent() {
     return undefined;
   }, [urlStoreId, urlUid]);
 
-  const { orders } = useStoreOwnerData(cleanUid);
+  const { orders, subscription } = useStoreOwnerData(cleanUid);
   const [globalSearch, setGlobalSearch] = useState("");
   const [section, setSection] = useState<SectionId>("overview");
 
@@ -154,6 +155,51 @@ function DashboardContent() {
       <SectionBar active={section} onChange={changeSection} pendingOrders={pending} />
 
       <main className="max-w-[1400px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+        {subscription?.status === "pending_payment" && (
+          <div className="mb-4 p-3.5 sm:p-4 rounded-2xl border border-[var(--color-status-amber)]/30 bg-[var(--color-status-amber-bg)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[var(--color-text-primary)] animate-in fade-in">
+            <div className="flex items-center gap-2.5">
+              <span className="w-8 h-8 rounded-xl bg-[var(--color-status-amber)]/20 text-[var(--color-status-amber)] flex items-center justify-center shrink-0">
+                <i className="bi bi-credit-card text-base" aria-hidden="true" />
+              </span>
+              <div>
+                <p className="font-bold text-[13px] text-[var(--color-status-amber)]">
+                  {tr("Subscription Pending Payment", "الاشتراك بانتظار الدفع")}
+                </p>
+                <p className="text-[var(--color-text-muted)] text-[11px] mt-0.5">
+                  {tr(
+                    "Your subscription is awaiting payment via Kashier. Complete checkout to unlock all store features.",
+                    "اشتراكك بانتظار تأكيد الدفع عبر كاشير. أكمل عملية الدفع لتفعيل كافة مميزات المتجر."
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    try {
+                      const raw = localStorage.getItem("matager_pending_subscription");
+                      if (raw) {
+                        const parsed = JSON.parse(raw);
+                        if (parsed.sessionUrl) {
+                          window.location.href = parsed.sessionUrl;
+                          return;
+                        }
+                      }
+                    } catch {}
+                    window.location.href = `/?auth=signup&step=6`;
+                  }
+                }}
+                className="px-3.5 py-1.5 rounded-lg bg-[var(--color-primary-light)] text-white font-bold hover:opacity-90 transition-opacity flex items-center gap-1.5"
+              >
+                <span>{tr("Complete Payment", "إتمام الدفع")}</span>
+                <i className={`bi ${isRtl ? "bi-arrow-left" : "bi-arrow-right"}`} />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* key => the whole section fades in when the tab changes */}
         <div key={section} className="space-y-3 sm:space-y-5 animate-in fade-in duration-200">
           {section === "overview" && (

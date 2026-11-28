@@ -50,6 +50,11 @@ export function useStoreOwnerData(customUid?: string) {
       price: 0,
       currency: "EGP",
       end_date: "",
+      volume_tier: "",
+      order_id: "",
+      billing_cycle: "monthly",
+      provider: "kashier",
+      paid_at: "",
     },
     orders: [],
     products: [],
@@ -82,12 +87,14 @@ export function useStoreOwnerData(customUid?: string) {
     const cleanUid = uid.replace(/^store_/, "");
     const storeIdFull = uid.startsWith("store_") ? uid : `store_${uid}`;
 
-    // Reference primary nodes: stores/<cleanUid>, stores/<storeIdFull>, store/<cleanUid>, storeowner/<cleanUid>, client/<cleanUid>
+    // Reference primary nodes: stores/<cleanUid>, stores/<storeIdFull>, store/<cleanUid>, storeowner/<cleanUid>, client/<cleanUid>, subscriptions/<storeIdFull>
     const storeRef = rtdbRef(rtdb, `stores/${cleanUid}`);
     const storeFullRef = rtdbRef(rtdb, `stores/${storeIdFull}`);
     const storeAltRef = rtdbRef(rtdb, `store/${cleanUid}`);
     const storeOwnerRef = rtdbRef(rtdb, `storeowner/${cleanUid}`);
     const clientRef = rtdbRef(rtdb, `client/${cleanUid}`);
+    const subRef = rtdbRef(rtdb, `subscriptions/${storeIdFull}`);
+    const subCleanRef = rtdbRef(rtdb, `subscriptions/${cleanUid}`);
 
     let activeData: any = null;
 
@@ -292,12 +299,80 @@ export function useStoreOwnerData(customUid?: string) {
       }
     }, (err) => console.warn("RTDB client listener error:", err));
 
+    // Subscription snapshot handler for live Kashier updates
+    const handleSubscriptionSnapshot = (snapVal: any) => {
+      if (!snapVal || typeof snapVal !== "object") return;
+      setState((prev) => ({
+        ...prev,
+        subscription: {
+          plan_id:
+            snapVal.planId ||
+            snapVal.plan_id ||
+            snapVal.selectedPlan ||
+            prev.subscription.plan_id ||
+            "starter",
+          status: snapVal.status || prev.subscription.status || "Active",
+          price:
+            Number(snapVal.amount) ||
+            Number(snapVal.price) ||
+            prev.subscription.price ||
+            0,
+          currency: snapVal.currency || prev.subscription.currency || "EGP",
+          end_date:
+            snapVal.endDate ||
+            snapVal.end_date ||
+            prev.subscription.end_date ||
+            "",
+          volume_tier:
+            snapVal.volume_tier ||
+            snapVal.planId ||
+            prev.subscription.volume_tier ||
+            "",
+          order_id:
+            snapVal.orderId ||
+            snapVal.order_id ||
+            prev.subscription.order_id ||
+            "",
+          billing_cycle:
+            snapVal.billingCycle ||
+            snapVal.billing_cycle ||
+            prev.subscription.billing_cycle ||
+            "monthly",
+          provider:
+            snapVal.provider || prev.subscription.provider || "kashier",
+          paid_at:
+            snapVal.paidAt ||
+            snapVal.paid_at ||
+            prev.subscription.paid_at ||
+            "",
+        },
+      }));
+    };
+
+    onValue(
+      subRef,
+      (snap) => {
+        if (snap.exists()) handleSubscriptionSnapshot(snap.val());
+      },
+      (err) => console.warn("RTDB subscription listener error:", err)
+    );
+
+    onValue(
+      subCleanRef,
+      (snap) => {
+        if (snap.exists()) handleSubscriptionSnapshot(snap.val());
+      },
+      (err) => console.warn("RTDB subscription clean listener error:", err)
+    );
+
     return () => {
       off(storeRef);
       off(storeFullRef);
       off(storeAltRef);
       off(storeOwnerRef);
       off(clientRef);
+      off(subRef);
+      off(subCleanRef);
     };
   }, [uid]);
 

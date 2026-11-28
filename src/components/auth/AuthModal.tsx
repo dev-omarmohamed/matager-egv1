@@ -34,9 +34,11 @@ import {
   User,
   Plus,
   Minus,
+  AlertCircle,
 } from "lucide-react";
 import { APP_ROUTES } from "@/config/routes";
 import { setupStoreOwnerAccount } from "@/lib/firestore-service";
+import { savePendingSubscriptionAndPayment } from "@/lib/kashier-service";
 import { auth } from "@/lib/firebase";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { useDashboardLanguage } from "@/lib/i18n";
@@ -171,6 +173,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [passwordNotice, setPasswordNotice] = useState<string | null>(null);
 
   const [isLaunching, setIsLaunching] = useState(false);
+  const [signupLaunchError, setSignupLaunchError] = useState<string | null>(null);
 
   const [signinForgotMode, setSigninForgotMode] = useState(false);
   const [signinError, setSigninError] = useState<string | null>(null);
@@ -630,6 +633,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     if (signupStep < 6) {
       setSignupStep((s) => (s + 1) as any);
     } else {
+      setSignupLaunchError(null);
       setIsLaunching(true);
       if (typeof window !== "undefined") {
         localStorage.setItem("matager_user_role", "merchant");
@@ -664,62 +668,133 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         password: signupPassword || "MatagerStore2026!",
         selectedPlan,
       })
-        .then(({ store, user }) => {
+        .then(async ({ store, user }) => {
           const sId = store?.id || `store_${Date.now()}`;
-          const slug =
-            storeName
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, "-")
-              .replace(/^-|-$/g, "") || "store";
+          const uId = user?.id || `owner_${Date.now()}`;
 
           if (typeof window !== "undefined") {
             localStorage.setItem("matager_user_role", "merchant");
             localStorage.setItem("matager_current_store_id", sId);
             localStorage.setItem("matager_active_store_id", sId);
             localStorage.setItem("matager_active_store_name", storeName);
-            if (user?.id) {
-              localStorage.setItem("matager_active_user_id", user.id);
+            if (uId) {
+              localStorage.setItem("matager_active_user_id", uId);
             }
           }
 
-          setIsLaunching(false);
-          setSignupSuccessData({
-            storeId: sId,
-            storeName,
-            subdomain: `${slug}.matager.com`,
-            email,
-            plan: selectedPlan,
-          });
-          setIsSignupSuccess(true);
-          setRedirectCountdown(5);
+          // 1. Generate unique order ID for Kashier session
+          const orderId = `sub_${sId}_${Date.now()}`;
+          const numPrice =
+            typeof tierPrice === "number"
+              ? tierPrice
+              : parseFloat(String(tierPrice).replace(/[^0-9.]/g, "")) || 0;
+          const currencyCode = activeCountryObj.currency || "EGP";
+          const posCount = modalPricingMode === "pos_only" ? posOnlyPosCount : catalogPosCount;
+
+          try {
+            // 2. Call Kashier Payment Sessions API route
+            const sessionRes = await fetch("/api/kashier/create-session", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                amount: numPrice,
+                currency: currencyCode,
+                orderId,
+                storeId: sId,
+                customerEmail: email,
+                customerPhone: fullPhone,
+                locale: isAr ? "ar" : "en",
+                metaData: {
+                  storeName,
+                  legalName: legalName || storeName,
+                  category,
+                  planId: selectedVolumeTier || "starter",
+                  selectedPlan,
+                  expectedVolume,
+                  pricingMode: modalPricingMode,
+                  billingCycle: modalBilling,
+                  posCount,
+                },
+              }),
+            });
+
+            const sessionJson = await sessionRes.json().catch(() => ({}));
+
+            if (!sessionRes.ok || !sessionJson.sessionUrl) {
+              throw new Error(
+                sessionJson.error ||
+                  (isAr
+                    ? "فشل في تهيئة جلسة الدفع عبر كاشير"
+                    : "Failed to initialize Kashier payment session")
+              );
+            }
+
+            // 3. Persist pending subscription & payment records in RTDB:
+            // - subscriptions/{storeId}
+            // - subscriptions_by_order/{orderId}
+            // - payments/{orderId}
+            await savePendingSubscriptionAndPayment({
+              storeId: sId,
+              ownerId: uId,
+              orderId,
+              storeName,
+              legalName: legalName || storeName,
+              category,
+              ownerEmail: email,
+              ownerPhone: fullPhone,
+              pricingMode: modalPricingMode,
+              billingCycle: modalBilling,
+              planId: selectedVolumeTier || "starter",
+              selectedPlan,
+              expectedVolume,
+              posCount,
+              amount: numPrice,
+              currency: currencyCode,
+              provider: "kashier",
+              sessionId: sessionJson.sessionId || "",
+              sessionUrl: sessionJson.sessionUrl,
+            });
+
+            // 4. Save pending checkout context in localStorage
+            if (typeof window !== "undefined") {
+              localStorage.setItem(
+                "matager_pending_subscription",
+                JSON.stringify({
+                  storeId: sId,
+                  orderId,
+                  amount: numPrice,
+                  currency: currencyCode,
+                  planId: selectedVolumeTier || "starter",
+                  selectedPlan,
+                  sessionId: sessionJson.sessionId,
+                  sessionUrl: sessionJson.sessionUrl,
+                  createdAt: new Date().toISOString(),
+                })
+              );
+
+              // 5. Redirect immediately to Kashier hosted checkout page
+              window.location.href = sessionJson.sessionUrl;
+            }
+          } catch (paymentErr: any) {
+            console.error("Kashier payment session creation error:", paymentErr);
+            setIsLaunching(false);
+            setSignupLaunchError(
+              paymentErr?.message ||
+                (isAr
+                  ? "تعذر إتمام جلسة الدفع عبر كاشير. يرجى إعادة المحاولة."
+                  : "Could not create Kashier payment session. Please try again.")
+            );
+          }
         })
         .catch((err) => {
           console.error("Firebase store setup error:", err);
-          const fallbackStoreId = `store_${Date.now()}`;
-          const slug =
-            storeName
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, "-")
-              .replace(/^-|-$/g, "") || "store";
-
-          if (typeof window !== "undefined") {
-            localStorage.setItem("matager_user_role", "merchant");
-            localStorage.setItem("matager_current_store_id", fallbackStoreId);
-            localStorage.setItem("matager_active_store_id", fallbackStoreId);
-            localStorage.setItem("matager_active_store_name", storeName);
-            localStorage.setItem("matager_active_user_id", `owner_${Date.now()}`);
-          }
-
           setIsLaunching(false);
-          setSignupSuccessData({
-            storeId: fallbackStoreId,
-            storeName,
-            subdomain: `${slug}.matager.com`,
-            email,
-            plan: selectedPlan,
-          });
-          setIsSignupSuccess(true);
-          setRedirectCountdown(5);
+          setSignupLaunchError(
+            err?.message ||
+              (isAr
+                ? "تعذر إنشاء حساب المتجر. يرجى المحاولة مرة أخرى."
+                : "Failed to setup store account. Please try again.")
+          );
         });
     }
   };
@@ -1911,6 +1986,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             {isAr ? "جاهز لإطلاق مساحة العمل" : "Review & launch"}
                           </h2>
                         </div>
+
+                        {signupLaunchError && (
+                          <div className="p-2.5 rounded-[10px] border border-[var(--color-status-red)]/30 bg-[var(--color-status-red-bg)] text-[var(--color-status-red)] text-xs flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 shrink-0" />
+                            <span className="flex-1">{signupLaunchError}</span>
+                          </div>
+                        )}
 
                         <div className="p-3 rounded-[12px] bg-[var(--color-surface-elevated)] border border-[var(--color-border)] space-y-1.5 text-[11px]">
                           <div className="flex justify-between py-0.5">

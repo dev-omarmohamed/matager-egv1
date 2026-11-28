@@ -113,6 +113,10 @@ export interface StoreOwnerState {
     currency: string;
     end_date: string;
     volume_tier?: string;
+    order_id?: string;
+    billing_cycle?: string;
+    provider?: string;
+    paid_at?: string;
   };
   orders: LiveOrder[];
   products: LiveProduct[];

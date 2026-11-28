@@ -1,0 +1,1266 @@
+{
+    "defaults": {
+        "currency": "EGP",
+        "rtdbUrl": "https://matager-egv01-default-rtdb.europe-west1.firebasedatabase.app",
+        "storeOwnerUid": "A3ireYsqqIMJ5ORmeRxuWeg1EqM2",
+        "maxBundles": 3,
+        "sellingChannels": [
+            "both",
+            "pos",
+            "storefront"
+        ],
+        "presetColors": [
+            {
+                "name": "Black",
+                "hex": "#111827"
+            },
+            {
+                "name": "White",
+                "hex": "#F9FAFB"
+            },
+            {
+                "name": "Navy",
+                "hex": "#1E3A8A"
+            },
+            {
+                "name": "Beige",
+                "hex": "#D6C7B2"
+            },
+            {
+                "name": "Olive",
+                "hex": "#4B5320"
+            },
+            {
+                "name": "Burgundy",
+                "hex": "#7F1D1D"
+            },
+            {
+                "name": "Grey",
+                "hex": "#6B7280"
+            },
+            {
+                "name": "Blue",
+                "hex": "#2563EB"
+            },
+            {
+                "name": "Red",
+                "hex": "#DC2626"
+            },
+            {
+                "name": "Green",
+                "hex": "#16A34A"
+            }
+        ],
+        "orderedIntervals": {
+            "clothingSizes": [
+                "XXS",
+                "XS",
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL",
+                "3XL",
+                "4XL"
+            ],
+            "shoeSizes": [
+                "36",
+                "37",
+                "38",
+                "39",
+                "40",
+                "41",
+                "42",
+                "43",
+                "44",
+                "45",
+                "46",
+                "47"
+            ],
+            "ringSizes": [
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "10",
+                "11",
+                "12",
+                "13"
+            ],
+            "storageSizes": [
+                "32GB",
+                "64GB",
+                "128GB",
+                "256GB",
+                "512GB",
+                "1TB",
+                "2TB"
+            ],
+            "volumes": [
+                "15ml",
+                "30ml",
+                "50ml",
+                "75ml",
+                "100ml",
+                "150ml",
+                "200ml",
+                "500ml",
+                "1L"
+            ]
+        }
+    },
+    "categories": [
+        {
+            "main": "Clothing & Fashion",
+            "defaultAttributeName": "Size",
+            "intervalKey": "clothingSizes",
+            "attributeSuggestions": [
+                "Size",
+                "Fit",
+                "Length",
+                "Sleeve"
+            ],
+            "valueSuggestions": [
+                "XS",
+                "S",
+                "M",
+                "L",
+                "XL",
+                "XXL",
+                "3XL"
+            ],
+            "submain": [
+                {
+                    "name": "Headwear",
+                    "innersubmain": [
+                        "Caps",
+                        "Beanies",
+                        "Bucket Hats",
+                        "Visors"
+                    ],
+                    "valueSuggestions": [
+                        "One Size",
+                        "S/M",
+                        "L/XL"
+                    ]
+                },
+                {
+                    "name": "Eyewear",
+                    "innersubmain": [
+                        "Optical Frames",
+                        "Aviators",
+                        "Wayfarers",
+                        "Sports"
+                    ],
+                    "valueSuggestions": [
+                        "Standard",
+                        "Narrow",
+                        "Wide"
+                    ]
+                },
+                {
+                    "name": "Handwear",
+                    "innersubmain": [
+                        "Winter Gloves",
+                        "Training Gloves",
+                        "Leather Gloves"
+                    ],
+                    "valueSuggestions": [
+                        "S",
+                        "M",
+                        "L",
+                        "XL"
+                    ]
+                },
+                {
+                    "name": "Tops",
+                    "innersubmain": [
+                        "T-Shirts",
+                        "Hoodies",
+                        "Sweatshirts",
+                        "Polo Shirts",
+                        "Shirts"
+                    ],
+                    "valueSuggestions": [
+                        "XS",
+                        "S",
+                        "M",
+                        "L",
+                        "XL",
+                        "XXL",
+                        "3XL"
+                    ]
+                },
+                {
+                    "name": "Bottoms",
+                    "innersubmain": [
+                        "Jeans",
+                        "Chinos",
+                        "Joggers",
+                        "Shorts",
+                        "Trousers"
+                    ],
+                    "valueSuggestions": [
+                        "28",
+                        "30",
+                        "32",
+                        "34",
+                        "36",
+                        "38",
+                        "40",
+                        "S",
+                        "M",
+                        "L",
+                        "XL"
+                    ]
+                },
+                {
+                    "name": "Accessories",
+                    "innersubmain": [
+                        "Socks",
+                        "Pins",
+                        "Patches",
+                        "Wallets"
+                    ],
+                    "valueSuggestions": [
+                        "Standard",
+                        "Pack of 3",
+                        "Pack of 6"
+                    ]
+                },
+                {
+                    "name": "Footwear",
+                    "defaultAttributeName": "Shoe Size",
+                    "intervalKey": "shoeSizes",
+                    "innersubmain": [
+                        "Sneakers",
+                        "Boots",
+                        "Loafers",
+                        "Slides & Sandals",
+                        "Running"
+                    ],
+                    "valueSuggestions": [
+                        "38",
+                        "39",
+                        "40",
+                        "41",
+                        "42",
+                        "43",
+                        "44",
+                        "45",
+                        "46",
+                        "47"
+                    ]
+                },
+                {
+                    "name": "Leg Wear",
+                    "innersubmain": [
+                        "Tights",
+                        "Leggings",
+                        "Thermal Base Layers"
+                    ],
+                    "valueSuggestions": [
+                        "XS",
+                        "S",
+                        "M",
+                        "L",
+                        "XL",
+                        "XXL"
+                    ]
+                }
+            ]
+        },
+        {
+            "main": "Home Appliances",
+            "defaultAttributeName": "Capacity / Model",
+            "intervalKey": "volumes",
+            "attributeSuggestions": [
+                "Capacity",
+                "Dimensions",
+                "Power",
+                "Voltage",
+                "Model"
+            ],
+            "valueSuggestions": [
+                "50x50cm",
+                "100x60cm",
+                "150x80cm",
+                "220V Standard",
+                "12L",
+                "20L"
+            ],
+            "submain": [
+                {
+                    "name": "Kitchen Appliances",
+                    "innersubmain": [
+                        "Blenders",
+                        "Air Fryers",
+                        "Coffee Makers",
+                        "Toasters"
+                    ]
+                },
+                {
+                    "name": "Laundry Appliances",
+                    "innersubmain": [
+                        "Front Load Washers",
+                        "Top Load Washers",
+                        "Dryers"
+                    ]
+                },
+                {
+                    "name": "Refrigeration",
+                    "innersubmain": [
+                        "Double Door",
+                        "Mini Fridges",
+                        "Deep Freezers"
+                    ]
+                },
+                {
+                    "name": "Cooking Appliances",
+                    "innersubmain": [
+                        "Ovens",
+                        "Microwaves",
+                        "Induction Cooktops"
+                    ]
+                },
+                {
+                    "name": "Small Appliances",
+                    "innersubmain": [
+                        "Kettles",
+                        "Irons",
+                        "Hand Mixers"
+                    ]
+                },
+                {
+                    "name": "Vacuum & Floor Care",
+                    "innersubmain": [
+                        "Stick Vacuums",
+                        "Robot Vacuums",
+                        "Steam Mops"
+                    ]
+                },
+                {
+                    "name": "Climate Control",
+                    "innersubmain": [
+                        "Split AC",
+                        "Air Purifiers",
+                        "Fans",
+                        "Heaters"
+                    ]
+                },
+                {
+                    "name": "Appliance Parts & Accessories",
+                    "innersubmain": [
+                        "Filters",
+                        "Hoses",
+                        "Remotes",
+                        "Trays"
+                    ]
+                }
+            ]
+        },
+        {
+            "main": "Electronics",
+            "defaultAttributeName": "Storage",
+            "intervalKey": "storageSizes",
+            "attributeSuggestions": [
+                "Storage",
+                "RAM",
+                "Edition",
+                "Model",
+                "Screen Size"
+            ],
+            "valueSuggestions": [
+                "64GB",
+                "128GB",
+                "256GB",
+                "512GB",
+                "1TB",
+                "8GB RAM",
+                "16GB RAM"
+            ],
+            "submain": [
+                {
+                    "name": "Mobile Phones",
+                    "innersubmain": [
+                        "Android",
+                        "iOS",
+                        "Rugged Phones"
+                    ]
+                },
+                {
+                    "name": "Computers & Laptops",
+                    "innersubmain": [
+                        "Ultrabooks",
+                        "Gaming Laptops",
+                        "Desktops",
+                        "Monitors"
+                    ]
+                },
+                {
+                    "name": "Tablets",
+                    "innersubmain": [
+                        "iPad",
+                        "Android Tablets",
+                        "Drawing Tablets"
+                    ]
+                },
+                {
+                    "name": "Audio & Headphones",
+                    "innersubmain": [
+                        "Wireless Earbuds",
+                        "Over-Ear Headphones",
+                        "Speakers",
+                        "Microphones"
+                    ]
+                },
+                {
+                    "name": "Cameras & Photography",
+                    "innersubmain": [
+                        "Mirrorless",
+                        "DSLR",
+                        "Action Cameras",
+                        "Lenses",
+                        "Tripods"
+                    ]
+                },
+                {
+                    "name": "TVs & Displays",
+                    "innersubmain": [
+                        "4K Smart TV",
+                        "OLED",
+                        "Gaming Monitors"
+                    ]
+                },
+                {
+                    "name": "Gaming",
+                    "innersubmain": [
+                        "Consoles",
+                        "Controllers",
+                        "Gaming Keyboards",
+                        "Headsets"
+                    ]
+                },
+                {
+                    "name": "Wearables",
+                    "innersubmain": [
+                        "Smartwatches",
+                        "Fitness Bands"
+                    ]
+                },
+                {
+                    "name": "Networking",
+                    "innersubmain": [
+                        "Wi-Fi Routers",
+                        "Mesh Systems",
+                        "Switches"
+                    ]
+                },
+                {
+                    "name": "Chargers & Cables",
+                    "innersubmain": [
+                        "Fast Chargers",
+                        "Power Banks",
+                        "USB-C Cables",
+                        "Hubs"
+                    ]
+                },
+                {
+                    "name": "Smart Home",
+                    "innersubmain": [
+                        "Smart Bulbs",
+                        "Smart Plugs",
+                        "Security Cameras",
+                        "Sensors"
+                    ]
+                }
+            ]
+        },
+        {
+            "main": "Health & Beauty",
+            "defaultAttributeName": "Volume",
+            "intervalKey": "volumes",
+            "attributeSuggestions": [
+                "Volume",
+                "Shade",
+                "Weight",
+                "Skin Type"
+            ],
+            "valueSuggestions": [
+                "30ml",
+                "50ml",
+                "100ml",
+                "200ml",
+                "250g"
+            ],
+            "submain": [
+                {
+                    "name": "Skincare",
+                    "innersubmain": [
+                        "Cleansers",
+                        "Serums",
+                        "Moisturizers",
+                        "Sunscreens"
+                    ]
+                },
+                {
+                    "name": "Makeup",
+                    "innersubmain": [
+                        "Foundation",
+                        "Lipstick",
+                        "Mascara",
+                        "Eyeshadow"
+                    ]
+                },
+                {
+                    "name": "Hair Care",
+                    "innersubmain": [
+                        "Shampoo",
+                        "Conditioner",
+                        "Hair Oils",
+                        "Masks"
+                    ]
+                },
+                {
+                    "name": "Fragrance",
+                    "innersubmain": [
+                        "Eau de Parfum",
+                        "Eau de Toilette",
+                        "Body Mist",
+                        "Attar"
+                    ]
+                },
+                {
+                    "name": "Personal Care",
+                    "innersubmain": [
+                        "Deodorants",
+                        "Body Wash",
+                        "Hand Care"
+                    ]
+                },
+                {
+                    "name": "Oral Care",
+                    "innersubmain": [
+                        "Electric Toothbrushes",
+                        "Whitening",
+                        "Mouthwash"
+                    ]
+                },
+                {
+                    "name": "Wellness & Supplements",
+                    "innersubmain": [
+                        "Vitamins",
+                        "Omega-3",
+                        "Protein",
+                        "Electrolytes"
+                    ]
+                },
+                {
+                    "name": "Beauty Tools",
+                    "innersubmain": [
+                        "Rollers",
+                        "Brushes",
+                        "Hair Dryers",
+                        "Stylers"
+                    ]
+                },
+                {
+                    "name": "Men's Grooming",
+                    "innersubmain": [
+                        "Beard Care",
+                        "Shaving",
+                        "Grooming Kits"
+                    ]
+                }
+            ]
+        },
+        {
+            "main": "Vape, E-Liquid & Tobacco",
+            "defaultAttributeName": "Strength / Edition",
+            "attributeSuggestions": [
+                "Nicotine Strength",
+                "Puff Count",
+                "Resistance",
+                "Flavor"
+            ],
+            "valueSuggestions": [
+                "0mg",
+                "3mg",
+                "6mg",
+                "20mg",
+                "50mg",
+                "0.6ohm",
+                "0.8ohm"
+            ],
+            "submain": [
+                {
+                    "name": "Vape Devices",
+                    "innersubmain": [
+                        "Pod Systems",
+                        "Box Mods",
+                        "Disposables"
+                    ]
+                },
+                {
+                    "name": "E-Liquids",
+                    "innersubmain": [
+                        "Freebase",
+                        "Nic Salts",
+                        "Menthol",
+                        "Fruity",
+                        "Dessert"
+                    ]
+                },
+                {
+                    "name": "Coils & Pods",
+                    "innersubmain": [
+                        "Replacement Pods",
+                        "Mesh Coils",
+                        "RBA"
+                    ]
+                },
+                {
+                    "name": "Vape Accessories",
+                    "innersubmain": [
+                        "Batteries",
+                        "Chargers",
+                        "Cases",
+                        "Drip Tips"
+                    ]
+                },
+                {
+                    "name": "Tobacco",
+                    "innersubmain": [
+                        "Pipe Tobacco",
+                        "Cigars",
+                        "Rolling Supplies"
+                    ]
+                },
+                {
+                    "name": "Herbal Vaporizers",
+                    "innersubmain": [
+                        "Portable Dry Herb",
+                        "Desktop"
+                    ]
+                },
+                {
+                    "name": "Nicotine Pouches",
+                    "innersubmain": [
+                        "Mint",
+                        "Citrus",
+                        "Berry"
+                    ]
+                }
+            ]
+        },
+        {
+            "main": "Jewelry & Accessories",
+            "defaultAttributeName": "Size / Length",
+            "intervalKey": "ringSizes",
+            "attributeSuggestions": [
+                "Ring Size",
+                "Length",
+                "Material",
+                "Style"
+            ],
+            "valueSuggestions": [
+                "6",
+                "7",
+                "8",
+                "9",
+                "10",
+                "45cm",
+                "50cm",
+                "60cm"
+            ],
+            "submain": [
+                {
+                    "name": "Rings",
+                    "innersubmain": [
+                        "Signet",
+                        "Bands",
+                        "Statement Rings"
+                    ]
+                },
+                {
+                    "name": "Necklaces",
+                    "innersubmain": [
+                        "Chains",
+                        "Pendants",
+                        "Chokers"
+                    ]
+                },
+                {
+                    "name": "Earrings",
+                    "innersubmain": [
+                        "Studs",
+                        "Hoops",
+                        "Drops"
+                    ]
+                },
+                {
+                    "name": "Bracelets",
+                    "innersubmain": [
+                        "Cuffs",
+                        "Chain Bracelets",
+                        "Beaded"
+                    ]
+                },
+                {
+                    "name": "Watches",
+                    "innersubmain": [
+                        "Analog",
+                        "Chronograph",
+                        "Dress",
+                        "Sport"
+                    ]
+                },
+                {
+                    "name": "Bags & Wallets",
+                    "innersubmain": [
+                        "Crossbody",
+                        "Backpacks",
+                        "Cardholders",
+                        "Totes"
+                    ]
+                },
+                {
+                    "name": "Sunglasses",
+                    "innersubmain": [
+                        "Polarized",
+                        "UV400",
+                        "Acetate"
+                    ]
+                },
+                {
+                    "name": "Hair Accessories",
+                    "innersubmain": [
+                        "Claw Clips",
+                        "Scrunchies",
+                        "Headbands"
+                    ]
+                },
+                {
+                    "name": "Belts",
+                    "innersubmain": [
+                        "Leather Belts",
+                        "Braided",
+                        "Reversible"
+                    ]
+                },
+                {
+                    "name": "Scarves",
+                    "innersubmain": [
+                        "Silk",
+                        "Wool",
+                        "Pashmina",
+                        "Lightweight"
+                    ]
+                }
+            ]
+        },
+        {
+            "main": "3D Works (Files or Products)",
+            "defaultAttributeName": "Scale / Format",
+            "attributeSuggestions": [
+                "Scale",
+                "Material",
+                "Filament",
+                "License",
+                "Finish"
+            ],
+            "valueSuggestions": [
+                "1:1",
+                "1:12",
+                "1:24",
+                "PLA+",
+                "PETG",
+                "Resin",
+                "STL + 3MF",
+                "Commercial License"
+            ],
+            "submain": [
+                {
+                    "name": "3D Models & STL Files",
+                    "innersubmain": [
+                        "STL",
+                        "3MF",
+                        "OBJ",
+                        "Blender"
+                    ]
+                },
+                {
+                    "name": "Printed Products",
+                    "innersubmain": [
+                        "PLA",
+                        "PETG",
+                        "ABS",
+                        "Resin"
+                    ]
+                },
+                {
+                    "name": "Miniatures",
+                    "innersubmain": [
+                        "Tabletop",
+                        "Busts",
+                        "Figurines"
+                    ]
+                },
+                {
+                    "name": "Home Decor Prints",
+                    "innersubmain": [
+                        "Planters",
+                        "Lamps",
+                        "Wall Art",
+                        "Organizers"
+                    ]
+                },
+                {
+                    "name": "Functional Parts",
+                    "innersubmain": [
+                        "Brackets",
+                        "Mounts",
+                        "Enclosures",
+                        "Automotive Clips"
+                    ]
+                },
+                {
+                    "name": "Cosplay & Props",
+                    "innersubmain": [
+                        "Helmets",
+                        "Armor",
+                        "Weapons",
+                        "Badges"
+                    ]
+                },
+                {
+                    "name": "Jewelry Models",
+                    "innersubmain": [
+                        "Rings",
+                        "Pendants",
+                        "Casting Masters"
+                    ]
+                },
+                {
+                    "name": "Custom Orders",
+                    "innersubmain": [
+                        "CAD Design",
+                        "Batch Print",
+                        "Prototyping"
+                    ]
+                }
+            ]
+        },
+        {
+            "main": "Food & Restaurant Ordering",
+            "defaultAttributeName": "Portion",
+            "attributeSuggestions": [
+                "Portion",
+                "Spice Level",
+                "Combo Size",
+                "Add-ons"
+            ],
+            "valueSuggestions": [
+                "Single",
+                "Medium",
+                "Large",
+                "Family",
+                "Mild",
+                "Spicy"
+            ],
+            "submain": [
+                {
+                    "name": "Restaurant Meals",
+                    "innersubmain": [
+                        "Mains",
+                        "Appetizers",
+                        "Sides"
+                    ]
+                },
+                {
+                    "name": "Fast Food",
+                    "innersubmain": [
+                        "Burgers",
+                        "Sandwiches",
+                        "Fries",
+                        "Fried Chicken"
+                    ]
+                },
+                {
+                    "name": "Pizza & Pasta",
+                    "innersubmain": [
+                        "Neapolitan",
+                        "Pan Pizza",
+                        "Alfredo",
+                        "Arrabbiata"
+                    ]
+                },
+                {
+                    "name": "Desserts & Bakery",
+                    "innersubmain": [
+                        "Cakes",
+                        "Pastries",
+                        "Cookies",
+                        "Oriental Sweets"
+                    ]
+                },
+                {
+                    "name": "Drinks",
+                    "innersubmain": [
+                        "Fresh Juices",
+                        "Soft Drinks",
+                        "Iced Drinks"
+                    ]
+                },
+                {
+                    "name": "Combos & Meal Deals",
+                    "innersubmain": [
+                        "Solo Meal",
+                        "Duo Box",
+                        "Family Feast"
+                    ]
+                },
+                {
+                    "name": "Breakfast",
+                    "innersubmain": [
+                        "Morning Boxes",
+                        "Eggs & Foul",
+                        "Croissants"
+                    ]
+                },
+                {
+                    "name": "Catering",
+                    "innersubmain": [
+                        "Events",
+                        "Corporate",
+                        "Buffet Trays"
+                    ]
+                }
+            ]
+        },
+        {
+            "main": "Food & Beverage",
+            "defaultAttributeName": "Weight / Pack",
+            "attributeSuggestions": [
+                "Weight",
+                "Pack Size",
+                "Roast / Flavor",
+                "Volume"
+            ],
+            "valueSuggestions": [
+                "250g",
+                "500g",
+                "1kg",
+                "6-Pack",
+                "12-Pack",
+                "24-Pack"
+            ],
+            "submain": [
+                {
+                    "name": "Snacks",
+                    "innersubmain": [
+                        "Chips",
+                        "Nuts",
+                        "Crackers",
+                        "Granola"
+                    ]
+                },
+                {
+                    "name": "Beverages",
+                    "innersubmain": [
+                        "Sparkling",
+                        "Juices",
+                        "Energy Drinks",
+                        "Water"
+                    ]
+                },
+                {
+                    "name": "Coffee & Tea",
+                    "innersubmain": [
+                        "Whole Bean",
+                        "Ground Coffee",
+                        "Espresso",
+                        "Loose Leaf Tea"
+                    ]
+                },
+                {
+                    "name": "Bakery",
+                    "innersubmain": [
+                        "Bread",
+                        "Buns",
+                        "Rusks",
+                        "Toast"
+                    ]
+                },
+                {
+                    "name": "Dairy",
+                    "innersubmain": [
+                        "Milk",
+                        "Cheese",
+                        "Yogurt",
+                        "Butter"
+                    ]
+                },
+                {
+                    "name": "Frozen Foods",
+                    "innersubmain": [
+                        "Meals",
+                        "Vegetables",
+                        "Pastries",
+                        "Ice Cream"
+                    ]
+                },
+                {
+                    "name": "Meat & Seafood",
+                    "innersubmain": [
+                        "Beef",
+                        "Poultry",
+                        "Fish",
+                        "Shrimp"
+                    ]
+                },
+                {
+                    "name": "Fruits & Vegetables",
+                    "innersubmain": [
+                        "Fresh Produce",
+                        "Organic",
+                        "Herbs"
+                    ]
+                },
+                {
+                    "name": "Pantry & Dry Goods",
+                    "innersubmain": [
+                        "Rice",
+                        "Pasta",
+                        "Oils",
+                        "Spices",
+                        "Sauces"
+                    ]
+                },
+                {
+                    "name": "Candy & Sweets",
+                    "innersubmain": [
+                        "Chocolates",
+                        "Gummies",
+                        "Mints"
+                    ]
+                }
+            ]
+        },
+        {
+            "main": "General Retail",
+            "defaultAttributeName": "Variant",
+            "attributeSuggestions": [
+                "Size",
+                "Model",
+                "Pack",
+                "Type"
+            ],
+            "valueSuggestions": [
+                "S",
+                "M",
+                "L",
+                "XL",
+                "Standard",
+                "Pack of 1",
+                "Pack of 2"
+            ],
+            "submain": [
+                {
+                    "name": "Apparel",
+                    "innersubmain": [
+                        "Casual",
+                        "Workwear",
+                        "Basics"
+                    ]
+                },
+                {
+                    "name": "Home & Living",
+                    "innersubmain": [
+                        "Bedding",
+                        "Storage",
+                        "Decor",
+                        "Tableware"
+                    ]
+                },
+                {
+                    "name": "Electronics",
+                    "innersubmain": [
+                        "Accessories",
+                        "Audio",
+                        "Gadgets"
+                    ]
+                },
+                {
+                    "name": "Toys & Games",
+                    "innersubmain": [
+                        "Board Games",
+                        "Action Figures",
+                        "Puzzles",
+                        "Educational"
+                    ]
+                },
+                {
+                    "name": "Sports & Outdoors",
+                    "innersubmain": [
+                        "Fitness",
+                        "Camping",
+                        "Team Sports",
+                        "Accessories"
+                    ]
+                },
+                {
+                    "name": "Pet Supplies",
+                    "innersubmain": [
+                        "Dogs",
+                        "Cats",
+                        "Food",
+                        "Grooming & Toys"
+                    ]
+                },
+                {
+                    "name": "Office & Stationery",
+                    "innersubmain": [
+                        "Notebooks",
+                        "Pens",
+                        "Desk Organizers",
+                        "Printing"
+                    ]
+                },
+                {
+                    "name": "Baby & Kids",
+                    "innersubmain": [
+                        "Feeding",
+                        "Diapering",
+                        "Nursery",
+                        "Toys"
+                    ]
+                },
+                {
+                    "name": "Automotive",
+                    "innersubmain": [
+                        "Car Care",
+                        "Interior Accessories",
+                        "Tools",
+                        "Lighting"
+                    ]
+                },
+                {
+                    "name": "Tools & Hardware",
+                    "innersubmain": [
+                        "Hand Tools",
+                        "Power Tools",
+                        "Fasteners",
+                        "Measuring"
+                    ]
+                }
+            ]
+        },
+        {
+            "main": "Services",
+            "defaultAttributeName": "Duration / Package",
+            "attributeSuggestions": [
+                "Duration",
+                "Sessions",
+                "Package",
+                "Turnaround"
+            ],
+            "valueSuggestions": [
+                "30 mins",
+                "1 hour",
+                "2 hours",
+                "4 Sessions",
+                "8 Sessions",
+                "Basic",
+                "Pro"
+            ],
+            "submain": [
+                {
+                    "name": "Home Services",
+                    "innersubmain": [
+                        "Plumbing",
+                        "Electrical",
+                        "Carpentry",
+                        "Pest Control"
+                    ]
+                },
+                {
+                    "name": "Beauty Services",
+                    "innersubmain": [
+                        "Hair Styling",
+                        "Makeup",
+                        "Skincare Session",
+                        "Nails"
+                    ]
+                },
+                {
+                    "name": "Repairs & Maintenance",
+                    "innersubmain": [
+                        "Phone Repair",
+                        "Laptop Repair",
+                        "Appliance Service"
+                    ]
+                },
+                {
+                    "name": "Delivery & Moving",
+                    "innersubmain": [
+                        "Local Express",
+                        "Home Moving",
+                        "Packaging"
+                    ]
+                },
+                {
+                    "name": "Education & Tutoring",
+                    "innersubmain": [
+                        "1-on-1 Session",
+                        "Course",
+                        "Exam Prep"
+                    ]
+                },
+                {
+                    "name": "Events & Photography",
+                    "innersubmain": [
+                        "Photo Shoot",
+                        "Video Coverage",
+                        "Event Setup"
+                    ]
+                },
+                {
+                    "name": "Cleaning",
+                    "innersubmain": [
+                        "Standard Clean",
+                        "Deep Clean",
+                        "Move-Out Clean"
+                    ]
+                },
+                {
+                    "name": "Health Services",
+                    "innersubmain": [
+                        "Consultation",
+                        "Physiotherapy",
+                        "Nutrition Plan"
+                    ]
+                },
+                {
+                    "name": "Business Services",
+                    "innersubmain": [
+                        "Branding",
+                        "Web Development",
+                        "Accounting",
+                        "Consulting"
+                    ]
+                },
+                {
+                    "name": "Freelancing",
+                    "innersubmain": [
+                        "Design",
+                        "Video Editing",
+                        "3D Modeling",
+                        "Copywriting"
+                    ]
+                }
+            ]
+        }
+    ]
+}
